@@ -4,12 +4,14 @@
     <Project Path="src/Shared.Domain/Shared.Domain.csproj" />
     <Project Path="src/Shared.Infrastructure.Persistence/Shared.Infrastructure.Persistence.csproj" />
     <Project Path="src/Shared.Infrastructure.Security/Shared.Infrastructure.Security.csproj" />
+    <Project Path="src/Shared.Infrastructure.Web/Shared.Infrastructure.Web.csproj" />
     <Project Path="src/Shared.Kernel/Shared.Kernel.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Shared.Application.Tests/Shared.Application.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Persistence.Tests/Shared.Infrastructure.Persistence.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Security.Tests/Shared.Infrastructure.Security.Tests.csproj" />
+    <Project Path="tests/Shared.Infrastructure.Web.Tests/Shared.Infrastructure.Web.Tests.csproj" />
     <Project Path="tests/Shared.Kernel.Tests/Shared.Kernel.Tests.csproj" />
   </Folder>
 </Solution>
