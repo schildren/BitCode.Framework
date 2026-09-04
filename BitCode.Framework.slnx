@@ -10,6 +10,7 @@
     <Project Path="src/Shared.Infrastructure.Web/Shared.Infrastructure.Web.csproj" />
     <Project Path="src/Shared.Kernel/Shared.Kernel.csproj" />
     <Project Path="src/Shared.Modularity/Shared.Modularity.csproj" />
+    <Project Path="src/Shared.Testing/Shared.Testing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Shared.Application.Tests/Shared.Application.Tests.csproj" />

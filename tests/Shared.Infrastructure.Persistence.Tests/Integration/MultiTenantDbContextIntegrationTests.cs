@@ -2,8 +2,8 @@ using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Security;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Repositories;
+using BitCode.Framework.Shared.Testing;
 using FluentAssertions;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,14 +18,8 @@ namespace BitCode.Framework.Shared.Infrastructure.Persistence.Tests.Integration;
 [Collection(SqlServerCollection.Name)]
 public class MultiTenantDbContextIntegrationTests(SqlServerContainerFixture fixture)
 {
-    private string BuildIsolatedConnectionString([System.Runtime.CompilerServices.CallerMemberName] string testName = "")
-    {
-        var builder = new SqlConnectionStringBuilder(fixture.ConnectionString)
-        {
-            InitialCatalog = $"BitCodeFramework_{testName}_{Guid.NewGuid():N}"
-        };
-        return builder.ConnectionString;
-    }
+    private string BuildIsolatedConnectionString([System.Runtime.CompilerServices.CallerMemberName] string testName = "") =>
+        fixture.BuildIsolatedConnectionString("BitCodeFramework", testName);
 
     private static async Task<ServiceProvider> BuildProviderAsync(string connectionString, ITenantProvider? tenantProvider = null)
     {

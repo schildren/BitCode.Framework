@@ -4,8 +4,8 @@ using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using BitCode.Framework.Shared.Infrastructure.Security.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
+using BitCode.Framework.Shared.Testing;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,14 +22,8 @@ namespace BitCode.Framework.Shared.Infrastructure.Security.Tests.Integration;
 [Collection(SqlServerCollection.Name)]
 public class SecurityEndToEndTests(SqlServerContainerFixture fixture)
 {
-    private string BuildIsolatedConnectionString([System.Runtime.CompilerServices.CallerMemberName] string testName = "")
-    {
-        var builder = new SqlConnectionStringBuilder(fixture.ConnectionString)
-        {
-            InitialCatalog = $"BitCodeFrameworkSecurity_{testName}_{Guid.NewGuid():N}"
-        };
-        return builder.ConnectionString;
-    }
+    private string BuildIsolatedConnectionString([System.Runtime.CompilerServices.CallerMemberName] string testName = "") =>
+        fixture.BuildIsolatedConnectionString("BitCodeFrameworkSecurity", testName);
 
     private static IConfiguration BuildConfiguration() =>
         new ConfigurationBuilder()

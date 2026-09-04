@@ -1,7 +1,13 @@
 using Testcontainers.MsSql;
+using Xunit;
 
-namespace BitCode.Framework.Shared.Infrastructure.Persistence.Tests.Integration;
+namespace BitCode.Framework.Shared.Testing;
 
+/// <summary>
+/// Fixture de xUnit reutilizable para tests de integración que necesitan SQL Server real. Un
+/// contenedor por clase de test (ver ICollectionFixture) — usar BuildIsolatedConnectionString para
+/// que cada test opere sobre su propia base de datos dentro del mismo contenedor.
+/// </summary>
 public class SqlServerContainerFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _container = new MsSqlBuilder().Build();
@@ -11,10 +17,4 @@ public class SqlServerContainerFixture : IAsyncLifetime
     public Task InitializeAsync() => _container.StartAsync();
 
     public Task DisposeAsync() => _container.DisposeAsync().AsTask();
-}
-
-[CollectionDefinition(Name)]
-public class SqlServerCollection : ICollectionFixture<SqlServerContainerFixture>
-{
-    public const string Name = "SqlServer integration tests";
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using BitCode.Framework.Shared.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;

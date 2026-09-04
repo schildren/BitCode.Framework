@@ -1,3 +1,4 @@
+using BitCode.Framework.Shared.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
