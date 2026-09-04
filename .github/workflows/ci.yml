@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+  test-unit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Tests unitarios (sin integración)
+        run: >
+          dotnet test --configuration Release
+          --filter "FullyQualifiedName!~Integration"
+          --logger "trx;LogFileName=unit-tests.trx"
+          --results-directory ./TestResults
+
+      - name: Publicar resultados de tests unitarios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: ./TestResults
+
+  test-integration:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Tests de integración (Testcontainers — SQL Server, Redis)
+        run: >
+          dotnet test --configuration Release
+          --filter "FullyQualifiedName~Integration"
+          --logger "trx;LogFileName=integration-tests.trx"
+          --results-directory ./TestResults
+
+      - name: Publicar resultados de tests de integración
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: ./TestResults
