@@ -36,6 +36,13 @@ public static class ModularityServiceCollectionExtensions
 
             var module = (IFrameworkModule)constructor.Invoke(null);
             module.ConfigureServices(services, configuration);
+
+            // Se registra la instancia (no solo se invoca ConfigureServices) para que código
+            // posterior — p.ej. UseModules() en Shared.Infrastructure.Web, que configura el
+            // pipeline HTTP de los módulos que también implementan IWebFrameworkModule — pueda
+            // recuperar los módulos ya resueltos, respetando el mismo orden por DependsOn.
+            services.AddSingleton(moduleType, module);
+            services.AddSingleton<IFrameworkModule>(module);
         }
 
         return services;
