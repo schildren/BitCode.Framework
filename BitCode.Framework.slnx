@@ -23,5 +23,6 @@
     <Project Path="tests/Shared.Modularity.Tests.HappyPathModules/Shared.Modularity.Tests.HappyPathModules.csproj" />
     <Project Path="tests/Shared.Modularity.Tests.NegativeCases/Shared.Modularity.Tests.NegativeCases.csproj" />
     <Project Path="tests/Shared.Modularity.Tests/Shared.Modularity.Tests.csproj" />
+    <Project Path="tests/Templates.Tests/Templates.Tests.csproj" />
   </Folder>
 </Solution>
