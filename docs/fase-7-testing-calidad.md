@@ -1,6 +1,6 @@
 # Fase 7 — Testing e infraestructura de calidad
 
-**Estado:** Completa (pendiente de confirmación externa del primer run de CI, ver abajo)
+**Estado:** Completa — primer run de CI confirmado en verde ([run 33836338365](https://github.com/schildren/BitCode.Framework/actions/runs/33836338365))
 **Commits:** `6db0ed4`, `04a0e44`, `3713085` (3 commits)
 
 ## Objetivo
@@ -19,7 +19,7 @@ Cerrar el hueco que la auditoría inicial de BC-SFE-MID marcó como **completame
 
 `test-unit` y `test-integration` corren en paralelo (ambos dependen solo de `build`, no uno del otro), para no serializar innecesariamente los tests de integración detrás de los unitarios.
 
-**Verificación pendiente de confirmación externa:** el repo (`schildren/BitCode.Framework`) es privado y no había credenciales de GitHub (ni `gh` CLI ni token) disponibles en la sesión para consultar el estado del run vía API. El workflow se subió y quedó a la espera de que el usuario confirmara en la pestaña Actions si el primer run pasó en verde — actualizar esta sección con el resultado una vez confirmado.
+**Verificación:** el repo (`schildren/BitCode.Framework`) es privado y no había credenciales de GitHub (ni `gh` CLI ni token) disponibles en la sesión para consultar el estado del run vía API, así que se le pidió al usuario confirmarlo manualmente en la pestaña Actions. El [primer run](https://github.com/schildren/BitCode.Framework/actions/runs/33836338365) concluyó exitosamente (los tres jobs: `build`, `test-unit`, `test-integration`).
 
 ### Tarea 7.2 — `Shared.Testing`: fixtures de Testcontainers reutilizables
 
@@ -46,8 +46,7 @@ Sin tests nuevos propios de esta fase (es infraestructura de proceso, no funcion
 
 ## Pendiente / fuera de alcance de esta fase
 
-- Confirmación del primer run real de GitHub Actions (ver Tarea 7.1) — acción del usuario, no completable desde esta sesión sin credenciales.
-- Badge de estado de CI en el README del repo — trivial de agregar una vez confirmado que el workflow corre correctamente.
+- Badge de estado de CI en el README del repo — trivial de agregar ahora que el workflow ya corrió exitosamente.
 - Cobertura de código mínima exigida (gate de PR) — `coverlet.collector` ya está en todos los proyectos de test desde que se crearon, pero no hay un umbral mínimo forzado en CI; candidato para cuando el framework tenga más historial de uso real y se pueda fijar un umbral realista.
 - `Directory.Packages.props` (gestión centralizada de versiones de paquetes NuGet) — se evaluó pero se descartó en esta fase por ser un cambio más amplio y riesgoso que el de `Directory.Build.props`; candidato para una pasada de mantenimiento posterior si la deriva de versiones entre proyectos se vuelve un problema real.
 - Fase 8 del plan general (documentación y adopción: proyecto piloto end-to-end, guía de convenciones) — siguiente y última fase del plan original.

@@ -56,5 +56,4 @@ El plan original de 9 fases (Fase 0 absorbida en la 1) se ejecutó completo:
 ## Pendiente / fuera de alcance
 
 - Migrar gradualmente un módulo real de un proyecto existente (p.ej. `ConceptoPago` de BitCode.Satus) como caso piloto de adopción — mencionado en el plan original; no se ejecutó en esta sesión porque requiere trabajo coordinado con el equipo dueño de ese proyecto, fuera del alcance de construir el framework en sí.
-- Confirmación final del pipeline de CI en GitHub Actions (pendiente desde la Fase 7, ver `docs/fase-7-testing-calidad.md`).
 - Publicación de los proyectos como paquetes NuGet internos — objetivo futuro mencionado desde la Fase 1, no ejecutado; el framework sigue consumiéndose por `ProjectReference` directa o clonando el repo.
