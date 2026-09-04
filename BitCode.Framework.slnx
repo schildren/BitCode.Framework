@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Shared.Application/Shared.Application.csproj" />
     <Project Path="src/Shared.Domain/Shared.Domain.csproj" />
+    <Project Path="src/Shared.Infrastructure.BackgroundJobs/Shared.Infrastructure.BackgroundJobs.csproj" />
     <Project Path="src/Shared.Infrastructure.Observability/Shared.Infrastructure.Observability.csproj" />
     <Project Path="src/Shared.Infrastructure.Persistence/Shared.Infrastructure.Persistence.csproj" />
     <Project Path="src/Shared.Infrastructure.Security/Shared.Infrastructure.Security.csproj" />
@@ -10,6 +11,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Shared.Application.Tests/Shared.Application.Tests.csproj" />
+    <Project Path="tests/Shared.Infrastructure.BackgroundJobs.Tests/Shared.Infrastructure.BackgroundJobs.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Observability.Tests/Shared.Infrastructure.Observability.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Persistence.Tests/Shared.Infrastructure.Persistence.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Security.Tests/Shared.Infrastructure.Security.Tests.csproj" />
