@@ -2,11 +2,13 @@ using BitCode.Framework.Shared.Kernel;
 
 namespace BitCode.Framework.Shared.Infrastructure.Persistence.Tests;
 
-public class TestEntity : Entity<Guid>, IAuditedEntity, ISoftDelete
+public class TestEntity : Entity<Guid>, IAuditedEntity, ISoftDelete, ITenantEntity
 {
     public string Name { get; set; } = string.Empty;
 
     public int Amount { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
 
