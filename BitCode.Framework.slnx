@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shared.Domain/Shared.Domain.csproj" />
+    <Project Path="src/Shared.Kernel/Shared.Kernel.csproj" />
+  </Folder>
+</Solution>
