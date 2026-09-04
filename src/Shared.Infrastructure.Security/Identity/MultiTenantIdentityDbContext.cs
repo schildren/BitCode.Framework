@@ -1,5 +1,6 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -18,6 +19,8 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
     where TUser : ApplicationUser
     where TRole : ApplicationRole
 {
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     private readonly Guid _tenantId;
     private readonly bool _isMultiTenancyEnabled;
 
