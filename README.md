@@ -45,4 +45,4 @@ dotnet run
 
 ## Estado del proyecto
 
-Fases 1-7 del plan original completas; Fase 8 (documentación y adopción) en curso. Ver [`docs/README.md`](docs/README.md) para el detalle de cada una.
+Las 9 fases del plan original completas (Fase 0 absorbida en la Fase 1). Ver [`docs/README.md`](docs/README.md) para el detalle de cada una.
