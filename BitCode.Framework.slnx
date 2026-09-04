@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/samples/">
+    <Project Path="samples/Sample.Api.Tests/Sample.Api.Tests.csproj" />
+    <Project Path="samples/Sample.Api/Sample.Api.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Shared.Application/Shared.Application.csproj" />
     <Project Path="src/Shared.Domain/Shared.Domain.csproj" />

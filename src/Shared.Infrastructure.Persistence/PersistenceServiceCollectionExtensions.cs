@@ -44,6 +44,10 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
         services.AddScoped<IUnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<TContext>()));
         services.AddScoped(typeof(IRepository<,>), typeof(RepositoryBase<,>));
+        // IReadRepository<,> también resuelve a RepositoryBase<,>: sin este registro, un IQuery
+        // (Fase 2) que solo necesita lectura no puede inyectar IReadRepository<,> — solo
+        // IRepository<,> quedaba resoluble, aunque RepositoryBase implementa ambas interfaces.
+        services.AddScoped(typeof(IReadRepository<,>), typeof(RepositoryBase<,>));
 
         return services;
     }

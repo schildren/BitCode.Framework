@@ -28,6 +28,24 @@ public class PersistenceServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public async Task AddSharedPersistence_ResolvesIReadRepository()
+    {
+        // Regresión: el proyecto piloto Sample.Api (Fase 8) detectó que un handler de IQuery
+        // (Fase 2), que solo necesita lectura, no podía inyectar IReadRepository<,> — únicamente
+        // IRepository<,> quedaba resoluble, aunque RepositoryBase implementa ambas interfaces.
+        var services = new ServiceCollection();
+        services.AddSharedPersistence<MultiTenantTestDbContext>(
+            "Server=(localdb)\\mssqllocaldb;Database=BitCodeFrameworkTests;Trusted_Connection=True;");
+
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        var readRepository = scope.ServiceProvider.GetRequiredService<IReadRepository<TestEntity, Guid>>();
+
+        readRepository.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task AddSharedPersistence_RespectsTenantProviderRegisteredBeforehand()
     {
         var services = new ServiceCollection();
