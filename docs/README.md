@@ -10,7 +10,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | 1 — Núcleo de dominio y persistencia | ✅ Completa | [fase-1-nucleo-dominio-persistencia.md](fase-1-nucleo-dominio-persistencia.md) |
 | 2 — Capa de aplicación (MediatR, behaviors, Result) | ✅ Completa | [fase-2-capa-aplicacion.md](fase-2-capa-aplicacion.md) |
 | 3 — Seguridad y autorización | ✅ Completa | [fase-3-seguridad-autorizacion.md](fase-3-seguridad-autorizacion.md) |
-| 4 — Infraestructura transversal | Pendiente | — |
+| 4 — Infraestructura transversal | ✅ Completa | [fase-4-infraestructura-transversal.md](fase-4-infraestructura-transversal.md) |
 | 5 — Sistema de módulos | Pendiente | — |
 | 6 — Scaffolding/generadores | Pendiente | — |
 | 7 — Testing e infraestructura de calidad | Pendiente | — |
