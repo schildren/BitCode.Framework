@@ -13,5 +13,5 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | 4 — Infraestructura transversal | ✅ Completa | [fase-4-infraestructura-transversal.md](fase-4-infraestructura-transversal.md) |
 | 5 — Sistema de módulos | ✅ Completa | [fase-5-sistema-modulos.md](fase-5-sistema-modulos.md) |
 | 6 — Scaffolding/generadores | ✅ Completa | [fase-6-scaffolding.md](fase-6-scaffolding.md) |
-| 7 — Testing e infraestructura de calidad | Pendiente | — |
+| 7 — Testing e infraestructura de calidad | ✅ Completa (CI pendiente de confirmación) | [fase-7-testing-calidad.md](fase-7-testing-calidad.md) |
 | 8 — Documentación y adopción | Pendiente | — |
