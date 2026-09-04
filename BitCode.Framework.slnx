@@ -6,5 +6,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Shared.Infrastructure.Persistence.Tests/Shared.Infrastructure.Persistence.Tests.csproj" />
+    <Project Path="tests/Shared.Kernel.Tests/Shared.Kernel.Tests.csproj" />
   </Folder>
 </Solution>
