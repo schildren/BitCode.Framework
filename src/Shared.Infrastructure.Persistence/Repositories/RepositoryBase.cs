@@ -14,8 +14,16 @@ public class RepositoryBase<TEntity, TId>(DbContext dbContext) : IRepository<TEn
 
     protected DbSet<TEntity> DbSet { get; } = dbContext.Set<TEntity>();
 
+    /// <remarks>
+    /// Se usa un Where/FirstOrDefault en vez de DbSet.FindAsync a propósito: FindAsync devuelve una
+    /// entidad ya trackeada directamente desde el ChangeTracker sin volver a consultar la base, lo
+    /// que salta por completo los filtros globales (soft-delete/tenant) cuando esa entidad ya fue
+    /// cargada o modificada en la misma unidad de trabajo — devolviendo, por ejemplo, un registro que
+    /// acaba de ser soft-eliminado. Se prioriza la consistencia del filtro sobre el atajo de caché
+    /// local que ofrece FindAsync.
+    /// </remarks>
     public virtual async Task<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default) =>
-        await DbSet.FindAsync([id], cancellationToken);
+        await DbSet.FirstOrDefaultAsync(entity => entity.Id.Equals(id), cancellationToken);
 
     public virtual async Task<IReadOnlyList<TEntity>> ListAsync(CancellationToken cancellationToken = default) =>
         await DbSet.ToListAsync(cancellationToken);
