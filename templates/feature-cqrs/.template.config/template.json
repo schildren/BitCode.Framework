@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BitCode.Framework",
+  "classifications": ["Common", "CQRS", "BitCode.Framework"],
+  "identity": "BitCode.Framework.Templates.Feature",
+  "name": "BitCode Framework - CQRS Command Feature",
+  "shortName": "bitcode-feature",
+  "sourceName": "FeatureName",
+  "preferNameDirectory": false,
+  "symbols": {
+    "Namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "MyApp.Application.Features",
+      "defaultValue": "MyApp.Application.Features",
+      "description": "Namespace del feature generado."
+    },
+    "ResponseType": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "Guid",
+      "defaultValue": "Guid",
+      "description": "Tipo de dato que retorna el Command (ICommand<ResponseType>)."
+    }
+  }
+}

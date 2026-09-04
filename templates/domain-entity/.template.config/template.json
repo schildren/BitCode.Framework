@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BitCode.Framework",
+  "classifications": ["Common", "Domain", "BitCode.Framework"],
+  "identity": "BitCode.Framework.Templates.DomainEntity",
+  "name": "BitCode Framework - Domain Entity + Repository",
+  "shortName": "bitcode-entity",
+  "sourceName": "EntityName",
+  "preferNameDirectory": false,
+  "symbols": {
+    "Namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "MyApp.Domain.Entities",
+      "defaultValue": "MyApp.Domain.Entities",
+      "description": "Namespace de la entidad generada."
+    },
+    "MultiTenant": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "description": "Si se incluye, la entidad también implementa ITenantEntity."
+    }
+  },
+  "specialCustomOperations": {
+    "**/*.cs": {
+      "operations": [
+        {
+          "type": "conditional",
+          "configuration": {
+            "if": ["#if"],
+            "else": ["#else"],
+            "elseif": ["#elseif"],
+            "endif": ["#endif"],
+            "trim": "true",
+            "wholeLine": "true"
+          }
+        }
+      ]
+    }
+  }
+}
