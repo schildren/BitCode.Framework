@@ -1,0 +1,68 @@
+# Convenciones — BitCode.Framework
+
+Guía de convenciones para un proyecto consumidor del framework. Extraída de los patrones ya validados en `samples/Sample.Api` y en la suite de tests de cada fase — no son reglas nuevas, son las que el propio framework ya sigue.
+
+## Estructura de un proyecto consumidor
+
+```
+MiApp/
+  MiApp.Api/                      (o el nombre del proyecto Web)
+    Program.cs                    (AddModules + UseModules, nada más)
+    InfrastructureModule.cs       (envuelve los AddSharedX<T>() del framework)
+    MiAppDbContext.cs             (: MultiTenantDbContext o MultiTenantIdentityDbContext)
+    appsettings.json
+    <Feature>/
+      <Feature>.cs                 (entidad de dominio)
+      Crear<Feature>Command.cs     (Command + Validator + Handler, un archivo o tres)
+      Obtener<Feature>Query.cs     (Query + Handler)
+      <Feature>Module.cs           (IWebFrameworkModule: MapGroup + endpoints)
+```
+
+Un feature = una carpeta = un `IWebFrameworkModule` con `[DependsOn(typeof(InfrastructureModule))]`. Ver `samples/Sample.Api/Productos/` como referencia completa.
+
+## Nomenclatura
+
+| Elemento | Convención | Ejemplo |
+|---|---|---|
+| Command | `{Verbo}{Entidad}Command` | `CrearProductoCommand`, `EliminarProductoCommand` |
+| Query | `Obtener{Entidad}Query` / `Listar{Entidad}sQuery` | `ObtenerProductoQuery` |
+| Validator | `{Command}Validator` | `CrearProductoCommandValidator` |
+| Handler | `{Command}Handler` | `CrearProductoCommandHandler` |
+| Response de Query | `{Entidad}Response` | `ProductoResponse` |
+| Módulo de feature | `{Feature}Module` | `ProductosModule` |
+| Error de dominio | `{Entidad}.{Motivo}` (código) | `"Producto.NoEncontrado"` |
+| Permiso | `{entidad}.{accion}` (minúsculas, punto) | `"productos.crear"` |
+
+## Reglas duras (no opcionales)
+
+Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse de ellas rompe garantías que el resto del framework asume:
+
+1. **Un handler nunca llama `IUnitOfWork.SaveChangesAsync` explícitamente en un `ICommand`.** `TransactionBehavior` (Fase 2) ya lo hace al confirmar la transacción. Ver el comentario en `CrearProductoCommandHandler` del piloto.
+2. **Un `IQuery` nunca modifica datos.** `TransactionBehavior` está restringido a `IBaseCommand` — una query que escribe no tiene la protección transaccional y puede dejar cambios a medias sin que el framework lo detecte.
+3. **Nunca exponer `IQueryable` desde un repositorio.** Toda consulta pasa por `ISpecification<T>` o por los métodos tipados de `IRepository`/`IReadRepository`.
+4. **Un error de negocio esperado es un `Result.Failure`, nunca una excepción.** Las excepciones son para lo verdaderamente inesperado; `GlobalExceptionHandler` las trata como error 500 sin distinción.
+5. **Toda entidad que necesite auditoría/soft-delete/multi-tenancy implementa la interfaz correspondiente (`IAuditedEntity`/`ISoftDelete`/`ITenantEntity`) y nada más** — el framework detecta las interfaces por reflexión, no requiere configuración adicional en `OnModelCreating`.
+6. **Un endpoint siempre termina en `.ToOkOrProblem()` o `.ToProblemDetails()` sobre el `Result` que devuelve el `Sender`**, nunca inspeccionando manualmente `IsSuccess`/`Error` para construir la respuesta HTTP a mano.
+
+## Cuándo usar qué
+
+| Necesito... | Uso |
+|---|---|
+| Una entidad nueva | `dotnet new bitcode-entity -n MiEntidad --MultiTenant true\|false` |
+| Un feature CQRS nuevo | `dotnet new bitcode-feature -n MiAccion` |
+| Agrupar servicios de una feature | `IFrameworkModule` con `[DependsOn(typeof(InfrastructureModule))]` |
+| Que el módulo también mapee endpoints | `IWebFrameworkModule` en vez de `IFrameworkModule` |
+| Cachear el resultado de una query costosa | `HybridCache.GetOrCreateAsync` (Fase 4) — recordar que la escritura a Redis L2 es asíncrona, no asumir consistencia inmediata entre instancias |
+| Un job recurrente | `IJob` de Quartz.NET registrado en `AddSharedBackgroundJobs` |
+| Proteger un endpoint por permiso | `[RequirePermission("entidad.accion")]` o `.RequireAuthorization("entidad.accion")` |
+
+## Testing
+
+- Un test que depende de Docker (SQL Server, Redis) va en una carpeta `Integration/` y su nombre de clase/namespace debe contener `Integration` — el filtro `FullyQualifiedName!~Integration` de CI y de uso diario depende de esa convención.
+- Reutilizar `SqlServerContainerFixture`/`RedisContainerFixture` de `Shared.Testing`, no crear una copia local — ver Fase 7 para el porqué.
+- Un test de integración usa `fixture.BuildIsolatedConnectionString(prefijo, nombreDeTest)` para que cada test tenga su propia base de datos dentro del mismo contenedor.
+
+## Referencias
+
+- [`docs/README.md`](README.md) — índice de fases con el detalle de cada decisión de diseño.
+- [`samples/Sample.Api`](../samples/Sample.Api) — implementación de referencia siguiendo todas estas convenciones.
