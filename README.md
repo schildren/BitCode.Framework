@@ -43,6 +43,7 @@ dotnet run
 ## Documentación
 
 - **[`docs/README.md`](docs/README.md)** — índice de las 8 fases del plan, con un documento detallado por fase (decisiones de diseño, bugs reales encontrados y corregidos, guía de uso, cobertura de tests).
+- **[`docs/guia-uso-proyectos.md`](docs/guia-uso-proyectos.md)** — guía paso a paso para arrancar un proyecto consumidor desde cero.
 - **[`docs/convenciones.md`](docs/convenciones.md)** — convenciones de nombres, estructura de carpetas y patrones a seguir en un proyecto consumidor.
 
 ## Estado del proyecto

@@ -15,3 +15,8 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | 6 — Scaffolding/generadores | ✅ Completa | [fase-6-scaffolding.md](fase-6-scaffolding.md) |
 | 7 — Testing e infraestructura de calidad | ✅ Completa | [fase-7-testing-calidad.md](fase-7-testing-calidad.md) |
 | 8 — Documentación y adopción | ✅ Completa | [fase-8-documentacion-adopcion.md](fase-8-documentacion-adopcion.md) |
+
+## Guías
+
+- [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
+- [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
