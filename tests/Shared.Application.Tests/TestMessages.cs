@@ -21,6 +21,10 @@ public class TestTransactionalCommandHandler : IRequestHandler<TestTransactional
         Task.FromResult(Result.Success($"Hola, {request.Name}"));
 }
 
+public record TestIdempotentCommand(string Name) : ICommand<string>, IIdempotentCommand;
+
+public record TestIdempotentCommandWithoutValue(string Name) : ICommand, IIdempotentCommand;
+
 public class TestQueryHandler : IRequestHandler<TestQuery, Result<string>>
 {
     public Task<Result<string>> Handle(TestQuery request, CancellationToken cancellationToken) =>

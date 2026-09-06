@@ -1,6 +1,14 @@
 #nullable enable
 BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator
 static BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator.ApplyConcurrencyTokens(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.Add(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.EfIdempotencyStore(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.FindAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.PurgeExpiredAsync(System.DateTime utcNow, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.Remove(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.IdempotencyModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.IdempotencyModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.AuditableEntitySaveChangesInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor

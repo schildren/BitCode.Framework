@@ -1,7 +1,9 @@
+using BitCode.Framework.Shared.Domain.Idempotency;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Security;
 using BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding;
@@ -101,6 +103,10 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
         services.AddScoped<IUnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<TContext>()));
+        // F1-22: comparte el mismo DbContext de scope que IUnitOfWork/IRepository de arriba — el
+        // registro de idempotencia se persiste en el mismo SaveChangesAsync que el efecto del
+        // comando, coordinado por IdempotencyBehavior (Shared.Application).
+        services.AddScoped<IIdempotencyStore, EfIdempotencyStore>();
         services.AddScoped(typeof(IRepository<,>), typeof(RepositoryBase<,>));
         // IReadRepository<,> resuelve a ReadOnlyRepositoryBase<,> (F1-17), no a RepositoryBase<,>:
         // un IQuery (Fase 2) nunca muta datos (regla dura #2 de docs/convenciones.md), así que toda

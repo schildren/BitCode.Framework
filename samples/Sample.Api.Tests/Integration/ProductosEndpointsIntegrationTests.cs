@@ -44,10 +44,27 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         _client = _factory.CreateClient();
     }
 
+    /// <summary>
+    /// F1-22: CrearProductoCommand implementa IIdempotentCommand — toda creación real (fuera de los
+    /// tests que ejercitan la idempotencia en sí misma) necesita una Idempotency-Key propia, o
+    /// IdempotencyBehavior la rechaza con 400/"Idempotency.KeyRequired" (ver
+    /// <see cref="CrearProducto_SinIdempotencyKey_Retorna400ConErrorDeValidacion"/>).
+    /// </summary>
+    private Task<HttpResponseMessage> PostProductoAsync(object payload, string? idempotencyKey = null)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/productos")
+        {
+            Content = JsonContent.Create(payload),
+        };
+        request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
+
+        return _client!.SendAsync(request);
+    }
+
     [Fact]
     public async Task CrearYObtenerProducto_FlujoCompleto_PersisteYRespondeCorrectamente()
     {
-        var crearResponse = await _client!.PostAsJsonAsync("/productos", new { nombre = "Teclado", precio = 49.90m });
+        var crearResponse = await PostProductoAsync(new { nombre = "Teclado", precio = 49.90m });
         crearResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var id = await crearResponse.Content.ReadFromJsonAsync<Guid>();
 
@@ -70,19 +87,101 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task CrearProducto_DatosInvalidos_Retorna400ConErroresDeValidacion()
     {
-        var response = await _client!.PostAsJsonAsync("/productos", new { nombre = "", precio = -5m });
+        var response = await PostProductoAsync(new { nombre = "", precio = -5m });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("Nombre").And.Contain("Precio");
     }
 
+    /// <summary>
+    /// Criterio de aceptación F1-22 ("POST repetido no duplica operación"), primer escenario:
+    /// reenviar el MISMO comando (mismo body) con la MISMA Idempotency-Key no debe insertar un
+    /// segundo Producto, y ambas respuestas deben ser idénticas (mismo 201 Created, mismo Guid) —
+    /// como si el segundo POST nunca hubiera llegado al handler.
+    /// </summary>
+    [Fact]
+    public async Task CrearProducto_MismaIdempotencyKeyYMismoPayload_NoDuplicaLaOperacionYRespondeIgual()
+    {
+        var idempotencyKey = Guid.NewGuid().ToString();
+        var payload = new { nombre = "Teclado mecánico", precio = 89.90m };
+
+        var primeraRespuesta = await PostProductoAsync(payload, idempotencyKey);
+        var segundaRespuesta = await PostProductoAsync(payload, idempotencyKey);
+
+        primeraRespuesta.StatusCode.Should().Be(HttpStatusCode.Created);
+        segundaRespuesta.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var primerId = await primeraRespuesta.Content.ReadFromJsonAsync<Guid>();
+        var segundoId = await segundaRespuesta.Content.ReadFromJsonAsync<Guid>();
+        segundoId.Should().Be(
+            primerId,
+            "el segundo POST con la misma Idempotency-Key debe devolver el mismo resultado ya " +
+            "obtenido, sin volver a ejecutar el handler");
+
+        var listado = await _client!.GetAsync("/productos?page=1&pageSize=100");
+        var pagina = await listado.Content.ReadFromJsonAsync<PagedResultDto>();
+        pagina!.Items.Count(p => p.Nombre == "Teclado mecánico").Should().Be(
+            1,
+            "el efecto de negocio (crear el Producto) debe haber ocurrido UNA sola vez, no dos");
+    }
+
+    /// <summary>
+    /// Criterio de aceptación F1-22 ("POST repetido no duplica operación"), segundo escenario:
+    /// reenviar la MISMA Idempotency-Key con un body DISTINTO nunca se ejecuta como si fuera el
+    /// mismo reintento — se rechaza con 409 Conflict/"Idempotency.KeyReused", y el segundo Producto
+    /// nunca se crea (el listado solo contiene el primero).
+    /// </summary>
+    [Fact]
+    public async Task CrearProducto_MismaIdempotencyKeyConPayloadDistinto_Retorna409YNoCreaElSegundoProducto()
+    {
+        var idempotencyKey = Guid.NewGuid().ToString();
+
+        var primeraRespuesta = await PostProductoAsync(
+            new { nombre = "Producto original", precio = 10m },
+            idempotencyKey);
+        var segundaRespuesta = await PostProductoAsync(
+            new { nombre = "Producto distinto", precio = 999m },
+            idempotencyKey);
+
+        primeraRespuesta.StatusCode.Should().Be(HttpStatusCode.Created);
+        segundaRespuesta.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+        var body = await segundaRespuesta.Content.ReadAsStringAsync();
+        body.Should().Contain("Idempotency.KeyReused");
+
+        var listado = await _client!.GetAsync("/productos?page=1&pageSize=100");
+        var pagina = await listado.Content.ReadFromJsonAsync<PagedResultDto>();
+        pagina!.Items.Should().NotContain(p => p.Nombre == "Producto distinto");
+        pagina.Items.Count(p => p.Nombre == "Producto original").Should().Be(1);
+    }
+
+    /// <summary>
+    /// Decisión F1-22 documentada en <c>IIdempotentCommand</c>/<c>docs/convenciones.md</c>: un
+    /// comando marcado <c>IIdempotentCommand</c> exige una Idempotency-Key, nunca se ejecuta en
+    /// silencio como si no fuera idempotente.
+    /// </summary>
+    [Fact]
+    public async Task CrearProducto_SinIdempotencyKey_Retorna400ConErrorDeValidacion()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/productos")
+        {
+            Content = JsonContent.Create(new { nombre = "Sin clave", precio = 5m }),
+        };
+
+        var response = await _client!.SendAsync(request);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Idempotency.KeyRequired");
+    }
+
     [Fact]
     public async Task ListarProductos_ConPageSizeValido_RetornaPaginaCorrecta()
     {
         // F1-21: demuestra el mecanismo de paginación de punta a punta contra el endpoint real.
-        await _client!.PostAsJsonAsync("/productos", new { nombre = "Mouse", precio = 15m });
-        await _client!.PostAsJsonAsync("/productos", new { nombre = "Monitor", precio = 199m });
+        await PostProductoAsync(new { nombre = "Mouse", precio = 15m });
+        await PostProductoAsync(new { nombre = "Monitor", precio = 199m });
 
         var response = await _client!.GetAsync("/productos?page=1&pageSize=1");
 

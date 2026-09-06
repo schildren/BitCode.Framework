@@ -1,5 +1,7 @@
+using BitCode.Framework.Shared.Domain.Idempotency;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Web.Exceptions;
+using BitCode.Framework.Shared.Infrastructure.Web.Idempotency;
 using BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,6 +35,22 @@ public static class WebServiceCollectionExtensions
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ITenantProvider, HttpContextTenantProvider>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registra <see cref="HttpContextIdempotencyKeyProvider"/> como implementación productiva de
+    /// <see cref="IIdempotencyKeyProvider"/> (F1-22). Debe llamarse ANTES de
+    /// <c>AddSharedApplication</c> en el <c>InfrastructureModule</c> del proyecto consumidor: ese
+    /// método solo registra su valor por defecto (<c>NullIdempotencyKeyProvider</c>) con
+    /// <c>TryAddScoped</c>, así que una llamada previa a este método gana — mismo patrón que
+    /// <see cref="AddHttpContextTenantProvider"/>.
+    /// </summary>
+    public static IServiceCollection AddHttpContextIdempotencyKeyProvider(this IServiceCollection services)
+    {
+        services.AddHttpContextAccessor();
+        services.AddScoped<IIdempotencyKeyProvider, HttpContextIdempotencyKeyProvider>();
 
         return services;
     }

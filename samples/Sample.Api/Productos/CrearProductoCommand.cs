@@ -6,7 +6,13 @@ using MediatR;
 
 namespace Sample.Api.Productos;
 
-public record CrearProductoCommand(string Nombre, decimal Precio) : ICommand<Guid>;
+// F1-22: implementa IIdempotentCommand como referencia de uso end-to-end — no necesita ningún campo
+// ni endpoint adicional, la Idempotency-Key se resuelve del header HTTP homónimo vía
+// IIdempotencyKeyProvider (ver InfrastructureModule.AddHttpContextIdempotencyKeyProvider()). Un POST
+// repetido con la misma Idempotency-Key y el mismo body responde con el mismo Guid ya creado, sin
+// insertar un segundo Producto; con la misma clave y un body distinto, responde 409 Conflict
+// ("Idempotency.KeyReused") en vez de crear un producto distinto bajo la misma clave.
+public record CrearProductoCommand(string Nombre, decimal Precio) : ICommand<Guid>, IIdempotentCommand;
 
 public class CrearProductoCommandValidator : AbstractValidator<CrearProductoCommand>
 {

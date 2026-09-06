@@ -92,3 +92,28 @@ BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute
 BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.HotPathAttribute(string! justification, string! benchmarkRef) -> void
 BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.Justification.get -> string!
 BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.BenchmarkRef.get -> string!
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyKeyProvider
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyKeyProvider.IdempotencyKey.get -> string?
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore.Add(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore.FindAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey?>!
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore.PurgeExpiredAsync(System.DateTime utcNow, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore.Remove(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyHeaderNames
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.CreatedAtUtc.init -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.ExpiresAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.ExpiresAtUtc.set -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.Id.get -> System.Guid
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.Id.init -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.IdempotencyKey() -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.Key.get -> string!
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.Key.init -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.RequestHash.get -> string!
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.RequestHash.init -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.ResponseValueJson.get -> string?
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.ResponseValueJson.init -> void
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.TenantId.set -> void
+const BitCode.Framework.Shared.Domain.Idempotency.IdempotencyHeaderNames.IdempotencyKey = "Idempotency-Key" -> string!

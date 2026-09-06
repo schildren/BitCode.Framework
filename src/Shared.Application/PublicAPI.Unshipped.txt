@@ -1,5 +1,8 @@
 #nullable enable
 BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>.IdempotencyBehavior(BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyKeyProvider! idempotencyKeyProvider, BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore! idempotencyStore, BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions! options, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse!>!>! logger) -> void
 BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>
 BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
 BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse!>!>! logger, BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions? options = null) -> void
@@ -13,6 +16,14 @@ BitCode.Framework.Shared.Application.Behaviors.TransactionBehavior<TRequest, TRe
 BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>
 BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
 BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>.ValidationBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>!>! validators) -> void
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.IdempotencyOptions() -> void
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.RetentionPeriod.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.RetentionPeriod.set -> void
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider.IdempotencyKey.get -> string?
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider.NullIdempotencyKeyProvider() -> void
 BitCode.Framework.Shared.Application.Messaging.IBaseCommand
 BitCode.Framework.Shared.Application.Messaging.ICommand
 BitCode.Framework.Shared.Application.Messaging.ICommand<TResponse>
@@ -20,3 +31,6 @@ BitCode.Framework.Shared.Application.Messaging.IIdempotentCommand
 BitCode.Framework.Shared.Application.Messaging.IQuery<TResponse>
 BitCode.Framework.Shared.Application.Messaging.ITransactionalCommand
 static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions!>! configureIdempotency, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyRequired -> BitCode.Framework.Shared.Kernel.Error!
+static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyReused -> BitCode.Framework.Shared.Kernel.Error!

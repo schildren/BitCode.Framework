@@ -30,6 +30,13 @@ public class InfrastructureModule : IWebFrameworkModule
         // consumidor multi-tenant real debe cablear la resolución de tenant.
         services.AddHttpContextTenantProvider();
         services.AddSharedPersistence<SampleDbContext>(connectionString);
+
+        // F1-22: AddHttpContextIdempotencyKeyProvider() ANTES de AddSharedApplication — registra la
+        // implementación productiva de IIdempotencyKeyProvider (lee el header Idempotency-Key del
+        // request) para que gane sobre el NullIdempotencyKeyProvider por defecto (TryAddScoped),
+        // mismo patrón que AddHttpContextTenantProvider() arriba. CrearProductoCommand implementa
+        // IIdempotentCommand como referencia de uso end-to-end.
+        services.AddHttpContextIdempotencyKeyProvider();
         services.AddSharedApplication(typeof(InfrastructureModule).Assembly);
         services.AddSharedExceptionHandling();
     }
