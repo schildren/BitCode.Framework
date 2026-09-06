@@ -118,7 +118,7 @@ Reglas a respetar (detalle completo en [`convenciones.md`](convenciones.md)):
 | Jobs recurrentes | `Shared.Infrastructure.BackgroundJobs` | `services.AddSharedBackgroundJobs(q => q.AddJob<MiJob>(j => j.WithIdentity("mi-job")).AddTrigger(t => t.ForJob("mi-job").WithCronSchedule("0 0 * * * ?")))` | Ninguna adicional |
 | Proteger un endpoint por permiso | (parte de `Shared.Infrastructure.Security`) | — | `.RequireAuthorization("entidad.accion")` en el endpoint |
 
-Cachear con `HybridCache.GetOrCreateAsync`: recordar que la escritura a Redis L2 es asíncrona — no asumir consistencia inmediata entre instancias (Fase 4).
+Cachear datos de negocio (sensibles a tenant) con `ITenantAwareCache.GetOrCreateAsync` (F1-16) — no `HybridCache` directamente: compone el `TenantId` en la clave para que dos tenants nunca compartan una entrada de cache por casualidad de usar la misma clave lógica. Para datos que no son sensibles a tenant (metadata/configuración global), `HybridCache.GetOrCreateAsync` directo sigue siendo correcto. En ambos casos, recordar que la escritura a Redis L2 es asíncrona — no asumir consistencia inmediata entre instancias (Fase 4).
 
 ## 7. `appsettings.json` mínimo
 
