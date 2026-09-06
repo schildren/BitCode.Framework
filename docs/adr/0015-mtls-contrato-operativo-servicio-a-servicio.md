@@ -1,8 +1,8 @@
 # 0015. mTLS servicio-a-servicio: contrato operativo, mecanismo de emisión propuesto
 
-**Estado:** Proposed
+**Estado:** Accepted
 **Fecha:** 2026-09-06
-**Responsable:** Pendiente de aprobación humana explícita (Plan Maestro sección 13)
+**Responsable de aprobación:** Javier León (2026-09-06)
 
 ## Contexto
 
@@ -45,16 +45,16 @@ aprobación humana o de la fase que la necesite realmente):
    Trust — verificar siempre, en cada capa"). El contrato es independiente del mecanismo de emisión de
    certificados concreto (punto 2): describe requisitos verificables (rotación, revocación, validación),
    no la tecnología que los satisface.
-2. **El mecanismo concreto de emisión/rotación de certificados de identidad de servicio (SPIFFE/SPIRE
-   propuesto como candidato de referencia, PKI interna propia o `cert-manager` de Kubernetes como
-   alternativas) queda `Proposed`, no `Accepted`** — ninguno de los tres se adopta formalmente en esta
-   tarea. Elegir uno es, en los mismos términos que ADR 0014 trató "elección de proveedor de
-   secretos/KMS", una decisión que compromete infraestructura operativa real (una autoridad de
-   certificación viva, con su propia política de confianza/HA/rotación) y que hoy no tiene ningún
-   consumidor real que la necesite (no existe ni un segundo servicio separado en este repositorio) —
+2. **El mecanismo concreto de emisión/rotación de certificados de identidad de servicio: SPIFFE/SPIRE
+   queda `Accepted` como candidato de referencia** (aprobado explícitamente por Javier León, 2026-09-06,
+   Plan Maestro sección 13), sobre PKI interna propia o `cert-manager` de Kubernetes como alternativas
+   descartadas por ahora. Esta aprobación fija la *dirección tecnológica* (qué mecanismo se adoptará
+   cuando corresponda), no autoriza a desplegar hoy una autoridad de certificación operativa real: eso
+   sigue sin tener ningún consumidor (no existe un segundo servicio separado en este repositorio) y
    corresponde recién cuando la Fase 9 identifique el primer módulo elegible para extracción (F9-01,
    "Selección piloto... Aprobación humana") y ese runtime independiente (F9-05, "Host independiente")
-   necesite presentar y validar certificados reales.
+   necesite presentar y validar certificados reales. Si en ese momento el contexto cambió (p. ej. el
+   runtime objetivo terminó siendo Kubernetes), esta elección puede revisarse con un nuevo ADR.
 3. **No se agrega código nuevo en esta tarea.** A diferencia de F2-12/F2-13 (que sí entregaron una
    abstracción con implementación de referencia, `ISecretProvider`/`IEncryptionProvider`, aun sin un
    consumidor de dominio real en el propio framework), F2-14 no tiene siquiera un segundo proceso HTTP
@@ -99,11 +99,11 @@ aprobación humana o de la fase que la necesite realmente):
   el documento de contrato es el artefacto operable/consultable que un futuro F9-05 (Host independiente)
   debe satisfacer.
 - **Gate de salida de Fase 2** ("mTLS entre servicios extraídos: Obligatorio", sección 8.3 del Plan
-  Maestro) queda correctamente interpretado como aplicable recién quando existan servicios extraídos
+  Maestro) queda correctamente interpretado como aplicable recién cuando existan servicios extraídos
   (Fase 9) — no se declara satisfecho hoy porque hoy no aplica; el contrato deja documentado qué debe
-  cumplirse en ese momento, y este ADR dejará de estar `Proposed` (pasará a `Accepted` sobre el mecanismo
-  elegido) cuando F9-01 identifique el primer piloto de extracción y la elección de mecanismo de emisión
-  de certificados se apruebe explícitamente (sección 13 del Plan Maestro).
+  cumplirse en ese momento. El mecanismo de emisión (SPIFFE/SPIRE) ya está aprobado como dirección
+  tecnológica; su despliegue operativo real queda condicionado a que F9-01 identifique el primer piloto
+  de extracción.
 - Ningún código existente (`ServiceIdentityOptions.CertificateThumbprint`, `ServiceTokenProvider`) cambia
   en esta tarea: sigue fallando explícitamente (`ServiceIdentity.CertificateAuthenticationNotSupported`)
   si se configura sin `ClientSecret`, tal como F2-04 ya lo dejó documentado.
@@ -115,8 +115,7 @@ aprobación humana o de la fase que la necesite realmente):
   de salida de Fase 2 ("mTLS entre servicios extraídos: Obligatorio"). Mitigación: F9-02 (Contract
   boundary) y F9-05 (Host independiente) deben referenciar explícitamente este ADR y el contrato
   operativo como parte de su Definition of Ready.
-- **Riesgo:** elegir el mecanismo de emisión (SPIFFE/SPIRE vs PKI interna vs `cert-manager`) tarde,
-  bajo presión de una extracción ya en curso. Mitigación: el contrato operativo ya deja la recomendación
-  de referencia (SPIFFE/SPIRE) documentada para acelerar esa decisión cuando corresponda, sin obligar a
-  adoptarla sin aprobación humana.
+- **Riesgo (mitigado):** elegir el mecanismo de emisión tarde, bajo presión de una extracción ya en
+  curso. Mitigado: SPIFFE/SPIRE ya está aprobado como dirección tecnológica (Javier León, 2026-09-06),
+  disponible para acelerar la decisión operativa cuando F9-01 identifique el primer piloto.
 - Vinculado al registro de riesgos de F0-12 y a la sección 13 del Plan Maestro.

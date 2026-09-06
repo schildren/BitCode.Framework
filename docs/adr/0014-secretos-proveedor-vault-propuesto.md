@@ -1,8 +1,8 @@
 # 0014. Secretos: abstracción intercambiable (`ISecretProvider`) y HashiCorp Vault propuesto como proveedor
 
-**Estado:** Proposed
+**Estado:** Accepted
 **Fecha:** 2026-09-06
-**Responsable:** Pendiente de aprobación humana explícita (Plan Maestro sección 13)
+**Responsable de aprobación:** Javier León (2026-09-06)
 
 ## Contexto
 
@@ -38,13 +38,12 @@ intercambiable) y ADR 0005 (broker concreto pendiente de aprobación):
    resolver un secreto — nunca un tipo concreto. `SecretProviderServiceCollectionExtensions.AddSharedSecretProvider(configuration)`
    selecciona la implementación exclusivamente a partir de `"Secrets:Provider"`, sin que el código de
    negocio cambie entre proveedores.
-2. **HashiCorp Vault (`VaultSecretProvider`, motor KV v2 vía su API HTTP estándar) queda `Proposed`,
-   no `Accepted`, como proveedor concreto de nivel empresarial** — implementado y verificado (unitario
-   y contra un Vault real vía Testcontainers, `VaultContainerFixture`), disponible para que un
-   proyecto lo habilite explícitamente por configuración, pero su adopción productiva real (aprovisionar
-   un Vault operativo, definir su política de auth/sellado/HA) requiere la aprobación humana de la
-   sección 13 antes de habilitarse contra un entorno productivo real — mismo tratamiento que ADR 0005
-   da a Kafka.
+2. **HashiCorp Vault (`VaultSecretProvider`, motor KV v2 vía su API HTTP estándar) queda `Accepted`
+   como proveedor concreto de nivel empresarial** — implementado y verificado (unitario y contra un
+   Vault real vía Testcontainers, `VaultContainerFixture`), aprobado explícitamente por Javier León el
+   2026-09-06 (Plan Maestro sección 13). El aprovisionamiento operativo de un Vault productivo real
+   (política de auth/sellado/HA, backend de almacenamiento) queda a cargo de cada proyecto consumidor;
+   esta aprobación cubre la elección del proveedor, no su despliegue de infraestructura.
 3. **`ConfigurationSecretProvider` (default cuando no se configura `"Secrets:Provider"`) queda
    `Accepted` como proveedor de desarrollo/local**, sin necesidad de aprobación adicional: resuelve
    secretos desde `IConfiguration` bajo la sección `"Secrets:Values"`, poblada en la práctica vía
@@ -80,12 +79,11 @@ mismo criterio que ya justificó Keycloak sobre Entra ID para el entorno de refe
   `VaultSecretProvider`/`VaultSecretProviderOptions`, `SecretProviderServiceCollectionExtensions.AddSharedSecretProvider`).
   Ver `docs/guia-secret-provider.md` para el detalle de diseño y `docs/convenciones.md` para cuándo
   usar cada proveedor.
-- Habilitar `VaultSecretProvider` contra un Vault productivo real (no Testcontainers/dev) requiere
-  primero la aprobación humana de la sección 13 sobre esta misma ADR — análogo al addendum de riesgo
-  de ADR 0005 para Kafka. Mientras esa aprobación no exista, un proyecto real que necesite un
-  proveedor de secretos de nivel empresarial hoy usa `VaultSecretProvider` bajo su propio riesgo y
-  responsabilidad (el código ya es correcto y probado), o queda en `ConfigurationSecretProvider`
-  (variables de entorno/user-secrets) hasta que la decisión de proveedor se apruebe formalmente.
+- La aprobación humana de la sección 13 sobre el proveedor de secretos/KMS ya fue otorgada
+  (Javier León, 2026-09-06): un proyecto real puede habilitar `VaultSecretProvider` contra un Vault
+  productivo, quedando a su cargo el aprovisionamiento operativo (política de auth/sellado/HA) y la
+  decisión de si `ConfigurationSecretProvider` (variables de entorno/user-secrets) le basta para su
+  caso de uso.
 - Autenticación de `VaultSecretProvider` contra Vault: solo el método "token" (`VaultSecretProviderOptions.Token`)
   está implementado. AppRole, Kubernetes auth y la renovación/revocación de leases (Vault dinámico:
   credenciales de base de datos de corta vida, etc.) quedan fuera de alcance de F2-12 — ver
@@ -99,10 +97,9 @@ mismo criterio que ya justificó Keycloak sobre Entra ID para el entorno de refe
 
 ## Riesgos y mitigación
 
-- **Riesgo:** que un proyecto consumidor habilite `VaultSecretProvider` contra un Vault productivo real
-  sin que exista todavía la aprobación humana de la sección 13 sobre el proveedor de secretos/KMS.
-  Mitigación: este ADR documenta explícitamente el estado `Proposed`; la aprobación productiva se
-  registra actualizando este mismo documento a `Accepted`, mismo mecanismo que ADR 0004 usó para
+- **Riesgo (mitigado):** que un proyecto consumidor habilitara `VaultSecretProvider` contra un Vault
+  productivo real sin aprobación humana de la sección 13. Mitigado: la aprobación fue otorgada
+  (Javier León, 2026-09-06) y este ADR quedó `Accepted`, mismo mecanismo que ADR 0004 usó para
   Keycloak.
 - **Riesgo:** confundir `ConfigurationSecretProvider` (deliberadamente simple, pensado para desarrollo/
   CI) con un mecanismo apto para producción. Mitigación: la documentación de la clase y de
