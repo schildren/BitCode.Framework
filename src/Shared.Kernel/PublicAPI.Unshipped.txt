@@ -110,3 +110,12 @@ virtual BitCode.Framework.Shared.Kernel.Error.<Clone>$() -> BitCode.Framework.Sh
 virtual BitCode.Framework.Shared.Kernel.Error.EqualityContract.get -> System.Type!
 virtual BitCode.Framework.Shared.Kernel.Error.Equals(BitCode.Framework.Shared.Kernel.Error? other) -> bool
 virtual BitCode.Framework.Shared.Kernel.Error.PrintMembers(System.Text.StringBuilder! builder) -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>
+BitCode.Framework.Shared.Kernel.PagedResult<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+BitCode.Framework.Shared.Kernel.PagedResult<T>.Page.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.PageSize.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.TotalCount.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.TotalPages.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.HasPreviousPage.get -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>.HasNextPage.get -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>.PagedResult(System.Collections.Generic.IReadOnlyList<T>! items, int page, int pageSize, int totalCount) -> void

@@ -20,6 +20,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 - [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
+- [guia-queries-eficientes.md](guia-queries-eficientes.md) — AsNoTracking por defecto en lecturas (F1-17), proyección a DTO sin materializar la entidad completa y paginación con `PagedResult<T>`.
 
 ## Plan Maestro vigente
 

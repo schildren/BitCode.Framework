@@ -93,10 +93,13 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());
         services.AddScoped<IUnitOfWork>(sp => new UnitOfWork(sp.GetRequiredService<TContext>()));
         services.AddScoped(typeof(IRepository<,>), typeof(RepositoryBase<,>));
-        // IReadRepository<,> también resuelve a RepositoryBase<,>: sin este registro, un IQuery
-        // (Fase 2) que solo necesita lectura no puede inyectar IReadRepository<,> — solo
-        // IRepository<,> quedaba resoluble, aunque RepositoryBase implementa ambas interfaces.
-        services.AddScoped(typeof(IReadRepository<,>), typeof(RepositoryBase<,>));
+        // IReadRepository<,> resuelve a ReadOnlyRepositoryBase<,> (F1-17), no a RepositoryBase<,>:
+        // un IQuery (Fase 2) nunca muta datos (regla dura #2 de docs/convenciones.md), así que toda
+        // lectura resuelta por esta vía puede forzar AsNoTracking() sin excepción — el change tracker
+        // de EF Core no aporta nada cuando la entidad jamás se va a pasar a SaveChangesAsync.
+        // RepositoryBase<,> (detrás de IRepository<,>) sigue trackeando por defecto porque el lado de
+        // escritura necesita GetByIdAsync trackeado para poder llamar Update sobre esa misma instancia.
+        services.AddScoped(typeof(IReadRepository<,>), typeof(ReadOnlyRepositoryBase<,>));
 
         return services;
     }
