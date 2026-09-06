@@ -17,6 +17,19 @@ BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvi
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.Create(Microsoft.EntityFrameworkCore.DbContext! context, bool designTime) -> object!
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.PerInstanceModelCacheKeyFactory() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver.SharedDatabaseShardResolver() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver.ResolveShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider.SingleConnectionStringShardProvider(string! connectionString) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider.GetConnectionStringAsync(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver.TenantShardMapResolver(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore! shardMapStore) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver.ResolveShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.InMemoryTenantShardMapStore() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.Assign(System.Guid tenantId, BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.TryGetShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId?>!
 BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions
 BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>
 BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbContext.get -> Microsoft.EntityFrameworkCore.DbContext!

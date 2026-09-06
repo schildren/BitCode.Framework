@@ -62,4 +62,29 @@ public class PersistenceServiceCollectionExtensionsTests
 
         tenantProvider.TenantId.Should().Be(tenantId);
     }
+
+    [Fact]
+    public async Task AddSharedPersistence_ResolvesDefaultShardContracts_PreservingT1Behavior()
+    {
+        // F1-13: por defecto (sin que el proyecto consumidor opte por T2), IShardResolver siempre
+        // resuelve al shard compartido e IShardConnectionStringProvider siempre devuelve la única
+        // connectionString configurada — cero cambio de comportamiento respecto de T1 (F1-12).
+        const string connectionString =
+            "Server=(localdb)\\mssqllocaldb;Database=BitCodeFrameworkTests;Trusted_Connection=True;";
+        var services = new ServiceCollection();
+        services.AddSharedPersistence<MultiTenantTestDbContext>(connectionString);
+
+        await using var provider = services.BuildServiceProvider();
+        await using var scope = provider.CreateAsyncScope();
+
+        var shardResolver = scope.ServiceProvider.GetRequiredService<IShardResolver>();
+        var shardConnectionStringProvider = scope.ServiceProvider.GetRequiredService<IShardConnectionStringProvider>();
+
+        var resolvedShard = await shardResolver.ResolveShardAsync(Guid.NewGuid(), CancellationToken.None);
+        var resolvedConnectionString = await shardConnectionStringProvider.GetConnectionStringAsync(
+            resolvedShard, CancellationToken.None);
+
+        resolvedShard.Should().Be(ShardId.Shared);
+        resolvedConnectionString.Should().Be(connectionString);
+    }
 }

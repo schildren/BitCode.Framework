@@ -3,6 +3,7 @@ using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Security;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Repositories;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Security;
 using Microsoft.EntityFrameworkCore; // UseSqlServer (Microsoft.EntityFrameworkCore.SqlServer)
@@ -43,6 +44,15 @@ public static class PersistenceServiceCollectionExtensions
 
         services.TryAddScoped<ITenantProvider, NullTenantProvider>();
         services.TryAddScoped<ICurrentUserProvider, NullCurrentUserProvider>();
+
+        // F1-13 (estrategia T2, contratos y prototipo): por defecto todo tenant resuelve al shard
+        // T1 (base de datos compartida) contra la misma connectionString ya configurada — cero
+        // cambio de comportamiento para un proyecto que no optó explícitamente por sharding. Un
+        // proyecto que sí lo necesite reemplaza IShardResolver (p. ej. por TenantShardMapResolver)
+        // ANTES de llamar a este método, igual que con ITenantProvider.
+        services.TryAddScoped<IShardResolver, SharedDatabaseShardResolver>();
+        services.TryAddSingleton<IShardConnectionStringProvider>(
+            _ => new SingleConnectionStringShardProvider(connectionString));
 
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         services.AddScoped<SoftDeleteInterceptor>();

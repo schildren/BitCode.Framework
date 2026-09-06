@@ -43,10 +43,11 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 |---|---|---|
 | [0001](adr/0001-arquitectura-monolito-modular.md) | Arquitectura: monolito modular | Accepted |
 | [0002](adr/0002-persistencia-sql-server.md) | Persistencia: SQL Server | Accepted |
-| [0003](adr/0003-tenancy-multi-tenant-por-filtro-global.md) | Tenancy: filtro global por `ITenantEntity` | Proposed |
+| [0003](adr/0003-tenancy-multi-tenant-por-filtro-global.md) | Tenancy: filtro global por `ITenantEntity` (T1) | Accepted |
 | [0004](adr/0004-identidad-idp-oidc-oauth2.md) | Identidad: OIDC/OAuth2, proveedor de IdP pendiente | Proposed |
 | [0005](adr/0005-mensajeria-kafka.md) | Mensajería: Kafka | Proposed |
 | [0006](adr/0006-cache-hybridcache-valkey-redis.md) | Cache: HybridCache + Valkey/Redis | Accepted |
 | [0007](adr/0007-gateway-yarp.md) | Gateway: YARP | Proposed |
 | [0008](adr/0008-licencias-open-core.md) | Licencias: Open-Core (Apache-2.0 + propietario) | Proposed |
 | [0009](adr/0009-contratos-comando-transaccion-explicita.md) | Comandos: transacción explícita solo con `ITransactionalCommand` | Accepted |
+| [0010](adr/0010-tenancy-estrategia-t2-sharding-por-grupos-de-tenants.md) | Tenancy: contratos y prototipo de la estrategia T2 (sharding por grupos de tenants) | Proposed |

@@ -8,6 +8,25 @@ BitCode.Framework.Shared.Domain.MultiTenancy.TenantClaimTypes
 BitCode.Framework.Shared.Domain.MultiTenancy.TenantResolutionException
 BitCode.Framework.Shared.Domain.MultiTenancy.TenantResolutionException.TenantResolutionException(string! message) -> void
 const BitCode.Framework.Shared.Domain.MultiTenancy.TenantClaimTypes.TenantId = "tenant_id" -> string!
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.ShardId() -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.ShardId(string! Value) -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Value.get -> string!
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Value.init -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Deconstruct(out string! Value) -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Equals(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId other) -> bool
+~override BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Equals(object obj) -> bool
+override BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.GetHashCode() -> int
+override BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.ToString() -> string!
+static BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.operator ==(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId left, BitCode.Framework.Shared.Domain.MultiTenancy.ShardId right) -> bool
+static BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.operator !=(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId left, BitCode.Framework.Shared.Domain.MultiTenancy.ShardId right) -> bool
+static readonly BitCode.Framework.Shared.Domain.MultiTenancy.ShardId.Shared -> BitCode.Framework.Shared.Domain.MultiTenancy.ShardId
+BitCode.Framework.Shared.Domain.MultiTenancy.IShardResolver
+BitCode.Framework.Shared.Domain.MultiTenancy.IShardResolver.ResolveShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId>!
+BitCode.Framework.Shared.Domain.MultiTenancy.IShardConnectionStringProvider
+BitCode.Framework.Shared.Domain.MultiTenancy.IShardConnectionStringProvider.GetConnectionStringAsync(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore.TryGetShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId?>!
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>.AnyAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>.CountAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
