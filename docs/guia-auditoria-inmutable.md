@@ -1,16 +1,14 @@
-# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad, firma de lotes y exportación WORM (F2-15/F2-16/F2-17/F2-18)
+# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad, firma de lotes, exportación WORM y redacción de PII (F2-15/F2-16/F2-17/F2-18/F2-19)
 
-**Tareas:** F2-15, F2-16, F2-17 y F2-18 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17); pipeline de retención WORM (F2-18).
-**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17); "Escritura y lectura probadas" (F2-18).
+**Tareas:** F2-15, F2-16, F2-17, F2-18 y F2-19 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
+**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17); pipeline de retención WORM (F2-18); política y filtros de redacción de PII (F2-19).
+**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17); "Escritura y lectura probadas" (F2-18); "Logs sin PII no autorizada" (F2-19).
 
-F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad), F2-17 (firma de lotes) y
-F2-18 (exportación WORM, esta guía las cubre las tres últimas) son piezas ADICIONALES que se apoyan en ese
-esquema sin haber requerido ningún cambio de contrato público breaking (`AuditEntry` ya reservaba
-`PreviousAuditHash` desde F2-15). Las tareas siguientes de la épica siguen pendientes:
+F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad), F2-17 (firma de lotes),
+F2-18 (exportación WORM) y F2-19 (redacción de PII, esta guía las cubre las cuatro últimas) son piezas
+ADICIONALES que se apoyan en ese esquema sin haber requerido ningún cambio de contrato público breaking
+(`AuditEntry` ya reservaba `PreviousAuditHash` desde F2-15). La tarea siguiente de la épica sigue pendiente:
 
-- **F2-19** (PII y redacción): política de qué puede/no puede volcarse en
-  `AuditEntryRequest.Metadata`/`Reason`.
 - **F2-20** (consulta de auditoría): una API de lectura sobre el almacenamiento real detrás de
   `IAuditWriter` (ni F2-15 ni F2-16 incluyen ningún mecanismo de lectura más allá de
   `InMemoryAuditWriter.Entries`, pensado solo para inspección en pruebas/desarrollo local -- F2-18 sí agrega
@@ -420,6 +418,236 @@ distinto) porque:
   directamente a `IWormStorage`) -- mismo criterio que `ISecretProvider`/`IEncryptionProvider`, que tampoco
   autorizan por sí solos.
 
+## Redacción de PII: `IAuditRedactionPolicy` y `RedactingAuditWriter` (F2-19)
+
+### Qué hueco cierra, exactamente
+
+`AuditEntryRequest.Metadata`/`Reason` son campos de texto libre (F2-15) -- necesarios para que un handler de
+aplicación agregue contexto de negocio específico a un registro de auditoría, pero, por eso mismo, también
+el lugar más fácil para que un desarrollador vuelque sin querer un dato sensible (una contraseña, un email,
+un número de tarjeta/documento) que termina persistido en texto plano en un registro de retención larga --
+potencialmente reexportado a WORM (F2-18) con una retención de años. F2-19 cierra ese hueco con una
+clasificación explícita más una red de seguridad de contenido, aplicadas SIEMPRE antes de que el dato llegue
+a persistirse.
+
+### Dos mecanismos, en este orden de confiabilidad
+
+```csharp
+public interface IAuditRedactionPolicy
+{
+    AuditEntryRequest Redact(AuditEntryRequest request);
+}
+```
+
+1. **Clasificación por nombre de clave** (`AuditRedactionOptions.SensitiveMetadataKeys`) -- la política
+   PRINCIPAL. Toda clave de `Metadata` que matchee (comparación case-insensitive) contra esta lista se
+   redacta SIEMPRE, sin importar su contenido. Es configurable por proyecto a propósito: "qué es PII" varía
+   por jurisdicción y por dominio de negocio, así que el framework no puede fijar una lista cerrada y
+   correcta para todos los consumidores. Los defaults de `AuditRedactionOptions` (`password`, `token`,
+   `dni`, `cuit`/`cuil`, `email`, `tarjeta`, etc.) son un punto de partida razonable, NO una clasificación
+   normativa ni exhaustiva -- cada proyecto debe revisar y extender esta lista según su propio marco
+   regulatorio y su propio uso de `Metadata`.
+2. **Detección de patrones de contenido** (`AuditRedactionOptions.EnableContentPatternDetection`, `true` por
+   defecto) -- una red de seguridad ADICIONAL (*defense in depth*), aplicada a valores de `Metadata` cuya
+   clave NO fue declarada sensible, y a `Reason` (que no es un diccionario, no tiene "clave" que
+   clasificar). `AuditRedactionPolicy` (implementación por defecto) cubre dos patrones:
+   - **Email**: `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`.
+   - **Secuencia larga de dígitos (13-19), con o sin separadores de espacio/guion cada 4** -- el rango
+     típico de un PAN de tarjeta (ISO/IEC 7812) y de varios documentos de identidad numéricos largos.
+
+   **Un patrón de teléfono NO se incluyó a propósito**: el formato de un número de teléfono varía demasiado
+   entre países (con/sin prefijo internacional, con/sin separadores) para un patrón único que no genere una
+   tasa alta de falsos positivos/negativos -- se prefirió no incluir un patrón de baja confiabilidad antes
+   que dar una falsa sensación de cobertura.
+
+   **Esto es best-effort, NUNCA una garantía**: el reconocimiento de patrones de PII en texto libre no es
+   100% confiable en ninguna implementación -- puede haber falsos negativos (un dato sensible en un formato
+   no cubierto por ningún patrón) y, en menor medida, falsos positivos (un identificador de negocio legítimo
+   que coincide por casualidad con un patrón, por ejemplo un ID numérico largo). La clasificación por nombre
+   de clave sigue siendo el mecanismo confiable; la detección de contenido es un complemento, no un
+   reemplazo de una revisión legal/de cumplimiento de qué constituye PII regulada en cada jurisdicción.
+
+### Reemplazo, no pseudonimización: `RedactionPlaceholder`
+
+Un valor clasificado como sensible se reemplaza por un placeholder fijo (`"[REDACTED]"` por defecto,
+configurable) -- no un hash truncado ni ningún otro esquema reversible/correlacionable. Deliberado: el
+criterio de aceptación de F2-19 es "logs sin PII no autorizada", no "PII pseudonimizada pero igual
+reconstruible". Si un caso de uso futuro necesitara correlacionar valores redactados entre sí sin exponerlos
+(por ejemplo, para detectar que dos registros distintos comparten el mismo email sin poder leerlo), eso es
+una extensión posterior explícita fuera del alcance mínimo de esta tarea.
+
+### Dónde se aplica: `RedactingAuditWriter`, decorador de `IAuditWriter`
+
+```csharp
+public sealed class RedactingAuditWriter(IAuditWriter inner, IAuditRedactionPolicy redactionPolicy) : IAuditWriter
+{
+    public Task<Result<AuditEntry>> WriteAsync(AuditEntryRequest request, CancellationToken cancellationToken = default) =>
+        inner.WriteAsync(redactionPolicy.Redact(request), cancellationToken);
+}
+```
+
+Un decorador de `IAuditWriter` -- mismo patrón que `CachedPermissionService` (F2-09) sobre
+`IPermissionService` -- en lugar de modificar `InMemoryAuditWriter` directamente: la redacción debe aplicar
+igual a CUALQUIER implementación futura de `IAuditWriter` (tabla SQL, event store, o el destino WORM que un
+proyecto conecte), no solo a la implementación de desarrollo.
+
+### Orden de operaciones, CRÍTICO respecto de F2-16/F2-17
+
+La redacción ocurre ANTES de que el `AuditEntryRequest` llegue al `IAuditWriter` real -- el punto donde
+`AuditHashCalculator.Compute` calcula `AuditEntry.AuditHash` (F2-15/F2-16) y donde, más tarde, un lote se
+firma (F2-17) o se exporta a WORM (F2-18). Este orden no es un detalle de implementación intercambiable:
+
+- Si se redactara DESPUÉS de calcular el hash (por ejemplo, mutando un `AuditEntry` ya construido sin
+  recalcular), el `AuditHash` almacenado dejaría de corresponder al contenido efectivamente persistido, y
+  `IAuditIntegrityVerifier.Verify` reportaría un falso `HashMismatch` sobre un registro que en realidad
+  nunca fue manipulado por un tercero -- se rompería F2-16.
+- Si el hash/firma se calculara sobre el dato SIN redactar y solo se redactara la vista final (por ejemplo,
+  al leer), el propio hash/la propia firma seguiría siendo, en la práctica, información derivada del valor
+  sensible original -- no cumpliría el objetivo de F2-19 de raíz, y además cualquier destino que reciba el
+  lote firmado (WORM, F2-18) recibiría igual el dato sin redactar.
+
+Decorando `IAuditWriter` en la capa MÁS EXTERNA (envuelve el escritor real, cualquiera sea) se garantiza que
+NINGÚN `IAuditWriter` recibe jamás el valor sin redactar, y que el hash/firma calculados corresponden
+siempre a los datos YA redactados -- verificado en
+`tests/Shared.Infrastructure.Security.Tests/Audit/RedactingAuditWriterTests.cs` (el `AuditHash` persistido
+coincide con `AuditHashCalculator.Compute` sobre el contenido redactado, no sobre el original; la cadena de
+integridad de F2-16 sigue siendo válida) y en
+`tests/Shared.Infrastructure.Security.Tests/Audit/Worm/AuditRedactionWormExportTests.cs` (un lote exportado
+a WORM contiene los datos redactados al leerlo de vuelta).
+
+### Registro: `AddSharedAuditRedaction`
+
+```csharp
+services.AddSharedAuditing();                              // F2-15, debe registrarse antes
+services.AddSharedAuditRedaction(configuration);            // F2-19
+```
+
+Deliberadamente un método SEPARADO de `AddSharedAuditing` -- mismo principio que
+`AddSharedPermissionCache` (F2-09) sobre `AddSharedPermissionEvaluation`: decora el `IAuditWriter` ya
+registrado (`TryAddSingleton<IAuditRedactionPolicy, AuditRedactionPolicy>` + `Replace` sobre `IAuditWriter`),
+lanzando `InvalidOperationException` en el arranque si `IAuditWriter` todavía no fue registrado. Idempotente
+(una segunda llamada no vuelve a decorar -- ver "Idempotencia" más abajo). Lee la sección de configuración
+`AuditRedactionOptions.SectionName` ("AuditRedaction") -- opcional, los defaults ya son válidos sin
+configuración explícita.
+
+Un proyecto con su propia política de clasificación de PII (por ejemplo, integrada con una herramienta de
+DLP externa) puede reemplazar `AuditRedactionPolicy` registrando su propia `IAuditRedactionPolicy` después
+de `AddSharedAuditRedaction` -- gana la resolución, mismo principio que el resto de los `AddShared*`.
+
+### Conectar el `IAuditWriter` REAL del proyecto: `AddAuditWriter<TWriter>`, no `AddScoped` manual
+
+Fix post-revisión de arquitectura de F2-19 (Hallazgo 1, CRÍTICO). El registro habitual de un `IAuditWriter`
+productivo (tabla SQL append-only, event store, destino WORM propio) es un `AddScoped`/`Replace` manual que
+gana la resolución sobre cualquier registro anterior -- funciona bien cuando el orden es
+`AddSharedAuditing()` → `AddSharedAuditRedaction(...)` → registro manual del writer real (el caso ya cubierto
+antes de este fix). El problema aparece con el orden INVERSO, exactamente igual de válido a simple vista y
+justamente el que corresponde al caso de uso de producción más común (un proyecto que ya conecta su propio
+writer persistente):
+
+```csharp
+// NO HACER: deja el RedactingAuditWriter huérfano, SIN ningún error visible en el arranque.
+services.AddSharedAuditing();
+services.AddSharedAuditRedaction(configuration);
+services.AddScoped<IAuditWriter, SqlAuditWriter>();   // <- este gana la resolución, sin decorar
+```
+
+Con ese orden, el `AddScoped` final reemplaza el registro de `IAuditWriter` -- el `RedactingAuditWriter` que
+`AddSharedAuditRedaction` acababa de fijar queda sin ningún consumidor, sin lanzar ninguna excepción.
+`SqlAuditWriter` pasa a recibir el `AuditEntryRequest` **sin redactar**, `AuditHashCalculator.Compute` calcula
+`AuditEntry.AuditHash` sobre esa PII sin redactar, y cualquier firma (F2-17) o exportación WORM (F2-18)
+posterior hereda esa PII sin redactar -- silenciosamente.
+
+La forma correcta de conectar el writer real, que hace que el ORDEN relativo entre ambas llamadas deje de
+importar, es `AddAuditWriter<TWriter>`:
+
+```csharp
+services.AddSharedAuditing();
+services.AddSharedAuditRedaction(configuration);
+services.AddAuditWriter<SqlAuditWriter>();   // <- detecta la redacción ya aplicada y la vuelve a aplicar
+```
+
+```csharp
+// Orden inverso -- funciona exactamente igual, AddAuditWriter no depende de cuál se llamó primero.
+services.AddSharedAuditing();
+services.AddAuditWriter<SqlAuditWriter>();
+services.AddSharedAuditRedaction(configuration);
+```
+
+`AddAuditWriter<TWriter>` registra `TWriter` (lifetime configurable, `Scoped` por defecto) y comprueba
+(vía un marcador interno, `AuditRedactionAppliedMarker`, fijado por `AddSharedAuditRedaction`) si la
+redacción ya fue aplicada en algún momento anterior de la composición de servicios:
+
+- Si SÍ fue aplicada, vuelve a envolver `TWriter` en un `RedactingAuditWriter` -- la redacción sigue
+  aplicándose sin importar que `TWriter` se haya registrado después.
+- Si NO fue aplicada (todavía, o nunca), registra `TWriter` como `IAuditWriter` sin decorar, igual que un
+  `AddScoped`/`Replace` manual habría hecho -- un proyecto que decide no usar `AddSharedAuditRedaction` en
+  absoluto no ve ningún cambio de comportamiento.
+
+Esto resuelve el hueco DE RAÍZ (el orden deja de ser una responsabilidad del consumidor), en vez de solo
+detectarlo o documentarlo -- verificado en
+`tests/Shared.Infrastructure.Security.Tests/Audit/AuditRedactionServiceCollectionExtensionsTests.cs`
+(`AddAuditWriter_RegistradoDespuesDeAddSharedAuditRedaction_SigueRedactando`), que reproduce exactamente el
+escenario de falla descrito arriba.
+
+### Idempotencia: marcador dedicado, no inspección del descriptor de `IAuditWriter`
+
+Fix post-revisión de arquitectura de F2-19 (Hallazgo 2). La comprobación de idempotencia original de
+`AddSharedAuditRedaction` (`d.ImplementationType == typeof(RedactingAuditWriter)`) nunca era verdadera: el
+decorador se registra vía `ServiceDescriptor.Describe` con una factory, no con un tipo concreto, y para un
+descriptor basado en factory `ServiceDescriptor.ImplementationType` es siempre `null` -- mismo motivo por el
+que `PermissionEvaluationServiceCollectionExtensions.IsPermissionCacheAlreadyApplied` (F2-09) usa
+`ServiceDescriptor.ImplementationFactory is not null` como marcador en vez de `ImplementationType`. Como
+consecuencia, llamar a `AddSharedAuditRedaction` dos veces SÍ volvía a decorar (doble envoltorio
+`RedactingAuditWriter(RedactingAuditWriter(inner))`) -- funcionalmente inofensivo (redactar dos veces un
+valor ya reemplazado por el placeholder no cambia el resultado) pero desperdiciado.
+
+El fix usa un marcador interno dedicado (`AuditRedactionAppliedMarker`, `TryAddSingleton`) en vez de
+`ImplementationFactory is not null`: a diferencia del caso de `IPermissionService`, acá
+`AddAuditWriter<TWriter>` TAMBIÉN registra `IAuditWriter` con una factory en el caso NO decorado, así que
+comprobar solo "hay una factory" sería ambiguo entre "ya está decorado" y "hay un writer real registrado sin
+decorar todavía". El test de regresión
+(`AddSharedAuditRedaction_LlamadaDosVeces_NoVuelveADecorar`) ya no cuenta descriptores de `IAuditWriter`
+después de `Replace` (que siempre deja `count == 1`, sin importar cuántas veces se llame -- el test anterior
+daba una falsa confianza) sino que verifica el comportamiento real: contando cuántas veces se invoca
+`IAuditRedactionPolicy.Redact` en una sola escritura.
+
+### Alcance: `Metadata` y `Reason`, no el resto de los campos de `AuditEntryRequest`
+
+F2-19 aplica exclusivamente a `Metadata` (clasificación + contenido) y `Reason` (solo contenido, no tiene
+clave). Deliberadamente NO toca `Actor.Id`, `Resource.Id`, `CorrelationId`, `TraceId` ni `IpAddress`:
+- Son identificadores estructurados con un propósito de correlación/trazabilidad que la propia auditoría
+  necesita preservar sin redactar -- redactar `IpAddress`, en particular, inutilizaría la auditoría como
+  evidencia de una investigación de seguridad, que es justamente uno de sus propósitos centrales.
+- El vector de riesgo real que motiva F2-19 son los campos de texto libre pensado para contexto de negocio
+  arbitrario (`Metadata`/`Reason`), no los campos identificadores ya acotados por el propio modelo de F2-15.
+
+Esto reproduce exactamente la distinción que ya dejó escrita el comentario XML de
+`AuditEntryRequest.Metadata` desde F2-15/F2-18 ("Nunca debe contener PII/datos sensibles sin redactar... la
+política de redacción formal es F2-19").
+
+### Qué NO resuelve F2-19
+
+- **No garantiza remoción del 100% de la PII no declarada**: la detección de patrones de contenido es
+  best-effort -- puede haber falsos negativos (formato no cubierto por ningún patrón: un DNI de 7-8 dígitos
+  de un país que no entra en el rango 13-19, un teléfono en cualquier formato) y, en menor medida, falsos
+  positivos. La clasificación por nombre de clave sigue siendo el mecanismo confiable; declarar
+  explícitamente cada clave que un caso de uso conoce como sensible sigue siendo responsabilidad del
+  proyecto consumidor.
+- **No reemplaza una revisión legal/de cumplimiento**: qué constituye PII regulada (GDPR, normativa local de
+  protección de datos, PCI-DSS para datos de tarjeta) varía por jurisdicción e industria -- los defaults de
+  `AuditRedactionOptions.SensitiveMetadataKeys` son un punto de partida, no una certificación de
+  cumplimiento.
+- **No aplica a los demás logs de la aplicación fuera del subsistema de auditoría**: esta política vive
+  exclusivamente en `IAuditWriter`/`AuditEntryRequest` (`Shared.Infrastructure.Security.Audit`). El
+  framework, al día de esta tarea, no tiene ningún mecanismo de logging estructurado general (Serilog
+  destructuring policies, atributos `[Redact]`/`[Sensitive]`, etc.) con el que integrar o del que reutilizar
+  esta política -- extender el mismo criterio de clasificación/redacción a los logs generales de la
+  aplicación (fuera de auditoría) es una tarea/decisión aparte, no resuelta acá.
+- **No pseudonimiza de forma correlacionable**: ver "Reemplazo, no pseudonimización" arriba -- el valor
+  redactado no es recuperable ni comparable entre registros distintos.
+- **No redacta `Actor.Id`/`Resource.Id`/`CorrelationId`/`TraceId`/`IpAddress`**: ver "Alcance" arriba --
+  decisión deliberada, no un descuido.
+
 ## Uso desde un handler de aplicación
 
 ```csharp
@@ -481,9 +709,10 @@ la migración al overload auditado es responsabilidad del código de aplicación
   otro destino) es una decisión arquitectónica pendiente de un ADR propio — ver sección "Decisiones" del
   reporte de cierre de F2-15.
 - **Lectura/consulta administrativa**: es F2-20; `InMemoryAuditWriter.Entries` no es esa API.
-- **Redacción de PII**: es F2-19; hasta entonces, es responsabilidad de cada llamador no volcar datos
-  sensibles sin redactar en `Metadata`/`Reason` — la metadata que este cierre agrega (`abacDecisionReason`,
-  `permission`, `roleName`) son identificadores/códigos de negocio, no PII.
+
+F2-19 (redacción de PII) ya no es un pendiente — ver la sección "Redacción de PII" arriba. La metadata que
+el cierre de F2-15 agregó (`abacDecisionReason`, `permission`, `roleName`) son identificadores/códigos de
+negocio, no PII, así que no requieren clasificación adicional en `AuditRedactionOptions` por defecto.
 
 ## Referencias
 
@@ -492,7 +721,10 @@ la migración al overload auditado es responsabilidad del código de aplicación
   `AuditServiceCollectionExtensions`, y de F2-16: `IAuditIntegrityVerifier`, `AuditIntegrityVerifier`,
   `AuditIntegrityVerificationResult`, `AuditIntegrityBreakReason`; y de F2-17: `IAuditBatchSigner`,
   `HmacAuditBatchSigner`, `AuditBatchSignature`, `AuditBatchSigningOptions`,
-  `AuditBatchSigningServiceCollectionExtensions`).
+  `AuditBatchSigningServiceCollectionExtensions`; y de F2-19: `IAuditRedactionPolicy`,
+  `AuditRedactionPolicy`, `AuditRedactionOptions`, `RedactingAuditWriter`,
+  `AuditRedactionServiceCollectionExtensions.AddSharedAuditRedaction`/`AddAuditWriter`, y el marcador interno
+  `AuditRedactionAppliedMarker` del fix post-revisión de arquitectura descrito arriba).
 - `src/Shared.Infrastructure.Security/Audit/Worm/` — implementación de F2-18 (`IWormStorage`,
   `WormWriteRequest`, `WormObjectMetadata`, `WormObject`, `InMemoryWormStorage`,
   `IAuditWormExportPipeline`, `AuditWormExportPipeline`, `AuditWormExportRequest`,
@@ -523,3 +755,20 @@ la migración al overload auditado es responsabilidad del código de aplicación
   y `PrivilegedOperationsEndToEndTests.cs` — suite de pruebas del cableado de F2-10.
 - `tests/Shared.Infrastructure.Security.Tests/RoleManagerPermissionExtensionsTests.cs` — suite de pruebas
   del cableado de F2-07/F2-09.
+- `tests/Shared.Infrastructure.Security.Tests/Audit/AuditRedactionPolicyTests.cs` — suite de pruebas de
+  F2-19 sobre `AuditRedactionPolicy` aislada (clasificación por clave case-insensitive, detección de
+  patrones de email/tarjeta-documento en `Metadata`/`Reason`, deshabilitación de la detección de patrones,
+  placeholder configurable, valores `null`, inmutabilidad del request original).
+- `tests/Shared.Infrastructure.Security.Tests/Audit/RedactingAuditWriterTests.cs` — suite de pruebas de
+  F2-19 con `IAuditWriter` real (`InMemoryAuditWriter`): el registro persistido contiene el valor redactado,
+  el `AuditHash` persistido corresponde al contenido YA redactado (no al original), la cadena de integridad
+  de F2-16 sigue siendo válida sobre registros redactados, propagación de un fallo del writer interno.
+- `tests/Shared.Infrastructure.Security.Tests/Audit/AuditRedactionServiceCollectionExtensionsTests.cs` —
+  suite de pruebas de registro de F2-19 (decoración del `IAuditWriter` ya registrado, excepción si no hay
+  ninguno, idempotencia real -- no solo conteo de descriptores --, lectura de configuración de claves
+  sensibles adicionales, reemplazo de `IAuditRedactionPolicy` por un proyecto consumidor, y el escenario de
+  regresión del fix post-revisión de arquitectura: `AddAuditWriter<TWriter>` registrado DESPUÉS de
+  `AddSharedAuditRedaction` sigue redactando).
+- `tests/Shared.Infrastructure.Security.Tests/Audit/Worm/AuditRedactionWormExportTests.cs` — prueba de
+  extremo a extremo de F2-19+F2-18: un lote escrito a través de `RedactingAuditWriter` y exportado a WORM
+  contiene, al leerlo de vuelta, los datos redactados.

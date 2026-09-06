@@ -624,6 +624,26 @@ BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Denied = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Error = 2 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Success = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.AuditRedactionOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.EnableContentPatternDetection.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.EnableContentPatternDetection.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.RedactionPlaceholder.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.RedactionPlaceholder.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.SensitiveMetadataKeys.get -> System.Collections.Generic.IList<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.SensitiveMetadataKeys.set -> void
+const BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions.SectionName = "AuditRedaction" -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionPolicy
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionPolicy.AuditRedactionPolicy(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionPolicy.Redact(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request) -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionServiceCollectionExtensions.AddSharedAuditRedaction(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditRedactionServiceCollectionExtensions.AddAuditWriter<TWriter>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditRedactionPolicy
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditRedactionPolicy.Redact(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request) -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.RedactingAuditWriter
+BitCode.Framework.Shared.Infrastructure.Security.Audit.RedactingAuditWriter.RedactingAuditWriter(BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter! inner, BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditRedactionPolicy! redactionPolicy) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.RedactingAuditWriter.WriteAsync(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>!>!
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource.AuditResource(string! type, string? id = null) -> void
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource.Id.get -> string?
