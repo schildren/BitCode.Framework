@@ -23,6 +23,8 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [guia-queries-eficientes.md](guia-queries-eficientes.md) — AsNoTracking por defecto en lecturas (F1-17), proyección a DTO sin materializar la entidad completa y paginación con `PagedResult<T>`.
 - [guia-hot-paths.md](guia-hot-paths.md) — contrato de extensión controlada para hot paths que `ISpecification<T>` no expresa bien (F1-18): `IHotPathQuery<TResult>`/`IHotPathQueryExecutor`, atributo `[HotPath]` obligatorio y benchmark real que justifica el bypass.
 - [guia-resiliencia-http.md](guia-resiliencia-http.md) — resiliencia de `HttpClient` saliente (F1-26): `AddResilientHttpClient<TClient>` (`Shared.Infrastructure.Http`), pipeline estándar de timeout/retry/circuit breaker/bulkhead, y por qué el retry automático solo aplica a operaciones seguras de reintentar.
+- [guia-rbac-2.md](guia-rbac-2.md) — RBAC 2.0 (F2-07): `IPermissionEvaluator`, normalización de roles/permisos/scopes/tenancy.
+- [guia-abac.md](guia-abac.md) — ABAC (F2-08): `IAuthorizationPolicyEvaluator`, autorización combinada RBAC + reglas por monto/empresa/sucursal.
 
 ## Plan Maestro vigente
 

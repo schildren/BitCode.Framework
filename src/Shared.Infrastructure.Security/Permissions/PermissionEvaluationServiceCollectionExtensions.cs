@@ -30,8 +30,18 @@ public static class PermissionEvaluationServiceCollectionExtensions
         // funcionando igual con los permisos declarados directamente en el token (F2-07).
         services.TryAddScoped<IPermissionService, NullPermissionService>();
 
-        services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
-        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        // TryAdd (no Add) a propósito -- F2-08 (ABAC) también llama a este método desde
+        // AddSharedAbacAuthorization para garantizar IPermissionEvaluator disponible aunque el
+        // consumidor solo haya llamado a ese método; en un proyecto que combina RBAC + ABAC (el caso
+        // normal) también se llama desde AddSharedSecurity/AddSharedOidcAuthentication. Con Add
+        // (comportamiento anterior a F2-08) esa doble llamada duplicaba el registro de
+        // IAuthorizationHandler: PermissionAuthorizationHandler.HandleRequirementAsync se ejecutaba dos
+        // veces por cada verificación de permiso (dos consultas redundantes vía IPermissionEvaluator),
+        // sin cambiar el resultado pero desperdiciando una consulta a SQL Server por request. TryAdd
+        // mantiene el mismo comportamiento para el caso de una sola llamada (sigue siendo el primer y
+        // único registro) y lo hace correcto para el caso de dos llamadas.
+        services.TryAddScoped<IPermissionEvaluator, PermissionEvaluator>();
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IAuthorizationHandler, PermissionAuthorizationHandler>());
         services.TryAddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
         services.AddAuthorization();
 

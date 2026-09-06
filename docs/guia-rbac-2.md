@@ -138,9 +138,10 @@ public class AuditoriaPermisosEndpoint
   tenancy incluso en un proyecto que todavía no llamó a `AddSharedPersistence`.
 - `IPermissionService` con `TryAddScoped` sobre `NullPermissionService` (nunca aporta permisos por sí
   sola, pero deja que el evaluador siga funcionando con las fuentes 2 y 3 de arriba).
-- `IPermissionEvaluator` → `PermissionEvaluator`.
-- `IAuthorizationHandler` → `PermissionAuthorizationHandler` (ahora depende de `IPermissionEvaluator`,
-  no de `IPermissionService` directamente).
+- `IPermissionEvaluator` → `PermissionEvaluator` (`TryAddScoped` desde F2-08 — ver nota de idempotencia
+  más abajo).
+- `IAuthorizationHandler` → `PermissionAuthorizationHandler` (`TryAddEnumerable` desde F2-08; depende de
+  `IPermissionEvaluator`, no de `IPermissionService` directamente).
 - `IAuthorizationPolicyProvider` → `PermissionAuthorizationPolicyProvider` (sin cambios, F1).
 - `AddAuthorization()`.
 
@@ -164,11 +165,17 @@ services.AddSharedSecurity<ApplicationUser, ApplicationRole, MiDbContext>(config
 services.AddSharedOidcAuthentication(configuration);
 ```
 
+**Nota de idempotencia (F2-08):** `AddSharedPermissionEvaluation` es seguro de llamar más de una vez
+sobre el mismo `IServiceCollection` (`TryAddScoped`/`TryAddEnumerable`, no `AddScoped` — cambio puntual de
+F2-08, ver `docs/guia-abac.md`). Esto es lo que permite que `AddSharedAbacAuthorization` (F2-08) también
+la llame para garantizar `IPermissionEvaluator` disponible, sin duplicar el registro de
+`IAuthorizationHandler` cuando un proyecto combina RBAC + ABAC en el mismo `IServiceCollection`.
+
 ## Qué NO resuelve F2-07 (alcance de tareas posteriores de la Épica F2-B)
 
-- **F2-08 (ABAC):** `Subject`/`Resource`/`Action`/`Context` e `IAuthorizationPolicyEvaluator` para
-  reglas por monto, empresa y sucursal son una tarea separada, que se apoyará en
-  `IPermissionEvaluator` como la pieza RBAC del criterio combinado.
+- **F2-08 (ABAC):** implementado. `IAuthorizationPolicyEvaluator` (`Shared.Infrastructure.Security.Abac`)
+  combina el permiso RBAC de este evaluador con reglas de negocio basadas en atributos del recurso
+  (`Subject`/`Resource`/`Action`/`Context`, monto/empresa/sucursal) — ver `docs/guia-abac.md`.
 - **F2-09 (cache de permisos):** `IPermissionEvaluator`/`IPermissionService` siguen consultando SQL
   Server (vía `UserManager`/`RoleManager`) en cada evaluación — no hay L1/L2 todavía. No usar el
   resultado de `EvaluateAsync` como si estuviera cacheado entre requests.

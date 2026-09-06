@@ -177,6 +177,7 @@ const BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.SectionNam
 const BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.SectionName = "Oidc:AuthorizationCode" -> string!
 const BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.SectionName = "Oidc" -> string!
 const BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionClaimTypes.Permission = "permission" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecisionReasons.NotAuthenticated = "rbac:not-authenticated" -> string!
 override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> void
 override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Equals(object? obj) -> bool
@@ -354,3 +355,94 @@ BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RoleClaimJsonP
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation.OidcRoleClaimsTransformation(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions!>! oidcOptions) -> void
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation.TransformAsync(System.Security.Claims.ClaimsPrincipal! principal) -> System.Threading.Tasks.Task<System.Security.Claims.ClaimsPrincipal!>!
+
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.AbacAmountLimitRule() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ClaimType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ClaimType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ResourceAttributeKey.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ResourceAttributeKey.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ResourceType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule.ResourceType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext.AbacContext(System.Collections.Generic.IReadOnlyDictionary<string!, object?>? attributes = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext.Attributes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.AbacDecision(bool Allowed, string! Reason) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Allowed.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Allowed.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Deconstruct(out bool Allowed, out string! Reason) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Equals(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Reason.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Reason.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecisionReasons
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions.AbacOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions.AmountLimitRules.get -> System.Collections.Generic.IList<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacAmountLimitRule!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions.ScopeRules.get -> System.Collections.Generic.IList<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource.AbacResource(string! type, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? attributes = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource.Attributes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource.Type.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect.Deny = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect.NotApplicable = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.AbacRuleOutcome(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect Effect, string! Reason) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Deconstruct(out BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect Effect, out string! Reason) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Effect.get -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleEffect
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Effect.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Equals(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Reason.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Reason.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.AbacScopeAttributeRule() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ClaimType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ClaimType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ResourceAttributeKey.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ResourceAttributeKey.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ResourceType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacScopeAttributeRule.ResourceType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject.AbacSubject(System.Security.Claims.ClaimsPrincipal! principal, BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions! effectivePermissions) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject.EffectivePermissions.get -> BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject.GetClaimValues(string! claimType) -> System.Collections.Generic.IReadOnlyCollection<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject.Principal.get -> System.Security.Claims.ClaimsPrincipal!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AmountLimitAbacRule
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AmountLimitAbacRule.AmountLimitAbacRule(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AmountLimitAbacRule.AppliesTo(string! resourceType, string! action) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AmountLimitAbacRule.EvaluateAsync(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject! subject, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AttributeScopeAbacRule
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AttributeScopeAbacRule.AppliesTo(string! resourceType, string! action) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AttributeScopeAbacRule.AttributeScopeAbacRule(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AttributeScopeAbacRule.EvaluateAsync(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject! subject, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AuthorizationPolicyEvaluator
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AuthorizationPolicyEvaluator.AuthorizationPolicyEvaluator(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionEvaluator! permissionEvaluator, System.Collections.Generic.IEnumerable<BitCode.Framework.Shared.Infrastructure.Security.Abac.IAbacRule!>! rules) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Abac.AuthorizationPolicyEvaluator.EvaluateAsync(System.Security.Claims.ClaimsPrincipal! principal, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext? context = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.IAbacRule
+BitCode.Framework.Shared.Infrastructure.Security.Abac.IAbacRule.AppliesTo(string! resourceType, string! action) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Abac.IAbacRule.EvaluateAsync(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject! subject, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!>!
+BitCode.Framework.Shared.Infrastructure.Security.Abac.IAuthorizationPolicyEvaluator
+BitCode.Framework.Shared.Infrastructure.Security.Abac.IAuthorizationPolicyEvaluator.EvaluateAsync(System.Security.Claims.ClaimsPrincipal! principal, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext? context = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!>!
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.ToString() -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext.Empty.get -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Allow(string! reason) -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.Deny(string! reason) -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecisionReasons.Granted(string! requiredPermission) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecisionReasons.PermissionDenied(string! requiredPermission) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecisionReasons.RuleDenied(string! ruleReason) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Deny(string! reason) -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.NotApplicable(string! reason) -> BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacServiceCollectionExtensions.AddSharedAbacAuthorization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
