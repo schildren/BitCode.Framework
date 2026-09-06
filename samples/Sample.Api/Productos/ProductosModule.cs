@@ -35,5 +35,15 @@ public class ProductosModule : IWebFrameworkModule
             var result = await sender.Send(new ObtenerProductoQuery(id), ct);
             return result.ToOkOrProblem();
         });
+
+        // F1-21: ningún endpoint de listado queda ilimitado — page/pageSize llegan crudos del
+        // cliente, pero ListarProductosQueryHandler los valida vía PageRequest.Create (límite máximo
+        // configurable, 100 por defecto) antes de tocar el repositorio. Un pageSize fuera de rango
+        // responde 400 con un ProblemDetails de validación, nunca "todas las filas".
+        group.MapGet("/", async (ISender sender, CancellationToken ct, int page = 1, int pageSize = 20) =>
+        {
+            var result = await sender.Send(new ListarProductosQuery(page, pageSize), ct);
+            return result.ToOkOrProblem();
+        });
     }
 }

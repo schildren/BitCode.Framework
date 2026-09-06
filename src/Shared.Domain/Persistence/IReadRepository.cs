@@ -49,6 +49,29 @@ public interface IReadRepository<TEntity, TId>
         int pageSize,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Overload recomendado (F1-21): recibe un <see cref="PageRequest"/> ya validado en vez de
+    /// <c>page</c>/<c>pageSize</c> crudos. Un handler de <c>IQuery</c> construye el
+    /// <see cref="PageRequest"/> con <see cref="PageRequest.Create"/> (que aplica el límite máximo
+    /// configurable de tamaño de página y devuelve un <see cref="Result{TValue}"/> fallido, sin
+    /// truncar en silencio, si el cliente pide un <c>pageSize</c> fuera de rango) antes de llegar a
+    /// este método — para entonces la validación de límites ya pasó.
+    /// </summary>
+    Task<PagedResult<TEntity>> ListPagedAsync(
+        ISpecification<TEntity> specification,
+        PageRequest pageRequest,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Combina el overload de <see cref="PageRequest"/> con proyección — la forma recomendada de
+    /// servir un listado paginado a un endpoint (F1-21).
+    /// </summary>
+    Task<PagedResult<TResult>> ListPagedAsync<TResult>(
+        ISpecification<TEntity> specification,
+        Expression<Func<TEntity, TResult>> selector,
+        PageRequest pageRequest,
+        CancellationToken cancellationToken = default);
+
     Task<int> CountAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);
 
     Task<bool> AnyAsync(ISpecification<TEntity> specification, CancellationToken cancellationToken = default);

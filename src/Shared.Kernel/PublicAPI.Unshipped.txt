@@ -119,3 +119,15 @@ BitCode.Framework.Shared.Kernel.PagedResult<T>.TotalPages.get -> int
 BitCode.Framework.Shared.Kernel.PagedResult<T>.HasPreviousPage.get -> bool
 BitCode.Framework.Shared.Kernel.PagedResult<T>.HasNextPage.get -> bool
 BitCode.Framework.Shared.Kernel.PagedResult<T>.PagedResult(System.Collections.Generic.IReadOnlyList<T>! items, int page, int pageSize, int totalCount) -> void
+BitCode.Framework.Shared.Kernel.PageRequest
+BitCode.Framework.Shared.Kernel.PageRequest.Page.get -> int
+BitCode.Framework.Shared.Kernel.PageRequest.PageSize.get -> int
+BitCode.Framework.Shared.Kernel.PageRequest.Equals(BitCode.Framework.Shared.Kernel.PageRequest? other) -> bool
+const BitCode.Framework.Shared.Kernel.PageRequest.DefaultMaxPageSize = 100 -> int
+static BitCode.Framework.Shared.Kernel.PageRequest.Create(int page, int pageSize, int maxPageSize = 100) -> BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Kernel.PageRequest!>!
+override BitCode.Framework.Shared.Kernel.PageRequest.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.PageRequest.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.PageRequest.ToString() -> string!
+static BitCode.Framework.Shared.Kernel.PageRequest.operator ==(BitCode.Framework.Shared.Kernel.PageRequest? left, BitCode.Framework.Shared.Kernel.PageRequest? right) -> bool
+static BitCode.Framework.Shared.Kernel.PageRequest.operator !=(BitCode.Framework.Shared.Kernel.PageRequest? left, BitCode.Framework.Shared.Kernel.PageRequest? right) -> bool
+BitCode.Framework.Shared.Kernel.PageRequest.<Clone>$() -> BitCode.Framework.Shared.Kernel.PageRequest!

@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Infrastructure.Persistence.Repositories;
+using BitCode.Framework.Shared.Kernel;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
@@ -140,5 +141,54 @@ public class ReadOnlyRepositoryBaseTests
         page.TotalCount.Should().Be(4);
         page.Items.Should().HaveCount(2);
         context.ChangeTracker.Entries().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPagedAsync_WithPageRequest_ReturnsSamePageAsRawIntOverload()
+    {
+        // F1-21: el overload de PageRequest delega en el overload int/int ya probado arriba — este
+        // test cubre solo que la delegación preserva el resultado (la validación de límites en sí
+        // ya está cubierta por PageRequestTests en Shared.Kernel.Tests).
+        using var context = CreateContext(nameof(ListPagedAsync_WithPageRequest_ReturnsSamePageAsRawIntOverload));
+        var readRepository = new ReadOnlyRepositoryBase<TestEntity, Guid>(context);
+        var spec = new ByAmountAboveSpecification(threshold: 0);
+        var pageRequest = PageRequest.Create(page: 1, pageSize: 2).Value;
+
+        var page = await readRepository.ListPagedAsync(spec, pageRequest);
+
+        page.TotalCount.Should().Be(4);
+        page.Items.Should().HaveCount(2);
+        context.ChangeTracker.Entries().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPagedAsync_WithPageRequestAndSelector_ProjectsWithoutMaterializingFullEntity()
+    {
+        using var context = CreateContext(nameof(ListPagedAsync_WithPageRequestAndSelector_ProjectsWithoutMaterializingFullEntity));
+        var readRepository = new ReadOnlyRepositoryBase<TestEntity, Guid>(context);
+        var spec = new ByAmountAboveSpecification(threshold: 0);
+        var pageRequest = PageRequest.Create(page: 1, pageSize: 2).Value;
+
+        var page = await readRepository.ListPagedAsync(spec, e => e.Name, pageRequest);
+
+        page.TotalCount.Should().Be(4);
+        page.Items.Should().HaveCount(2);
+        context.ChangeTracker.Entries().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ListPagedAsync_WithRawPageSizeAboveDefaultMax_ClampsAsDefensiveFallback()
+    {
+        // Recorte defensivo de última línea (F1-21): un llamador que use el overload int/int
+        // directamente sin pasar por PageRequest.Create (el punto de validación principal, que nunca
+        // trunca en silencio) igual queda protegido contra un pageSize arbitrariamente alto.
+        using var context = CreateContext(nameof(ListPagedAsync_WithRawPageSizeAboveDefaultMax_ClampsAsDefensiveFallback));
+        var readRepository = new ReadOnlyRepositoryBase<TestEntity, Guid>(context);
+        var spec = new ByAmountAboveSpecification(threshold: 0);
+
+        var page = await readRepository.ListPagedAsync(spec, page: 1, pageSize: 10_000);
+
+        page.PageSize.Should().Be(PageRequest.DefaultMaxPageSize);
+        page.Items.Should().HaveCount(4); // solo 4 filas existen, igual quedan dentro del límite clamp-eado
     }
 }

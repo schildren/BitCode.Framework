@@ -77,6 +77,45 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         body.Should().Contain("Nombre").And.Contain("Precio");
     }
 
+    [Fact]
+    public async Task ListarProductos_ConPageSizeValido_RetornaPaginaCorrecta()
+    {
+        // F1-21: demuestra el mecanismo de paginación de punta a punta contra el endpoint real.
+        await _client!.PostAsJsonAsync("/productos", new { nombre = "Mouse", precio = 15m });
+        await _client!.PostAsJsonAsync("/productos", new { nombre = "Monitor", precio = 199m });
+
+        var response = await _client!.GetAsync("/productos?page=1&pageSize=1");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var pagina = await response.Content.ReadFromJsonAsync<PagedResultDto>();
+        pagina!.Items.Should().HaveCount(1);
+        pagina.PageSize.Should().Be(1);
+        pagina.TotalCount.Should().BeGreaterThanOrEqualTo(2);
+    }
+
+    [Fact]
+    public async Task ListarProductos_ConPageSizeSuperiorAlMaximo_Retorna400ConErrorDeValidacion_SinTruncarEnSilencio()
+    {
+        // Criterio de aceptación F1-21: "ningún endpoint ilimitado". Pedir un pageSize
+        // arbitrariamente alto debe fallar de forma explícita, nunca ejecutarse truncado en silencio
+        // ni devolver todas las filas.
+        var response = await _client!.GetAsync("/productos?page=1&pageSize=10000");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Paginacion.TamanioExcedeLimite");
+    }
+
+    [Fact]
+    public async Task ListarProductos_ConPageSizeCero_Retorna400ConErrorDeValidacion()
+    {
+        var response = await _client!.GetAsync("/productos?page=1&pageSize=0");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Paginacion.TamanioInvalido");
+    }
+
     public async Task DisposeAsync()
     {
         _client?.Dispose();
@@ -89,4 +128,6 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     }
 
     private record ProductoDto(Guid Id, string Nombre, decimal Precio);
+
+    private record PagedResultDto(List<ProductoDto> Items, int Page, int PageSize, int TotalCount);
 }

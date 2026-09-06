@@ -94,11 +94,77 @@ var pagina = await repository.ListPagedAsync(spec, p => new ProductoListItemResp
 
 **Fuera de alcance de esta tarea (F1-17):** ningún límite máximo de `pageSize` ni paginación por cursor todavía — eso es responsabilidad de F1-21 ("Paginación: incorporar límites máximos y cursores donde aplique"), que se apoya en esta misma primitiva `PagedResult<T>`.
 
+### 4. Límites máximos de paginación (F1-21)
+
+`PagedResult<T>`/`ListPagedAsync` (arriba) no tenían, hasta esta tarea, ningún límite máximo de
+`pageSize`: un handler que pasara `page`/`pageSize` crudos del cliente HTTP directamente al
+repositorio dejaba, de hecho, un endpoint "ilimitado" — nada impedía pedir `pageSize=1000000` y traer
+la tabla completa en una sola respuesta.
+
+`PageRequest` (`Shared.Kernel`) es la primitiva que cierra ese hueco:
+
+```csharp
+public static Result<PageRequest> Create(int page, int pageSize, int maxPageSize = PageRequest.DefaultMaxPageSize);
+```
+
+- `DefaultMaxPageSize` es `100` — un valor conservador para un listado servido a una grilla/tabla de
+  UI. Un feature con una necesidad distinta pasa su propio `maxPageSize` explícito a `Create` (no hay
+  ningún valor global oculto que cambiar en el framework).
+- Un `page < 1`, un `pageSize < 1` o un `pageSize > maxPageSize` **nunca se trunca en silencio**:
+  `Create` devuelve un `Result<PageRequest>` fallido con `ErrorType.Validation`
+  (`"Paginacion.PaginaInvalida"` / `"Paginacion.TamanioInvalido"` / `"Paginacion.TamanioExcedeLimite"`)
+  que el handler propaga como el `Error` de la propia query — el endpoint lo traduce a
+  `400 Bad Request` vía `ToProblemDetails()`, igual que cualquier otro error de validación.
+- `IReadRepository<TEntity, TId>` agrega overloads de `ListPagedAsync`/`ListPagedAsync<TResult>` que
+  reciben un `PageRequest` ya validado en vez de `page`/`pageSize` crudos — es la forma recomendada de
+  llamar al repositorio desde un handler de `IQuery`.
+
+```csharp
+// Patrón obligatorio para un IQuery de listado paginado expuesto a un endpoint HTTP
+var pageRequestResult = PageRequest.Create(request.Page, request.PageSize);
+if (pageRequestResult.IsFailure)
+{
+    return Result.Failure<PagedResult<ProductoResponse>>(pageRequestResult.Error);
+}
+
+return await repository.ListPagedAsync(
+    new TodosLosProductosOrdenadosPorNombreSpecification(),
+    p => new ProductoResponse(p.Id, p.Nombre, p.Precio),
+    pageRequestResult.Value,
+    cancellationToken);
+```
+
+Ver `ListarProductosQuery`/`ListarProductosQueryHandler` en `samples/Sample.Api/Productos/` para el
+patrón de referencia completo (incluye el endpoint `GET /productos?page=&pageSize=`) y
+`ListarProductos_ConPageSizeSuperiorAlMaximo_Retorna400ConErrorDeValidacion_SinTruncarEnSilencio` en
+`samples/Sample.Api.Tests/Integration/ProductosEndpointsIntegrationTests.cs` para la verificación de
+punta a punta.
+
+**Recorte defensivo de última línea, no el mecanismo principal:** `RepositoryBase.NormalizePaging`
+(el método interno que usan los overloads `ListPagedAsync(spec, page, pageSize, ct)` con `page`/
+`pageSize` crudos) también aplica un límite máximo (`PageRequest.DefaultMaxPageSize`) como red de
+seguridad de infraestructura, por si algo llega a invocar el repositorio sin pasar por
+`PageRequest.Create` — pero ese recorte sí trunca en silencio a propósito (protege la base de datos,
+no reemplaza la respuesta de error clara al cliente). Todo endpoint de listado debe construir su
+`PageRequest` en el handler, nunca depender de este recorte de infraestructura como mecanismo de
+validación.
+
+**Cursores (paginación por keyset): decisión consciente de no implementarlos todavía.**
+`PagedResult<T>` sigue siendo offset-based (`Skip`/`Take` + `CountAsync`). Una paginación por cursor
+(keyset) evita el "page drift" que ocurre cuando se insertan/eliminan filas entre el pedido de una
+página y la siguiente, y es más eficiente que `Skip`/`Take` en tablas muy grandes (evita que SQL
+Server tenga que recorrer y descartar todas las filas anteriores al offset). No se justifica agregarla
+ahora: el volumen real de los consumidores actuales del framework (`samples/Sample.Api`) es bajo y no
+hay reporte de un problema de page drift ni de degradación de performance por `Skip`/`Take` en un
+listado real. Si un consumidor real reporta cualquiera de los dos síntomas, la primitiva a agregar es
+nueva (`CursorPagedResult<T>`/`ICursorPagination`, aditiva) — no un reemplazo de `PagedResult<T>`, que
+sigue siendo la primitiva correcta para el caso común de una UI con "página 1, página 2, ...".
+
 ## Regla práctica
 
 1. Un `IQuery` inyecta `IReadRepository<TEntity, TId>` (nunca `IRepository<,>`) — regla ya vigente desde F1, ahora además garantiza `AsNoTracking`.
 2. Si el resultado del `IQuery` es un DTO/Response y no la entidad de dominio, usar el overload de `ListAsync`/`ListPagedAsync` con `selector` — no traer la entidad completa para descartar columnas después.
-3. Si el listado es potencialmente grande, usar `ListPagedAsync`/`ListPagedAsync<TResult>` en vez de `ListAsync`/`CountAsync` por separado.
+3. Si el listado es potencialmente grande, usar `ListPagedAsync`/`ListPagedAsync<TResult>` en vez de `ListAsync`/`CountAsync` por separado. Un `IQuery` de listado expuesto a un endpoint HTTP **siempre** construye un `PageRequest` con `PageRequest.Create` (F1-21) a partir de los parámetros crudos del cliente antes de llamar al repositorio — nunca pasa `page`/`pageSize` sin validar. `ListAsync()`/`ListAsync(spec)` sin paginar (que devuelven la colección completa) solo son aceptables cuando el volumen está estructuralmente acotado por diseño (por ejemplo, un catálogo de configuración pequeño y fijo, o una relación 1:1 con el tenant) — nunca para una tabla que crece sin límite con la actividad del negocio. Ver la regla dura correspondiente en `docs/convenciones.md`.
 4. Un `ICommand` que necesita cargar una entidad para mutarla sigue usando `IRepository<TEntity, TId>.GetByIdAsync` (tracking normal) — no cambia.
 
 **Fuera de alcance de esta tarea (F1-17), cubierto por F1-18:** si ninguno de los métodos de
@@ -113,5 +179,9 @@ documentado antes de bypasear el patrón genérico.
 - `src/Shared.Infrastructure.Persistence/Repositories/RepositoryBase.cs`
 - `src/Shared.Domain/Persistence/IReadRepository.cs`
 - `src/Shared.Kernel/PagedResult.cs`
-- `tests/Shared.Infrastructure.Persistence.Tests/ReadOnlyRepositoryBaseTests.cs` — pruebas de comportamiento (`ChangeTracker.Entries()` vacío tras una lectura vía `IReadRepository`, proyección, paginación).
-- `docs/convenciones.md` — regla dura #2 (`IQuery` nunca muta) y regla dura #5 (nunca exponer `IQueryable`).
+- `src/Shared.Kernel/PageRequest.cs` (F1-21)
+- `samples/Sample.Api/Productos/ListarProductosQuery.cs` (F1-21) — patrón de referencia end-to-end
+- `tests/Shared.Kernel.Tests/PageRequestTests.cs` (F1-21) — validación de límites (min/max, sin truncar en silencio)
+- `tests/Shared.Infrastructure.Persistence.Tests/ReadOnlyRepositoryBaseTests.cs` — pruebas de comportamiento (`ChangeTracker.Entries()` vacío tras una lectura vía `IReadRepository`, proyección, paginación, overloads de `PageRequest` y recorte defensivo de `NormalizePaging`).
+- `samples/Sample.Api.Tests/Integration/ProductosEndpointsIntegrationTests.cs` — verificación de punta a punta de "ningún endpoint ilimitado" contra el endpoint real `GET /productos`.
+- `docs/convenciones.md` — regla dura #2 (`IQuery` nunca muta), regla dura #5 (nunca exponer `IQueryable`) y regla dura (F1-21) sobre límites de paginación.
