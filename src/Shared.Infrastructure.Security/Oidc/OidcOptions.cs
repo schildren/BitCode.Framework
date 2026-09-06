@@ -102,4 +102,23 @@ public class OidcOptions
     /// depender de un default implícito del framework subyacente.
     /// </summary>
     public bool RefreshOnIssuerKeyNotFound { get; set; } = true;
+
+    /// <summary>
+    /// Rutas de claim JSON de las que <see cref="OidcRoleClaimsTransformation"/> (F2-07) extrae
+    /// nombres de rol y los proyecta como <see cref="System.Security.Claims.ClaimTypes.Role"/> en el
+    /// <see cref="System.Security.Claims.ClaimsPrincipal"/> autenticado -- necesario porque
+    /// <c>JwtBearerHandler</c> no aplana claims anidados: un token de Keycloak (el IdP con el que este
+    /// repo integra y prueba, ADR 0004) declara los roles de realm como un objeto anidado
+    /// (<c>realm_access: { "roles": [...] }</c>), no como un claim plano de rol. Cada entrada tiene la
+    /// forma <c>"claimSuperior.propiedad[.propiedadAnidada...]"</c> (el primer segmento identifica el
+    /// claim de nivel superior del token; el resto, la ruta dentro de su valor JSON hasta llegar a un
+    /// array de strings) -- resuelta genéricamente, sin ningún nombre de proveedor hardcodeado en el
+    /// código de <see cref="OidcRoleClaimsTransformation"/>. El default cubre roles de realm de
+    /// Keycloak; agregar <c>"resource_access.&lt;client-id&gt;.roles"</c> extrae también los roles de
+    /// un cliente concreto (el nombre del cliente varía por despliegue, por eso no viene en el default).
+    /// Una ruta que no resuelva a un array de strings en un token dado (claim ausente, forma distinta,
+    /// JSON inválido) se ignora en silencio para esa evaluación -- nunca lanza ni bloquea la
+    /// autenticación.
+    /// </summary>
+    public IList<string> RoleClaimJsonPaths { get; set; } = ["realm_access.roles"];
 }

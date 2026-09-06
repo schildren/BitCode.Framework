@@ -1,6 +1,9 @@
+using BitCode.Framework.Shared.Infrastructure.Security.Permissions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -32,12 +35,23 @@ public static class OidcAuthenticationServiceCollectionExtensions
     /// esquema de autenticación ("Bearer") y son mutuamente excluyentes en un mismo proyecto — un
     /// proyecto nuevo o migrado a OIDC llama a este método en lugar de <c>AddSharedSecurity</c> para la
     /// parte de autenticación (la emisión/gestión de Identity, roles y permisos de
-    /// <c>AddSharedSecurity</c> sigue siendo válida de forma independiente hasta que una tarea posterior
-    /// evalúe cómo evaluar permisos también contra claims de un IdP externo). El JWT propio no se marca
+    /// <c>AddSharedSecurity</c> sigue siendo válida de forma independiente). Desde F2-07 (RBAC 2.0)
+    /// este método también registra <see cref="PermissionEvaluationServiceCollectionExtensions.AddSharedPermissionEvaluation"/>,
+    /// así que <c>[RequirePermission]</c>/<c>RequireAuthorization("permiso")</c> ya funcionan sin
+    /// <c>AddSharedSecurity</c>: <see cref="IPermissionEvaluator"/> evalúa los permisos declarados
+    /// directamente como claim del token del IdP externo y el scope OAuth2 con forma de permiso, sin
+    /// depender de un <c>ApplicationUser</c> local (ver <c>docs/guia-rbac-2.md</c>). El JWT propio no se marca
     /// obsoleto ni se retira en esta tarea (ver ADR 0004 y <c>docs/guia-oidc-adapter.md</c>) para no
     /// romper a los consumidores existentes (<c>samples/Sample.Api</c> y proyectos ya generados con
     /// <c>AddSharedSecurity</c>) sin el análisis y período de gracia que exige
     /// <c>docs/politica-versionado.md</c> (sección 3).
+    /// Este método también registra <see cref="OidcRoleClaimsTransformation"/>
+    /// (<see cref="Microsoft.AspNetCore.Authentication.IClaimsTransformation"/>): sin ella, un token de
+    /// Keycloak nunca produce un <see cref="System.Security.Claims.ClaimTypes.Role"/> plano (los roles
+    /// de realm llegan anidados como <c>realm_access.roles</c>, un array JSON dentro de un único claim,
+    /// no aplanado por <c>JwtBearerHandler</c>) y <c>PermissionEvaluator</c> nunca encontraba nada que
+    /// expandir para una identidad puramente externa -- ver <see cref="OidcOptions.RoleClaimJsonPaths"/>
+    /// y <c>docs/guia-rbac-2.md</c>.
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// La sección de configuración "Oidc" no existe o le faltan Authority/Audience.
@@ -140,6 +154,23 @@ public static class OidcAuthenticationServiceCollectionExtensions
 
                 configureJwtBearer?.Invoke(options);
             });
+
+        // F2-07 (RBAC 2.0): habilita [RequirePermission]/RequireAuthorization("permiso") para una
+        // identidad autenticada por este adapter OIDC, sin requerir AddSharedSecurity/Identity local
+        // -- antes de esta tarea, AddSharedOidcAuthentication no registraba ningún
+        // IAuthorizationPolicyProvider dinámico, así que una policy por nombre de permiso nunca se
+        // resolvía bajo autenticación puramente OIDC.
+        services.AddSharedPermissionEvaluation();
+
+        // Bugfix de correctitud de F2-07: sin esta transformación, PermissionEvaluator busca
+        // ClaimTypes.Role directamente sobre el ClaimsPrincipal -- pero JwtBearerHandler nunca aplana
+        // un claim anidado como el "realm_access: { roles: [...] }" que emite Keycloak, así que una
+        // identidad puramente externa (sin ApplicationUser local) con rol correcto en el IdP recibía
+        // EffectivePermissions.Empty en todo endpoint [RequirePermission]. TryAddEnumerable evita
+        // duplicar la transformación si este método se invoca más de una vez sobre el mismo
+        // IServiceCollection (poco común, pero no debe registrar el handler dos veces).
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IClaimsTransformation, OidcRoleClaimsTransformation>());
 
         return services;
     }

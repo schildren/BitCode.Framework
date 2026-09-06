@@ -1,7 +1,9 @@
 using BitCode.Framework.Shared.Infrastructure.Security.Oidc;
+using BitCode.Framework.Shared.Infrastructure.Security.Permissions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -182,5 +184,22 @@ public class OidcAuthenticationServiceCollectionExtensionsTests
         var act = () => services.AddSharedOidcAuthentication(configuration);
 
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void AddSharedOidcAuthentication_RegistersPermissionEvaluationWithoutRequiringAddSharedSecurity()
+    {
+        // F2-07 (RBAC 2.0): antes de esta tarea, AddSharedOidcAuthentication no registraba ningún
+        // IAuthorizationPolicyProvider dinámico -- [RequirePermission]/RequireAuthorization("permiso")
+        // nunca se resolvía bajo autenticación puramente OIDC (sin AddSharedSecurity/Identity local).
+        var services = new ServiceCollection();
+        services.AddSharedOidcAuthentication(BuildConfiguration("https://keycloak.local/realms/bitcode", "bitcode-api"));
+
+        using var provider = services.BuildServiceProvider();
+
+        provider.GetRequiredService<IPermissionEvaluator>().Should().NotBeNull();
+        provider.GetRequiredService<IPermissionService>().Should().BeOfType<NullPermissionService>();
+        provider.GetRequiredService<IAuthorizationPolicyProvider>().Should().BeOfType<PermissionAuthorizationPolicyProvider>();
+        provider.GetServices<IAuthorizationHandler>().Should().Contain(h => h is PermissionAuthorizationHandler);
     }
 }

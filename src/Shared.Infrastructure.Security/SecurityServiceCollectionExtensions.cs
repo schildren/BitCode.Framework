@@ -3,7 +3,6 @@ using BitCode.Framework.Shared.Infrastructure.Security.Identity;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using BitCode.Framework.Shared.Infrastructure.Security.Permissions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,11 +38,12 @@ public static class SecurityServiceCollectionExtensions
             .AddDefaultTokenProviders();
 
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-        services.AddScoped<IPermissionService, PermissionService<TUser, TRole>>();
 
-        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        services.AddSingleton<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
-        services.AddAuthorization();
+        // F2-07 (RBAC 2.0): AddSharedPermissionEvaluation registra primero el fallback
+        // NullPermissionService (TryAddScoped); el AddScoped explícito de abajo, con Identity real,
+        // se agrega después y gana la resolución (último registro para un mismo tipo de servicio).
+        services.AddSharedPermissionEvaluation();
+        services.AddScoped<IPermissionService, PermissionService<TUser, TRole>>();
 
         services
             .AddAuthentication(options =>

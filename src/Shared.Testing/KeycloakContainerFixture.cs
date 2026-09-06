@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -122,10 +123,14 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
     public Task RotateSigningKeyAsync(CancellationToken cancellationToken = default) =>
         RotateSigningKeyAsync(RealmName, cancellationToken);
 
-    private async Task RotateSigningKeyAsync(string realm, CancellationToken cancellationToken)
+    /// <summary>
+    /// Obtiene un access token del usuario admin del realm "master" (Admin REST API de Keycloak) --
+    /// método compartido por toda operación de administración de este fixture (rotación de clave,
+    /// F2-06; alta de rol de realm y asignación a un sujeto, bugfix F2-07) para no duplicar el flujo de
+    /// autenticación contra "master" en cada una.
+    /// </summary>
+    private async Task<string> GetAdminAccessTokenAsync(HttpClient httpClient, CancellationToken cancellationToken)
     {
-        using var httpClient = new HttpClient();
-
         using var tokenResponse = await httpClient.PostAsync(
             $"{_container.GetBaseAddress()}/realms/master/protocol/openid-connect/token",
             new FormUrlEncodedContent(new Dictionary<string, string>
@@ -138,8 +143,83 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
             cancellationToken);
         tokenResponse.EnsureSuccessStatusCode();
         var tokenPayload = await tokenResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
-        var adminAccessToken = tokenPayload.GetProperty("access_token").GetString()
+        return tokenPayload.GetProperty("access_token").GetString()
             ?? throw new InvalidOperationException("Keycloak no devolvió 'access_token' para el usuario admin.");
+    }
+
+    /// <summary>
+    /// Crea un rol de realm nuevo (si no existe todavía) y lo asigna a la cuenta de servicio del
+    /// cliente de prueba (<see cref="ClientId"/>) -- el "usuario" real, del lado de Keycloak, detrás de
+    /// un token de Client Credentials (Service Accounts). A partir de esta llamada, un token nuevo
+    /// emitido para <see cref="ClientId"/> (<see cref="RequestAccessTokenAsync()"/>) trae el rol en
+    /// <c>realm_access.roles</c> (bugfix F2-07, ver <c>OidcRoleClaimsTransformation</c>): es la única
+    /// forma realista de probar contra Keycloak real que un rol de realm efectivamente asignado en el
+    /// IdP se proyecta y autoriza de punta a punta, sin mockear la forma del token.
+    /// </summary>
+    public async Task AssignRealmRoleToServiceAccountAsync(string roleName, CancellationToken cancellationToken = default)
+    {
+        using var httpClient = new HttpClient();
+        var adminAccessToken = await GetAdminAccessTokenAsync(httpClient, cancellationToken);
+
+        HttpRequestMessage AuthorizedRequest(HttpMethod method, string relativeUrl) =>
+            new(method, $"{_container.GetBaseAddress()}{relativeUrl}")
+            {
+                Headers = { Authorization = new AuthenticationHeaderValue("Bearer", adminAccessToken) },
+            };
+
+        // 1) Crear el rol de realm (idempotente: 409 si ya existe, en cuyo caso seguimos igual).
+        using var createRoleRequest = AuthorizedRequest(HttpMethod.Post, $"/admin/realms/{RealmName}/roles");
+        createRoleRequest.Content = JsonContent.Create(new { name = roleName });
+        using var createRoleResponse = await httpClient.SendAsync(createRoleRequest, cancellationToken);
+        if (createRoleResponse.StatusCode != HttpStatusCode.Conflict)
+        {
+            createRoleResponse.EnsureSuccessStatusCode();
+        }
+
+        // 2) Resolver la representación completa del rol (id + name), que la Admin REST API exige tal
+        // cual para asignarlo -- no alcanza con el nombre.
+        using var getRoleRequest = AuthorizedRequest(HttpMethod.Get, $"/admin/realms/{RealmName}/roles/{roleName}");
+        using var getRoleResponse = await httpClient.SendAsync(getRoleRequest, cancellationToken);
+        getRoleResponse.EnsureSuccessStatusCode();
+        var roleRepresentation = await getRoleResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
+
+        // 3) Resolver el id interno (UUID) del cliente de prueba a partir de su clientId público.
+        using var getClientsRequest = AuthorizedRequest(
+            HttpMethod.Get,
+            $"/admin/realms/{RealmName}/clients?clientId={ClientId}");
+        using var getClientsResponse = await httpClient.SendAsync(getClientsRequest, cancellationToken);
+        getClientsResponse.EnsureSuccessStatusCode();
+        var clients = await getClientsResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
+        var clientUuid = clients.EnumerateArray().First().GetProperty("id").GetString()
+            ?? throw new InvalidOperationException($"No se encontró el cliente '{ClientId}' en el realm '{RealmName}'.");
+
+        // 4) Resolver el usuario (service account) que Keycloak crea automáticamente para el cliente
+        // confidencial -- es el "sujeto" real de un token de Client Credentials.
+        using var getServiceAccountRequest = AuthorizedRequest(
+            HttpMethod.Get,
+            $"/admin/realms/{RealmName}/clients/{clientUuid}/service-account-user");
+        using var getServiceAccountResponse = await httpClient.SendAsync(getServiceAccountRequest, cancellationToken);
+        getServiceAccountResponse.EnsureSuccessStatusCode();
+        var serviceAccountUser = await getServiceAccountResponse.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: cancellationToken);
+        var serviceAccountUserId = serviceAccountUser.GetProperty("id").GetString()
+            ?? throw new InvalidOperationException($"No se pudo resolver la cuenta de servicio del cliente '{ClientId}'.");
+
+        // 5) Asignar el rol de realm a esa cuenta de servicio.
+        using var assignRoleRequest = AuthorizedRequest(
+            HttpMethod.Post,
+            $"/admin/realms/{RealmName}/users/{serviceAccountUserId}/role-mappings/realm");
+        assignRoleRequest.Content = JsonContent.Create(new[]
+        {
+            new { id = roleRepresentation.GetProperty("id").GetString(), name = roleRepresentation.GetProperty("name").GetString() },
+        });
+        using var assignRoleResponse = await httpClient.SendAsync(assignRoleRequest, cancellationToken);
+        assignRoleResponse.EnsureSuccessStatusCode();
+    }
+
+    private async Task RotateSigningKeyAsync(string realm, CancellationToken cancellationToken)
+    {
+        using var httpClient = new HttpClient();
+        var adminAccessToken = await GetAdminAccessTokenAsync(httpClient, cancellationToken);
 
         using var createKeyRequest = new HttpRequestMessage(
             HttpMethod.Post,
@@ -178,7 +258,13 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
     /// Realm export mínimo: un cliente confidencial ("bitcode-api") con Service Accounts habilitado
     /// (Client Credentials) y un mapper de audience que fija "aud" al propio client id, para que
     /// coincida exactamente con <see cref="ClientId"/> y sea comparable contra
-    /// <c>OidcOptions.Audience</c> en las pruebas.
+    /// <c>OidcOptions.Audience</c> en las pruebas. También declara explícitamente el protocol mapper de
+    /// roles de realm ("realm_access.roles", el mismo que trae por defecto el client scope incorporado
+    /// "roles" de Keycloak) -- necesario porque este realm export NO referencia ningún
+    /// <c>defaultClientScopes</c> built-in (el import parcial no los adjunta automáticamente al
+    /// cliente), y <see cref="AssignRealmRoleToServiceAccountAsync"/> (bugfix F2-07) depende de que un
+    /// rol de realm asignado a la cuenta de servicio efectivamente aparezca en el token bajo
+    /// <c>realm_access.roles</c>.
     /// </summary>
     private static readonly string RealmExportJson = $$"""
     {
@@ -197,6 +283,7 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
           "standardFlowEnabled": false,
           "directAccessGrantsEnabled": false,
           "clientAuthenticatorType": "client-secret",
+          "fullScopeAllowed": true,
           "protocolMappers": [
             {
               "name": "audience-bitcode-api",
@@ -207,6 +294,20 @@ public sealed class KeycloakContainerFixture : IAsyncLifetime
                 "included.client.audience": "{{ClientId}}",
                 "id.token.claim": "false",
                 "access.token.claim": "true"
+              }
+            },
+            {
+              "name": "realm-roles",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-usermodel-realm-role-mapper",
+              "consentRequired": false,
+              "config": {
+                "multivalued": "true",
+                "userinfo.token.claim": "false",
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+                "claim.name": "realm_access.roles",
+                "jsonType.label": "String"
               }
             }
           ]

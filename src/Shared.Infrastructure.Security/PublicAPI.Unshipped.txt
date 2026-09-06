@@ -156,7 +156,7 @@ BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RequireHttpsMe
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler
-BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler.PermissionAuthorizationHandler(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService! permissionService) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler.PermissionAuthorizationHandler(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionEvaluator! permissionEvaluator) -> void
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.GetDefaultPolicyAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Authorization.AuthorizationPolicy!>!
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.GetFallbackPolicyAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Authorization.AuthorizationPolicy?>!
@@ -310,3 +310,47 @@ BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksMinimumRef
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksMinimumRefreshInterval.set -> void
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RefreshOnIssuerKeyNotFound.get -> bool
 BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RefreshOnIssuerKeyNotFound.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions.AsPermissionSet() -> System.Collections.Generic.IReadOnlyCollection<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions.EffectivePermissions(System.Collections.Generic.IReadOnlyCollection<BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant!>! grants) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions.Grants.get -> System.Collections.Generic.IReadOnlyCollection<BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions.HasPermission(string! permission) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionEvaluator
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionEvaluator.EvaluateAsync(System.Security.Claims.ClaimsPrincipal! principal, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService.GetPermissionsForRoleAsync(string! roleName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.NullPermissionService
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.NullPermissionService.GetPermissionsForRoleAsync(string! roleName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.NullPermissionService.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.NullPermissionService.NullPermissionService() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionEvaluationServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionEvaluator
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionEvaluator.EvaluateAsync(System.Security.Claims.ClaimsPrincipal! principal, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionEvaluator.PermissionEvaluator(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService! permissionService, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Deconstruct(out string! Permission, out string! Source) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Equals(BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Permission.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Permission.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.PermissionGrant(string! Permission, string! Source) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Source.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Source.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrantSources
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionService<TUser, TRole>.GetPermissionsForRoleAsync(string! roleName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.ScopeClaimTypes
+const BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrantSources.LocalIdentityRoles = "identity-local:roles" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrantSources.TokenPermissionClaim = "token:permission-claim" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Permissions.ScopeClaimTypes.Scope = "scope" -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions.Empty.get -> BitCode.Framework.Shared.Infrastructure.Security.Permissions.EffectivePermissions!
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionEvaluationServiceCollectionExtensions.AddSharedPermissionEvaluation(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant? left, BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant? left, BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrant? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionGrantSources.FromRoleClaim(string! roleName) -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RoleClaimJsonPaths.get -> System.Collections.Generic.IList<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RoleClaimJsonPaths.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation.OidcRoleClaimsTransformation(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions!>! oidcOptions) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcRoleClaimsTransformation.TransformAsync(System.Security.Claims.ClaimsPrincipal! principal) -> System.Threading.Tasks.Task<System.Security.Claims.ClaimsPrincipal!>!
