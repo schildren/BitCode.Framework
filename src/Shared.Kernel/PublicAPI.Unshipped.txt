@@ -3,6 +3,9 @@ BitCode.Framework.Shared.Kernel.ConcurrencyError
 BitCode.Framework.Shared.Kernel.IHasConcurrencyToken
 BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.get -> byte[]!
 BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.set -> void
+BitCode.Framework.Shared.Kernel.IHasDomainEvents
+BitCode.Framework.Shared.Kernel.IHasDomainEvents.ClearDomainEvents() -> void
+BitCode.Framework.Shared.Kernel.IHasDomainEvents.DomainEvents.get -> System.Collections.Generic.IReadOnlyCollection<BitCode.Framework.Shared.Kernel.DomainEvent!>!
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot() -> void
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot(TId id) -> void

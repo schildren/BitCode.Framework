@@ -2,6 +2,7 @@ using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,8 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         // los configuradores reflexivos de abajo para que también reciba el filtro global de tenant
         // y el índice por TenantId.
         IdempotencyModelConfigurator.Configure(modelBuilder);
+        // F1-23: mismo motivo y mismo orden que IdempotencyModelConfigurator arriba.
+        OutboxModelConfigurator.Configure(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
         ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
         TenantIndexModelConfigurator.ApplyTenantIndexes(modelBuilder);

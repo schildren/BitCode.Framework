@@ -77,6 +77,9 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<TenantSaveChangesInterceptor>();
+        // F1-23 (Outbox base): escribe cada DomainEvent pendiente de los agregados trackeados como una
+        // fila OutboxMessages en el MISMO SaveChangesAsync que persiste el cambio de negocio.
+        services.AddScoped<OutboxSaveChangesInterceptor>();
 
         // F1-19: se registra con AddDbContext (Scoped), deliberadamente sin pooling
         // (AddDbContextPool/PooledDbContextFactory). MultiTenantDbContext resuelve el TenantId en su
@@ -98,7 +101,8 @@ public static class PersistenceServiceCollectionExtensions
             options.AddInterceptors(
                 sp.GetRequiredService<AuditableEntitySaveChangesInterceptor>(),
                 sp.GetRequiredService<SoftDeleteInterceptor>(),
-                sp.GetRequiredService<TenantSaveChangesInterceptor>());
+                sp.GetRequiredService<TenantSaveChangesInterceptor>(),
+                sp.GetRequiredService<OutboxSaveChangesInterceptor>());
         });
 
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<TContext>());

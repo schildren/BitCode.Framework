@@ -10,4 +10,8 @@ public class MultiTenantTestDbContext(DbContextOptions<MultiTenantTestDbContext>
     public DbSet<TestEntity> TestEntities => Set<TestEntity>();
 
     public DbSet<ConcurrentTestEntity> ConcurrentTestEntities => Set<ConcurrentTestEntity>();
+
+    // F1-23 (Outbox base): agregado de prueba dedicado a OutboxIntegrationTests, con eventos de
+    // dominio reales (AggregateRoot<TId>) para ejercitar OutboxSaveChangesInterceptor.
+    public DbSet<Integration.TestAccount> TestAccounts => Set<Integration.TestAccount>();
 }

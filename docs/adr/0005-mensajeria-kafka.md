@@ -27,3 +27,11 @@ Se adopta Kafka como broker de eventos de integración entre bounded contexts, a
 
 - **Riesgo:** aprovisionar o habilitar tráfico productivo sobre Kafka sin aprobación humana. Mitigación: la introducción operativa de Kafka (aprovisionamiento real, no solo el diseño) se trata como decisión de la sección 13 del Plan Maestro y requiere aprobación antes de F3.
 - Vinculado al registro de riesgos de F0-12 (pendiente de creación).
+
+## Addendum F1-23 (Outbox base — lado emisor, sin broker todavía)
+
+Este ADR se mantiene `Proposed` (Kafka en sí sigue sin implementarse, sigue requiriendo la aprobación de la sección 13 antes de F3), pero el prerequisito que menciona la Decisión de arriba ("construirse en Fase 3 sobre el patrón Outbox/Inbox de Fase 1") ya quedó resuelto del lado del Outbox:
+
+- `OutboxSaveChangesInterceptor` (Shared.Infrastructure.Persistence) escribe cada `DomainEvent` levantado por un `AggregateRoot<TId>` (`Shared.Kernel`, vía `RaiseDomainEvent`/`IHasDomainEvents`) como fila `OutboxMessage` (Shared.Domain) dentro del MISMO `SaveChangesAsync` que persiste el cambio de negocio del agregado — nunca en una escritura separada. Esto es lo que garantiza el criterio de aceptación de F1-23 ("evento no se pierde tras commit"): si el commit tiene éxito, el evento ya está en la base junto con el cambio de negocio; si la transacción hace rollback, ninguno de los dos queda persistido.
+- `OutboxMessage.ProcessedAtUtc` queda siempre en `null` tras F1-23 — no existe todavía ningún proceso que lo marque como publicado. El relay/publisher que lea las filas pendientes (`ProcessedAtUtc IS NULL`, ya indexado por `OutboxModelConfigurator`) y las publique a Kafka es trabajo de Fase 3, condicionado a la aprobación humana de este ADR; F1-23 no lo implementa.
+- Ver `docs/convenciones.md` (regla dura 3 y la nueva entrada de Outbox) para cómo levantar un evento desde un agregado, y `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxIntegrationTests.cs` para la verificación de atomicidad contra SQL Server real.

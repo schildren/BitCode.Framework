@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -30,6 +31,9 @@ public abstract class MultiTenantDbContext : DbContext
         // abajo, para que también reciba el filtro global de tenant y el índice por TenantId (ver
         // IdempotencyModelConfigurator).
         IdempotencyModelConfigurator.Configure(modelBuilder);
+        // F1-23: mismo motivo y mismo orden que IdempotencyModelConfigurator arriba — OutboxMessage
+        // tampoco se expone como DbSet en un MultiTenantDbContext consumidor.
+        OutboxModelConfigurator.Configure(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
         ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
         TenantIndexModelConfigurator.ApplyTenantIndexes(modelBuilder);

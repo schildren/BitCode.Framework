@@ -117,3 +117,21 @@ BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.ResponseValueJson.ini
 BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.TenantId.get -> System.Guid
 BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey.TenantId.set -> void
 const BitCode.Framework.Shared.Domain.Idempotency.IdempotencyHeaderNames.IdempotencyKey = "Idempotency-Key" -> string!
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.OutboxMessage() -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Id.get -> System.Guid
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Id.init -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.TenantId.set -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.EventType.get -> string!
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.EventType.init -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.PayloadJson.get -> string!
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.PayloadJson.init -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.OccurredAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.OccurredAtUtc.init -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ProcessedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ProcessedAtUtc.set -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.get -> int
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.set -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.get -> string?
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.set -> void
