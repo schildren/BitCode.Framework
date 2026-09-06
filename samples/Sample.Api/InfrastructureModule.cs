@@ -3,6 +3,7 @@ using BitCode.Framework.Shared.Infrastructure.Persistence;
 using BitCode.Framework.Shared.Infrastructure.Web;
 using BitCode.Framework.Shared.Infrastructure.Web.HealthChecks;
 using BitCode.Framework.Shared.Infrastructure.Web.Modularity;
+using BitCode.Framework.Shared.Infrastructure.Web.OpenApi;
 using BitCode.Framework.Shared.Modularity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -44,6 +45,21 @@ public class InfrastructureModule : IWebFrameworkModule
         // F1-27: versionado de API HTTP por segmento de ruta (/api/v{version}/...). Ver
         // ProductosModule para el ApiVersionSet de referencia (v1 deprecada + v2 coexistiendo).
         services.AddSharedApiVersioning();
+
+        // F1-28: un documento OpenAPI POR versión mayor de API (nunca uno mezclando v1 y v2) -- ver
+        // docs/guia-openapi.md. Un endpoint HTTP versionado sin ApiVersionMetadata propia aparecería
+        // en ambos documentos (AddSharedOpenApiForApiVersion lo trataría como version-neutral); en la
+        // práctica, /health/live y /health/ready (MapHealthChecks, F1-25) no llegan siquiera a
+        // generar una ApiDescription (MapHealthChecks no pasa por RequestDelegateFactory), así que no
+        // aparecen en NINGÚN documento -- ver la nota explícita en docs/guia-openapi.md y
+        // OpenApiDocumentsIntegrationTests.NingunDocumento_IncluyeLosEndpointsDeHealthChecks. No se llama
+        // OpenApiSecuritySchemeOptionsExtensions.AddJwtBearerSecurityScheme() acá a propósito: ningún
+        // endpoint de este proyecto piloto protege con RequireAuthorization/[Authorize] todavía (ver
+        // la nota de F1-12 en este mismo archivo) -- documentar un esquema de seguridad que el
+        // servidor no exige sería un contrato engañoso. Un consumidor real que sí autentique sus
+        // endpoints debe encadenar `.AddJwtBearerSecurityScheme()` al configurar cada documento.
+        services.AddSharedOpenApiForApiVersion(1);
+        services.AddSharedOpenApiForApiVersion(2);
     }
 
     public void ConfigureApplication(WebApplication app)
@@ -53,5 +69,10 @@ public class InfrastructureModule : IWebFrameworkModule
         // F1-25: /health/live (liveness, sin dependencias externas) y /health/ready (readiness,
         // verifica SQL Server -- y Redis si estuviera configurado) -- ver docs/guia-health-checks.md.
         app.MapSharedHealthChecks();
+
+        // F1-28: expone /openapi/{documentName}.json para TODOS los documentos ya registrados por
+        // AddSharedOpenApiForApiVersion (un único MapOpenApi() resuelve /openapi/v1.json y
+        // /openapi/v2.json por el route parameter {documentName}) -- ver docs/guia-openapi.md.
+        app.MapOpenApi();
     }
 }

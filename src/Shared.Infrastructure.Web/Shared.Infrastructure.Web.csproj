@@ -23,6 +23,15 @@
          proyecto que referencie Shared.Infrastructure.Web (ver samples/Sample.Api/Productos/
          ProductosModule.cs), sin que el consumidor declare su propio PackageReference. -->
     <PackageReference Include="Asp.Versioning.Http" Version="10.2.3" />
+    <!-- F1-28: generación de contrato OpenAPI. Soporte NATIVO de .NET 10 (Microsoft.AspNetCore.OpenApi,
+         AddOpenApi/MapOpenApi) en vez de Swashbuckle/NSwag: cubre generación, document/operation
+         transformers (examples, seguridad) y ShouldInclude (documento separado por versión de API) sin
+         una dependencia externa adicional. Trae transitivamente Microsoft.OpenApi (el modelo de objetos
+         del documento, incluida su propia capacidad de lectura/validación vía
+         Microsoft.OpenApi.Reader.OpenApiDocument.Parse, usada por la suite de tests para el criterio de
+         aceptación "Validación automática" sin necesitar Microsoft.OpenApi.Readers, que todavía no tiene
+         una versión estable compatible con Microsoft.OpenApi 2.x). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
   </ItemGroup>
 
 

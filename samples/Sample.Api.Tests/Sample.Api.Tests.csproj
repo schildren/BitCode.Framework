@@ -13,6 +13,11 @@
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="FluentAssertions" Version="6.12.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <!-- F1-28: OpenApiDocument.Parse (Microsoft.OpenApi 2.x, ya transitivo vía Sample.Api,
+         Shared.Infrastructure.Web, Microsoft.AspNetCore.OpenApi) valida de verdad la estructura del
+         documento generado contra el esquema de OpenAPI (ver OpenApiDocumentsIntegrationTests):
+         referencia explícita para que el tipo sea visible en tiempo de compilación en este proyecto. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
