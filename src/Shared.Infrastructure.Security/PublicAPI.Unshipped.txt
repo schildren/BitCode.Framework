@@ -1,4 +1,20 @@
 #nullable enable
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.AesGcmEncryptionProvider
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.AesGcmEncryptionProvider.AesGcmEncryptionProvider(BitCode.Framework.Shared.Infrastructure.Security.Secrets.ISecretProvider! secretProvider, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.AesGcmEncryptionProvider.DecryptAsync(string! ciphertext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.AesGcmEncryptionProvider.EncryptAsync(string! plaintext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.ActiveKeyVersionSecretKey.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.ActiveKeyVersionSecretKey.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.EncryptionOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.KeyMaterialSecretKeyPrefix.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.KeyMaterialSecretKeyPrefix.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.IEncryptionProvider
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.IEncryptionProvider.DecryptAsync(string! ciphertext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Encryption.IEncryptionProvider.EncryptAsync(string! plaintext, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+const BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionOptions.SectionName = "Encryption" -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Encryption.EncryptionServiceCollectionExtensions.AddSharedEncryption(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole
 BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole.ApplicationRole() -> void
 BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole.ApplicationRole(string! roleName) -> void
