@@ -153,7 +153,9 @@ proyecto consumidor, no un comportamiento automático de `IEncryptionProvider`.
   `Shared.Infrastructure.Security` a `Shared.Infrastructure.Persistence`/EF Core sin una necesidad concreta
   todavía; un proyecto consumidor puede escribir su propio `ValueConverter` fino sobre `IEncryptionProvider`
   hoy mismo sin esperar a una tarea nueva.
-- **mTLS servicio-a-servicio** — F2-14, tarea separada de la misma épica.
+- **mTLS servicio-a-servicio** — F2-14, tarea separada de la misma épica. Ver
+  [`docs/contrato-mtls-servicios.md`](contrato-mtls-servicios.md) y
+  [ADR 0015](adr/0015-mtls-contrato-operativo-servicio-a-servicio.md).
 - **Auditoría íntegra/resistente a manipulación** — Épica F2-D, mecanismo distinto (firma/hash encadenado,
   no cifrado de confidencialidad).
 
