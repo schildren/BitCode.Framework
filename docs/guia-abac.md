@@ -1,7 +1,15 @@
-# Guía — ABAC: autorización combinada RBAC + atributos (F2-08)
+# Guía — ABAC: autorización combinada RBAC + atributos (F2-08, F2-10)
 
 **Tarea:** F2-08 (Fase 2, Épica F2-B — Autorización) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
 **Criterio de aceptación:** "Reglas por monto, empresa y sucursal".
+
+Este documento también cubre F2-10 ("Operaciones privilegiadas": step-up, reevaluación y segregación de
+funciones, criterio de aceptación "Operaciones críticas protegidas") — ver la sección
+[Operaciones privilegiadas (F2-10)](#operaciones-privilegiadas-f2-10-step-up-y-segregación-de-funciones)
+más abajo. F2-10 se implementa como dos `IAbacRule` adicionales sobre el MISMO `IAuthorizationPolicyEvaluator`
+de F2-08, no como un pipeline de autorización paralelo — todo lo dicho arriba sobre el algoritmo combinado
+(deny-overrides, invocación explícita, sin resolución automática desde HTTP) aplica también a estas dos
+reglas.
 
 ## Qué resuelve esta tarea
 
@@ -136,6 +144,146 @@ services.AddScoped<IAbacRule, MiReglaDeNegocio>();
 
 `AuthorizationPolicyEvaluator` la ejecuta junto con las incorporadas, mismo algoritmo deny-overrides.
 
+## Operaciones privilegiadas (F2-10): step-up y segregación de funciones
+
+RBAC (F2-07) y las reglas ABAC de F2-08 responden "¿tiene el permiso, y respeta los límites de negocio de
+ESTA instancia?". Ninguna de las dos responde una pregunta distinta que sí importa para una operación
+crítica (por ejemplo, aprobar un pago de monto alto, o aprobar un pedido): "¿la EVIDENCIA de identidad del
+sujeto en ESTE momento es suficientemente fuerte/reciente?" (step-up) y "¿el sujeto está en conflicto de
+funciones respecto de esta operación o de su propio conjunto de permisos?" (segregación de funciones, SoD).
+F2-10 agrega esas dos piezas como `IAbacRule` adicionales, registradas junto con las de F2-08 y ejecutadas
+por el mismo `AuthorizationPolicyEvaluator` — ningún endpoint ni handler necesita saber que existen aparte
+de configurarlas.
+
+### `StepUpAbacRule` — step-up authentication
+
+Por cada `StepUpRequirement` configurada (`PrivilegedOperationsOptions.StepUpRequirements`) cuyo
+(`ResourceType`, `Action`) matchee la evaluación actual (ambos admiten `"*"`), exige evidencia de una
+autenticación reciente o reforzada, según los dos criterios configurables (al menos uno es obligatorio):
+
+- **Método de autenticación** (`AcceptableAuthenticationMethods`): el sujeto debe tener, entre los valores
+  del claim `AuthenticationMethodClaimType` (por defecto `"amr"`, el claim estándar OIDC), al menos uno de
+  los métodos aceptables configurados (por ejemplo, `["mfa"]`).
+- **Antigüedad máxima** (`MaxAuthenticationAge`): el sujeto debe tener el claim `AuthenticationTimeClaimType`
+  (por defecto `"auth_time"`, epoch Unix en segundos, el claim estándar OIDC) con una antigüedad, respecto
+  del instante de la evaluación, menor o igual al valor configurado.
+
+```csharp
+services.AddSharedPrivilegedOperationsPolicies(options =>
+{
+    options.StepUpRequirements.Add(new StepUpRequirement
+    {
+        ResourceType = "pagos",
+        Action = "aprobar",
+        MaxAuthenticationAge = TimeSpan.FromMinutes(5), // reautenticado en los últimos 5 minutos
+    });
+});
+```
+
+**Política deliberadamente fail-closed — DISTINTA de la política "sin dato, no se restringe" de F2-08**:
+un requisito de step-up existe porque la operación es crítica, así que la ausencia del claim de evidencia
+(el IdP no lo emite, o el sujeto nunca se reautenticó) deniega, no se ignora. Un `StepUpRequirement` sin
+ningún criterio configurado (ni `AcceptableAuthenticationMethods` ni `MaxAuthenticationAge`) es un error de
+configuración: `PrivilegedOperationsOptionsValidator` (`IValidateOptions<PrivilegedOperationsOptions>`,
+registrado junto con `services.AddOptions<PrivilegedOperationsOptions>().ValidateOnStart()` dentro de
+`AddSharedPrivilegedOperationsPolicies`) lo rechaza EN EL ARRANQUE — nunca en la primera evaluación real de
+un usuario. `StepUpAbacRule.EvaluateAsync` conserva el mismo `throw new InvalidOperationException` como
+defensa en profundidad (por ejemplo, si alguien construye la regla a mano fuera de DI, con opciones no
+validadas), pero en un pipeline registrado normalmente ese código es inalcanzable: el error de
+configuración ya se detectó al construir el `ServiceProvider`/resolver `IOptions<PrivilegedOperationsOptions>`
+por primera vez, con el mismo mensaje identificando el `ResourceType`/`Action` mal configurado, evitando que
+un typo se manifieste como un 500 genérico para el usuario final.
+
+`AbacRuleOutcome.Reason` producido: `step-up:not-required` (ningún requisito matchea esta evaluación),
+`step-up:verified` (matcheó y el sujeto cumplió toda la evidencia exigida),
+`step-up:missing-authentication-method:{claim}` / `step-up:missing-authentication-time:{claim}` (evidencia
+ausente) o `step-up:authentication-too-old:{claim}` (evidencia presente pero vencida).
+
+### `SegregationOfDutiesAbacRule` — segregación de funciones (SoD)
+
+Dos mecanismos complementarios, ambos configurables sin escribir código:
+
+1. **Maker-checker** (`PrivilegedOperationsOptions.MakerCheckerRules`): para cada `MakerCheckerRule` cuyo
+   (`ResourceType`, `Action`) matchee la evaluación actual, exige que el actor identificado en
+   `ActorResourceAttributeKey` del recurso (quien ejecutó la acción anterior — por ejemplo, quien creó el
+   pedido) sea DISTINTO del sujeto actual (identificado por `SubjectClaimType`, por defecto
+   `ClaimTypes.NameIdentifier`) — el patrón clásico "quien aprueba no puede ser quien creó".
+2. **Pares mutuamente excluyentes** (`PrivilegedOperationsOptions.MutuallyExclusivePermissions`): un sujeto
+   con AMBOS permisos de un par configurado a la vez entre sus `EffectivePermissions` (F2-07) queda
+   denegado en TODA evaluación — a diferencia de maker-checker, esta restricción es de identidad, no de una
+   instancia de recurso concreta; se verifica primero, antes de cualquier regla maker-checker.
+
+```csharp
+services.AddSharedPrivilegedOperationsPolicies(options =>
+{
+    // Maker-checker: quien creó el pedido no puede aprobarlo.
+    options.MakerCheckerRules.Add(new MakerCheckerRule
+    {
+        ResourceType = "pedidos",
+        Action = "aprobar",
+        ActorResourceAttributeKey = "creadoPorUserId", // atributo del AbacResource, lo arma el handler
+    });
+
+    // Roles/permisos que no pueden coexistir en el mismo sujeto.
+    options.MutuallyExclusivePermissions.Add(new MutuallyExclusivePermissionPair
+    {
+        PermissionA = "pedidos.crear",
+        PermissionB = "pedidos.auditar",
+    });
+});
+```
+
+**Política deliberadamente fail-closed** para maker-checker (mismo criterio que step-up, mismo contraste
+con F2-08): para una regla configurada y aplicable, la ausencia del atributo de actor en el recurso, o del
+claim de sujeto configurado, NO se interpreta como "no hay nada que comparar" — se interpreta como "no se
+puede probar que no hay conflicto de funciones", y se deniega. La comparación entre el atributo de actor
+del recurso y los claims del sujeto usa `StringComparer.OrdinalIgnoreCase` (no `Ordinal`): ambos valores
+suelen representar la MISMA identidad (por ejemplo, un `Guid`) con distinto casing según quién lo haya
+generado (el handler de negocio vs. el IdP), y una comparación sensible a mayúsculas/minúsculas fallaría
+en detectar al mismo actor — exactamente el escenario que esta regla existe para prevenir.
+
+`AbacRuleOutcome.Reason` producido: `sod:no-restriction` (nada configurado matchea esta evaluación),
+`sod:verified` (matcheó y no hubo conflicto), `sod:mutually-exclusive-permissions:{A}+{B}`,
+`sod:missing-actor-attribute:{clave}`, `sod:missing-subject-claim:{claim}` o `sod:same-actor:{clave}={valor}`.
+
+### Registro
+
+`AddSharedPrivilegedOperationsPolicies(Action<PrivilegedOperationsOptions>? configureOptions = null)`
+(`Shared.Infrastructure.Security.PrivilegedOperations`) debe llamarse DESPUÉS de
+`AddSharedAbacAuthorization` — lanza `InvalidOperationException` en el arranque si no encuentra
+`IAuthorizationPolicyEvaluator` ya registrado, mismo patrón de guarda que
+`PermissionCacheServiceCollectionExtensions.AddSharedPermissionCache` (F2-09):
+
+```csharp
+services.AddSharedSecurity<ApplicationUser, ApplicationRole, MiDbContext>(configuration); // RBAC, F2-07
+services.AddSharedAbacAuthorization(options => { /* reglas de empresa/sucursal/monto */ }); // ABAC, F2-08
+services.AddSharedPrivilegedOperationsPolicies(options => { /* step-up/SoD */ }); // F2-10
+```
+
+### "Reevaluación" (criterio de la fila de backlog)
+
+No hay ninguna decisión de autorización cacheada entre invocaciones: `IAuthorizationPolicyEvaluator.EvaluateAsync`
+se invoca explícitamente en cada operación (no hay middleware que "recuerde" un `Allow` previo), y el cache
+de F2-09 solo memoiza las consultas SQL detrás de `IPermissionEvaluator` — el permiso base, no la decisión
+combinada ni la evidencia de step-up. En la práctica, esto significa que la evidencia de step-up (claims del
+`ClaimsPrincipal` vigente) se revisa fresca en cada llamada: si el sujeto necesita reautenticarse para volver
+a cumplir `MaxAuthenticationAge`, la siguiente operación crítica lo exige de nuevo — no hace falta ningún
+mecanismo adicional de invalidación.
+
+### Qué NO resuelve F2-10
+
+- **Un mecanismo de reautenticación en sí** (challenge/redirect al IdP para que el usuario efectivamente
+  eleve su nivel de autenticación): F2-10 solo VERIFICA la evidencia de step-up ya presente en el
+  `ClaimsPrincipal` (claims `amr`/`auth_time`, u otros configurados). Provocar esa reautenticación (por
+  ejemplo, un `prompt=login`/ACR request al flujo OIDC de F2-02, o un segundo factor específico) es
+  responsabilidad del proyecto consumidor y del IdP configurado — el framework no implementa un flujo de
+  step-up interactivo.
+- **Detección automática de pares mutuamente excluyentes** a partir de un catálogo de roles: el proyecto
+  consumidor declara explícitamente qué pares son incompatibles; no hay ninguna heurística ni análisis de
+  jerarquía de roles.
+- **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica completa
+  siguen siendo una tarea separada.
+
 ## Uso desde un handler de aplicación
 
 ```csharp
@@ -223,8 +371,9 @@ consulta redundante a `IPermissionEvaluator` (y, transitivamente, a SQL Server) 
   en cada llamada, porque los atributos del recurso (monto, empresa, sucursal) son datos de la instancia
   concreta evaluada, no del sujeto — cachear la DECISIÓN combinada requeriría una clave que incluya esos
   atributos y todavía no existe.
-- **F2-10 (operaciones privilegiadas):** step-up, reevaluación y segregación de funciones no están
-  cubiertos.
+- **F2-10 (operaciones privilegiadas):** step-up, reevaluación y segregación de funciones — ver la sección
+  [Operaciones privilegiadas (F2-10)](#operaciones-privilegiadas-f2-10-step-up-y-segregación-de-funciones)
+  más arriba; ya cubiertas por este mismo documento.
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica completa
   son una tarea separada.
 
@@ -250,12 +399,36 @@ consulta redundante a `IPermissionEvaluator` (y, transitivamente, a SQL Server) 
   `AmountLimitAbacRule` reales, solo `IPermissionService` sustituido) — el criterio de aceptación literal
   ("reglas por monto, empresa y sucursal") de punta a punta, incluido el caso default-deny de "sin
   permiso RBAC base, ningún atributo salva la decisión".
+- `tests/Shared.Infrastructure.Security.Tests/PrivilegedOperations/StepUpAbacRuleTests.cs`: `AppliesTo` por
+  recurso/acción exacto y comodín, ambos criterios de evidencia (método, antigüedad) por separado y
+  combinados, los casos fail-closed (claim ausente deniega, a diferencia de F2-08) y el
+  `InvalidOperationException` de un requisito sin ningún criterio configurado como defensa en profundidad
+  (construcción manual de la regla, fuera de DI, con opciones no validadas).
+- `tests/Shared.Infrastructure.Security.Tests/PrivilegedOperations/SegregationOfDutiesAbacRuleTests.cs`:
+  maker-checker (mismo actor deniega, actor distinto pasa, mismo actor con distinto casing sigue
+  denegando, atributo/claim ausente deniega fail-closed) y pares mutuamente excluyentes (ambos permisos
+  deniega, uno solo pasa), y los casos de "nada configurado para esta evaluación".
+- `tests/Shared.Infrastructure.Security.Tests/PrivilegedOperations/PrivilegedOperationsServiceCollectionExtensionsTests.cs`:
+  el guard de orden de registro (`InvalidOperationException` sin `AddSharedAbacAuthorization` previo), el
+  registro de las dos reglas junto con las de F2-08, `PrivilegedOperationsOptions` configurado por el
+  delegado, idempotencia de una segunda llamada, y la validación en el arranque
+  (`OptionsValidationException` al resolver `IOptions<PrivilegedOperationsOptions>`) de un
+  `StepUpRequirement` sin ningún criterio configurado.
+- `tests/Shared.Infrastructure.Security.Tests/PrivilegedOperations/PrivilegedOperationsEndToEndTests.cs`:
+  prueba de componente contra la pila real completa (mismo criterio que `AbacEndToEndTests`) — el criterio
+  de aceptación literal de F2-10 ("operaciones críticas protegidas") de punta a punta: step-up
+  cumplido/vencido/ausente, maker-checker mismo/distinto actor, pares mutuamente excluyentes, y el caso
+  default-deny de "sin permiso RBAC base, ninguna evidencia de step-up salva la decisión".
 
 ## Referencias
 
 - `src/Shared.Infrastructure.Security/Abac/` — `IAuthorizationPolicyEvaluator`/`AuthorizationPolicyEvaluator`,
   `AbacSubject`/`AbacResource`/`AbacContext`, `IAbacRule`/`AbacRuleOutcome`,
   `AttributeScopeAbacRule`/`AmountLimitAbacRule`/`AbacOptions`, `AbacServiceCollectionExtensions`.
+- `src/Shared.Infrastructure.Security/PrivilegedOperations/` (F2-10) — `StepUpAbacRule`/`StepUpRequirement`,
+  `SegregationOfDutiesAbacRule`/`MakerCheckerRule`/`MutuallyExclusivePermissionPair`,
+  `PrivilegedOperationsOptions`, `PrivilegedOperationsOptionsValidator` (validación en el arranque, vía
+  `ValidateOnStart`), `PrivilegedOperationsServiceCollectionExtensions`.
 - `docs/guia-rbac-2.md` — RBAC 2.0 (F2-07), la pieza base sobre la que se apoya este evaluador combinado.
 - `docs/convenciones.md` — reglas duras del framework, y la entrada "autorizar una operación por atributos
   de negocio (monto, empresa, sucursal), además del permiso RBAC".

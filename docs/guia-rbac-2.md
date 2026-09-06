@@ -326,8 +326,11 @@ con certeza que la implementación real de RBAC está llegando tarde.
 - **F2-08 (ABAC):** implementado. `IAuthorizationPolicyEvaluator` (`Shared.Infrastructure.Security.Abac`)
   combina el permiso RBAC de este evaluador con reglas de negocio basadas en atributos del recurso
   (`Subject`/`Resource`/`Action`/`Context`, monto/empresa/sucursal) — ver `docs/guia-abac.md`.
-- **F2-10 (operaciones privilegiadas):** step-up, reevaluación y segregación de funciones no están
-  cubiertos por el evaluador de F2-07.
+- **F2-10 (operaciones privilegiadas):** implementado. Step-up authentication y segregación de funciones
+  se agregan como `IAbacRule` adicionales (`StepUpAbacRule`, `SegregationOfDutiesAbacRule`,
+  `Shared.Infrastructure.Security.PrivilegedOperations`) sobre el MISMO `IAuthorizationPolicyEvaluator` de
+  F2-08, no como parte del evaluador de F2-07 en sí — ver `docs/guia-abac.md`, sección "Operaciones
+  privilegiadas (F2-10)".
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica
   completa son una tarea separada; F2-07 solo prueba el evaluador en sí (ver más abajo).
 - **Roles tenant-scoped:** `ApplicationRole` (Identity) sigue sin implementar `ITenantEntity` — un rol

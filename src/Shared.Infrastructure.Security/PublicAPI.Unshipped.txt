@@ -446,6 +446,54 @@ static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.Not
 static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? right) -> bool
 static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? left, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome? right) -> bool
 static BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacServiceCollectionExtensions.AddSharedAbacAuthorization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.Action.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.Action.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.ActorResourceAttributeKey.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.ActorResourceAttributeKey.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.MakerCheckerRule() -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.ResourceType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.ResourceType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.SubjectClaimType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule.SubjectClaimType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair.MutuallyExclusivePermissionPair() -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair.PermissionA.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair.PermissionA.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair.PermissionB.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair.PermissionB.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions.MakerCheckerRules.get -> System.Collections.Generic.IList<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MakerCheckerRule!>!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions.MutuallyExclusivePermissions.get -> System.Collections.Generic.IList<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.MutuallyExclusivePermissionPair!>!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions.PrivilegedOperationsOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions.StepUpRequirements.get -> System.Collections.Generic.IList<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement!>!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptionsValidator
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptionsValidator.PrivilegedOperationsOptionsValidator() -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptionsValidator.Validate(string? name, BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions! options) -> Microsoft.Extensions.Options.ValidateOptionsResult!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.SegregationOfDutiesAbacRule
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.SegregationOfDutiesAbacRule.AppliesTo(string! resourceType, string! action) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.SegregationOfDutiesAbacRule.EvaluateAsync(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject! subject, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!>!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.SegregationOfDutiesAbacRule.SegregationOfDutiesAbacRule(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpAbacRule
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpAbacRule.AppliesTo(string! resourceType, string! action) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpAbacRule.EvaluateAsync(BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacSubject! subject, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacRuleOutcome!>!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpAbacRule.StepUpAbacRule(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AcceptableAuthenticationMethods.get -> System.Collections.Generic.IReadOnlyCollection<string!>?
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AcceptableAuthenticationMethods.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.Action.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.Action.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AuthenticationMethodClaimType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AuthenticationMethodClaimType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AuthenticationTimeClaimType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.AuthenticationTimeClaimType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.MaxAuthenticationAge.get -> System.TimeSpan?
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.MaxAuthenticationAge.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.ResourceType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.ResourceType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.StepUpRequirement.StepUpRequirement() -> void
+static BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsServiceCollectionExtensions.AddSharedPrivilegedOperationsPolicies(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.CachedPermissionService
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.CachedPermissionService.CachedPermissionService(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService! inner, BitCode.Framework.Shared.Infrastructure.Caching.ITenantAwareCache! tenantAwareCache, Microsoft.Extensions.Caching.Hybrid.HybridCache! hybridCache, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionCacheOptions!>! options) -> void
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.CachedPermissionService.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
