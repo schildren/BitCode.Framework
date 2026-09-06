@@ -114,6 +114,22 @@ public class TransactionBehavior<TRequest, TResponse>(
                 requestName);
             return CreateConcurrencyConflictResult<TResponse>();
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // F1-10 (timeouts y cancelación): la cancelación de un request (cliente que cierra la
+            // conexión, o un timeout del lado del servidor) NO es un error de negocio ni una excepción
+            // inesperada — es un camino normal del ciclo de vida del request. Se revierte la
+            // transacción igual que ante cualquier otro fallo (para no dejar locks/transacciones
+            // huérfanas en SQL Server), pero se relanza tal cual (nunca se traduce a un
+            // Result.Failure/ProblemDetails) para que ASP.NET Core la trate como cancelación del
+            // request, no como un error 500 genérico; y se loguea en un nivel bajo (no LogError) para
+            // no ensuciar los dashboards de errores con cancelaciones esperadas.
+            await unitOfWork.RollbackAsync(CancellationToken.None);
+            logger.LogInformation(
+                "{RequestName} fue cancelado; se revirtió la transacción",
+                requestName);
+            throw;
+        }
         catch (Exception exception)
         {
             // Mismo criterio: cerrar la transacción (liberar locks) antes de cualquier trabajo

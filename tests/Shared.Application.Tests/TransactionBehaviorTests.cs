@@ -133,4 +133,60 @@ public class TransactionBehaviorTests
         await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    /// <summary>
+    /// F1-10 (timeouts y cancelación): un request cancelado NO es un error de negocio (no debe
+    /// traducirse a un <c>Result.Failure</c>/ProblemDetails) ni una excepción inesperada silenciada —
+    /// debe propagarse tal cual como <see cref="OperationCanceledException"/> para que ASP.NET Core lo
+    /// trate como cancelación del request, después de liberar los recursos abiertos (rollback de la
+    /// transacción).
+    /// </summary>
+    [Fact]
+    public async Task Handle_TransactionalCommand_WhenCancelled_RollsBackAndRethrowsOperationCanceled()
+    {
+        var (behavior, unitOfWork) = CreateTransactionalBehavior();
+        using var cts = new CancellationTokenSource();
+
+        var act = async () => await behavior.Handle(
+            new TestTransactionalCommand("Alpha"),
+            () =>
+            {
+                cts.Cancel();
+                throw new OperationCanceledException(cts.Token);
+            },
+            cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        await unitOfWork.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
+        // El rollback debe ejecutarse con un token NO cancelado (CancellationToken.None): si se
+        // pasara el token ya cancelado, EF Core lanzaría OperationCanceledException al iniciar el
+        // propio RollbackAsync sin llegar a emitir el ROLLBACK real contra SQL Server, dejando la
+        // transacción física abierta hasta que el scope se disponga.
+        await unitOfWork.Received(1).RollbackAsync(CancellationToken.None);
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Mismo criterio que el test transaccional: un comando simple cancelado durante
+    /// <c>SaveChangesAsync</c> debe propagar <see cref="OperationCanceledException"/> sin traducirla a
+    /// un <c>Result.Failure</c> (a diferencia de <see cref="ConcurrencyConflictException"/>, que sí se
+    /// traduce).
+    /// </summary>
+    [Fact]
+    public async Task Handle_SimpleCommand_WhenSaveChangesCancelled_PropagatesOperationCanceled()
+    {
+        var (behavior, unitOfWork) = CreateBehavior();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        unitOfWork.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ => throw new OperationCanceledException(cts.Token));
+
+        var act = async () => await behavior.Handle(
+            new TestCommand("Alpha"),
+            () => Task.FromResult(Result.Success("ok")),
+            cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }

@@ -23,8 +23,24 @@ public static class PersistenceServiceCollectionExtensions
     public static IServiceCollection AddSharedPersistence<TContext>(
         this IServiceCollection services,
         string connectionString)
+        where TContext : MultiTenantDbContext =>
+        services.AddSharedPersistence<TContext>(connectionString, static _ => { });
+
+    /// <summary>
+    /// Sobrecarga que además acepta <see cref="PersistenceOptions"/> (F1-10: por ejemplo,
+    /// <see cref="PersistenceOptions.CommandTimeoutSeconds"/> para acotar cuánto puede tardar un
+    /// comando SQL individual, independiente del <see cref="System.Threading.CancellationToken"/>
+    /// del request).
+    /// </summary>
+    public static IServiceCollection AddSharedPersistence<TContext>(
+        this IServiceCollection services,
+        string connectionString,
+        Action<PersistenceOptions> configureOptions)
         where TContext : MultiTenantDbContext
     {
+        var persistenceOptions = new PersistenceOptions();
+        configureOptions(persistenceOptions);
+
         services.TryAddScoped<ITenantProvider, NullTenantProvider>();
         services.TryAddScoped<ICurrentUserProvider, NullCurrentUserProvider>();
 
@@ -34,7 +50,13 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<TContext>((sp, options) =>
         {
-            options.UseSqlServer(connectionString);
+            options.UseSqlServer(connectionString, sqlServerOptions =>
+            {
+                if (persistenceOptions.CommandTimeoutSeconds is { } commandTimeoutSeconds)
+                {
+                    sqlServerOptions.CommandTimeout(commandTimeoutSeconds);
+                }
+            });
             options.AddInterceptors(
                 sp.GetRequiredService<AuditableEntitySaveChangesInterceptor>(),
                 sp.GetRequiredService<SoftDeleteInterceptor>(),
