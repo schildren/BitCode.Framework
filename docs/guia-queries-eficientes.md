@@ -101,6 +101,12 @@ var pagina = await repository.ListPagedAsync(spec, p => new ProductoListItemResp
 3. Si el listado es potencialmente grande, usar `ListPagedAsync`/`ListPagedAsync<TResult>` en vez de `ListAsync`/`CountAsync` por separado.
 4. Un `ICommand` que necesita cargar una entidad para mutarla sigue usando `IRepository<TEntity, TId>.GetByIdAsync` (tracking normal) — no cambia.
 
+**Fuera de alcance de esta tarea (F1-17), cubierto por F1-18:** si ninguno de los métodos de
+`IReadRepository<,>` de arriba alcanza (por ejemplo, un agregado — `SUM`/`AVG`/`COUNT` combinados — que
+exige un único `SELECT` en la base de datos), ver `docs/guia-hot-paths.md` para el contrato de
+extensión controlada (`IHotPathQuery<TResult>`/`IHotPathQueryExecutor`), que exige un benchmark real
+documentado antes de bypasear el patrón genérico.
+
 ## Referencias
 
 - `src/Shared.Infrastructure.Persistence/Repositories/ReadOnlyRepositoryBase.cs`

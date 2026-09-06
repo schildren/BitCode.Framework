@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Security;
+using BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding;
@@ -100,6 +101,11 @@ public static class PersistenceServiceCollectionExtensions
         // RepositoryBase<,> (detrás de IRepository<,>) sigue trackeando por defecto porque el lado de
         // escritura necesita GetByIdAsync trackeado para poder llamar Update sobre esa misma instancia.
         services.AddScoped(typeof(IReadRepository<,>), typeof(ReadOnlyRepositoryBase<,>));
+
+        // F1-18: contrato de extensión controlada para hot paths que ISpecification<T> no expresa
+        // bien (ver docs/guia-hot-paths.md). Comparte el mismo DbContext de scope que IRepository/
+        // IReadRepository/IUnitOfWork de arriba — no abre una conexión ni un DbContext propio.
+        services.AddScoped<IHotPathQueryExecutor, HotPathQueryExecutor>();
 
         return services;
     }

@@ -73,6 +73,7 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 | Leer el `TenantId` del request actual desde un handler/servicio de aplicación | Inyectar `ITenantContext` (Shared.Domain), no `ITenantProvider` — ya viene memoizado e inmutable para el scope |
 | Que el `TenantId` aparezca automáticamente en todos los logs de un request | `app.UseTenantContextLogging()` (Shared.Infrastructure.Web) después de `UseAuthentication()`/`UseAuthorization()` |
 | Un listado de solo lectura para un `IQuery` (grilla, combo, export) | `IReadRepository<,>.ListAsync(spec, selector)` (proyección a DTO) o `.ListPagedAsync(spec, selector, page, pageSize)` (paginado) — nunca traer la entidad completa si solo se necesitan algunas columnas. Ver `docs/guia-queries-eficientes.md` (F1-17) |
+| Un agregado (`SUM`/`COUNT` combinados, etc.) o una consulta que `ISpecification<T>` no expresa bien | `IHotPathQuery<TResult>` + `IHotPathQueryExecutor` (F1-18) — nunca `IQueryable` crudo. Requiere `[HotPath(Justification, BenchmarkRef)]` con un benchmark real que demuestre que el patrón genérico no alcanzaba. Ver `docs/guia-hot-paths.md` |
 
 ## Testing
 

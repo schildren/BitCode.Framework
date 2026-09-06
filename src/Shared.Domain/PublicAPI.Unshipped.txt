@@ -84,3 +84,9 @@ BitCode.Framework.Shared.Domain.Specifications.Specification<T>.Skip.get -> int
 BitCode.Framework.Shared.Domain.Specifications.Specification<T>.Specification() -> void
 BitCode.Framework.Shared.Domain.Specifications.Specification<T>.Specification(System.Linq.Expressions.Expression<System.Func<T, bool>!>! criteria) -> void
 BitCode.Framework.Shared.Domain.Specifications.Specification<T>.Take.get -> int
+BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult>
+BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult>.ToSql() -> System.FormattableString!
+BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute
+BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.HotPathAttribute(string! justification, string! benchmarkRef) -> void
+BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.Justification.get -> string!
+BitCode.Framework.Shared.Domain.HotPaths.HotPathAttribute.BenchmarkRef.get -> string!
