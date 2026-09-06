@@ -76,6 +76,14 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<TenantSaveChangesInterceptor>();
 
+        // F1-19: se registra con AddDbContext (Scoped), deliberadamente sin pooling
+        // (AddDbContextPool/PooledDbContextFactory). MultiTenantDbContext resuelve el TenantId en su
+        // constructor y lo cierra sobre el filtro global de tenancy; el pooling de EF Core reutiliza la
+        // misma instancia entre scopes sin volver a invocar el constructor, lo que congelaría el
+        // filtro con el tenant que construyó la instancia por primera vez. Además, mientras
+        // OnConfiguring siga reemplazando IModelCacheKeyFactory por PerInstanceModelCacheKeyFactory
+        // (necesario para la corrección del filtro de tenant, ver F1-11), EF Core rechaza el pooling en
+        // tiempo de ejecución con InvalidOperationException. Ver docs/adr/0012-dbcontext-pooling-no-adoptado.md.
         services.AddDbContext<TContext>((sp, options) =>
         {
             options.UseSqlServer(connectionString, sqlServerOptions =>
