@@ -40,6 +40,24 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+
+    <!-- Gate de compatibilidad de API pública (F1-03, ver docs/gate-compatibilidad-api.md).
+         Analyzer de Roslyn que compara la superficie pública compilada contra
+         PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt de cada proyecto y falla el build
+         (RS0016/RS0017/RS0037/RS0022/RS0024/RS0025/RS0026/RS0027) si hay un miembro público
+         nuevo, eliminado o cambiado sin declarar en esos archivos. No requiere una versión
+         previa publicada: reacciona a cualquier cambio de superficie dentro del propio commit. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" PrivateAssets="All" />
   </ItemGroup>
+
+  <!-- Escalona a error las reglas núcleo del gate de compatibilidad (agregar/quitar miembro
+       público sin declarar en PublicAPI.*.txt, o cambio de anotación de nulabilidad no
+       reflejado). El resto de las reglas del analyzer (p. ej. RS0026, guía de diseño sobre
+       sobrecargas con parámetros opcionales) queda como advertencia informativa: no forma
+       parte del criterio de aceptación de F1-03 y no debe bloquear el build por hallazgos de
+       diseño preexistentes no relacionados con el gate. Ver docs/gate-compatibilidad-api.md. -->
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);RS0016;RS0017;RS0022;RS0037</WarningsAsErrors>
+  </PropertyGroup>
 
 </Project>

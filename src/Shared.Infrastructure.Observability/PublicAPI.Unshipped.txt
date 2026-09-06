@@ -1,0 +1,12 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Observability.ObservabilityServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.OpenTelemetryOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.OtlpEndpoint.get -> string?
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.OtlpEndpoint.set -> void
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.ServiceName.get -> string!
+BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.ServiceName.set -> void
+BitCode.Framework.Shared.Infrastructure.Observability.SerilogHostBuilderExtensions
+const BitCode.Framework.Shared.Infrastructure.Observability.OpenTelemetryOptions.SectionName = "OpenTelemetry" -> string!
+static BitCode.Framework.Shared.Infrastructure.Observability.ObservabilityServiceCollectionExtensions.AddSharedObservability(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Observability.SerilogHostBuilderExtensions.UseSharedSerilog(this Microsoft.Extensions.Hosting.IHostBuilder! hostBuilder) -> Microsoft.Extensions.Hosting.IHostBuilder!

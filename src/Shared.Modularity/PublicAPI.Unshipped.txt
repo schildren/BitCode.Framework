@@ -1,0 +1,10 @@
+#nullable enable
+BitCode.Framework.Shared.Modularity.DependsOnAttribute
+BitCode.Framework.Shared.Modularity.DependsOnAttribute.DependedOnModuleTypes.get -> System.Type![]!
+BitCode.Framework.Shared.Modularity.DependsOnAttribute.DependsOnAttribute(params System.Type![]! dependedOnModuleTypes) -> void
+BitCode.Framework.Shared.Modularity.IFrameworkModule
+BitCode.Framework.Shared.Modularity.IFrameworkModule.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
+BitCode.Framework.Shared.Modularity.ModularityServiceCollectionExtensions
+BitCode.Framework.Shared.Modularity.ModuleDependencyResolver
+static BitCode.Framework.Shared.Modularity.ModularityServiceCollectionExtensions.AddModules(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Modularity.ModuleDependencyResolver.OrderByDependencies(System.Collections.Generic.IReadOnlyCollection<System.Type!>! moduleTypes) -> System.Collections.Generic.IReadOnlyList<System.Type!>!

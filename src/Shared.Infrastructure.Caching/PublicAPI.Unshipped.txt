@@ -1,0 +1,8 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.CachingOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.RedisConnectionString.get -> string?
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.RedisConnectionString.set -> void
+BitCode.Framework.Shared.Infrastructure.Caching.CachingServiceCollectionExtensions
+const BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.SectionName = "Caching" -> string!
+static BitCode.Framework.Shared.Infrastructure.Caching.CachingServiceCollectionExtensions.AddSharedCaching(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

@@ -1,0 +1,52 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.AuditableEntitySaveChangesInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SoftDeleteInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.TenantSaveChangesInterceptor(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.MultiTenantDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.NullTenantProvider() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.Create(Microsoft.EntityFrameworkCore.DbContext! context, bool designTime) -> object!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.PerInstanceModelCacheKeyFactory() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbContext.get -> Microsoft.EntityFrameworkCore.DbContext!
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbSet.get -> Microsoft.EntityFrameworkCore.DbSet<TEntity!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.RepositoryBase(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider.NullCurrentUserProvider() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider.UserId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Persistence.Specifications.SpecificationEvaluator<T>
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.BeginTransactionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.UnitOfWork(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator.ApplyGlobalFilters(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, System.Guid tenantId, bool isMultiTenancyEnabled) -> void
+static BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions.AddSharedPersistence<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Persistence.Specifications.SpecificationEvaluator<T>.GetQuery(System.Linq.IQueryable<T!>! inputQuery, BitCode.Framework.Shared.Domain.Specifications.ISpecification<T!>! specification) -> System.Linq.IQueryable<T!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.AnyAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.CountAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.GetByIdAsync(TId id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TEntity?>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.Remove(TEntity! entity) -> void
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.Update(TEntity! entity) -> void

@@ -1,0 +1,13 @@
+#nullable enable
+BitCode.Framework.Shared.Testing.RedisContainerFixture
+BitCode.Framework.Shared.Testing.RedisContainerFixture.ConnectionString.get -> string!
+BitCode.Framework.Shared.Testing.RedisContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.RedisContainerFixture.InitializeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.RedisContainerFixture.RedisContainerFixture() -> void
+BitCode.Framework.Shared.Testing.SqlServerContainerFixture
+BitCode.Framework.Shared.Testing.SqlServerContainerFixture.ConnectionString.get -> string!
+BitCode.Framework.Shared.Testing.SqlServerContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.SqlServerContainerFixture.InitializeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.SqlServerContainerFixture.SqlServerContainerFixture() -> void
+BitCode.Framework.Shared.Testing.SqlServerContainerFixtureExtensions
+static BitCode.Framework.Shared.Testing.SqlServerContainerFixtureExtensions.BuildIsolatedConnectionString(this BitCode.Framework.Shared.Testing.SqlServerContainerFixture! fixture, string! databasePrefix, string! testName) -> string!

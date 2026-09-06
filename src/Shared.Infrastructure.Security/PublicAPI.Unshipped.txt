@@ -1,0 +1,86 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole.ApplicationRole() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationRole.ApplicationRole(string! roleName) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.ApplicationUser() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.CreatedAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.CreatedBy.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.CreatedBy.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.DeletedAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.DeletedBy.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.DeletedBy.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.IsDeleted.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.IsDeleted.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.ModifiedAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.ModifiedBy.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.ModifiedBy.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser.TenantId.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>
+BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.MultiTenantIdentityDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.RefreshTokens.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken!>!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.IJwtTokenGenerator
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.IJwtTokenGenerator.GenerateAccessToken(BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser! user, System.Collections.Generic.IEnumerable<string!>! roles, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim!>! extraClaims) -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.IJwtTokenGenerator.GenerateRefreshToken() -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.AccessTokenExpirationMinutes.get -> int
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.AccessTokenExpirationMinutes.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.Audience.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.Audience.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.Issuer.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.Issuer.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.JwtOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.RefreshTokenExpirationDays.get -> int
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.RefreshTokenExpirationDays.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.SecretKey.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.SecretKey.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtTokenGenerator
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtTokenGenerator.GenerateAccessToken(BitCode.Framework.Shared.Infrastructure.Security.Identity.ApplicationUser! user, System.Collections.Generic.IEnumerable<string!>! roles, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim!>! extraClaims) -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtTokenGenerator.GenerateRefreshToken() -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtTokenGenerator.JwtTokenGenerator(Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.CreatedAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.ExpiresAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.ExpiresAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Id.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Id.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.IsActive.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.RefreshToken() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.RevokedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.RevokedAtUtc.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Token.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Token.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.UserId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.UserId.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler.PermissionAuthorizationHandler(BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService! permissionService) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.GetDefaultPolicyAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Authorization.AuthorizationPolicy!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.GetFallbackPolicyAsync() -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Authorization.AuthorizationPolicy?>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.GetPolicyAsync(string! policyName) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Authorization.AuthorizationPolicy?>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationPolicyProvider.PermissionAuthorizationPolicyProvider(Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Authorization.AuthorizationOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionClaimTypes
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionRequirement
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionRequirement.Permission.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionRequirement.PermissionRequirement(string! permission) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionService<TUser, TRole>
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionService<TUser, TRole>.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionService<TUser, TRole>.PermissionService(Microsoft.AspNetCore.Identity.UserManager<TUser!>! userManager, Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.RequirePermissionAttribute
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.RequirePermissionAttribute.RequirePermissionAttribute(string! permission) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.SecurityServiceCollectionExtensions
+const BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.SectionName = "Jwt" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionClaimTypes.Permission = "permission" -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> void
+override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+override BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler.HandleRequirementAsync(Microsoft.AspNetCore.Authorization.AuthorizationHandlerContext! context, BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionRequirement! requirement) -> System.Threading.Tasks.Task!
+static BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions.AddPermissionAsync<TRole>(this Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager, TRole! role, string! permission) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
+static BitCode.Framework.Shared.Infrastructure.Security.SecurityServiceCollectionExtensions.AddSharedSecurity<TUser, TRole, TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

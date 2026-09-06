@@ -33,6 +33,7 @@ Todo lo que sigue es una instrumentación concreta de ese principio para cada ti
 - Prerelease (`-alpha`, `-beta`, `-rc`) se usa para paquetes en desarrollo activo previos a la primera versión 1.0.0 estable, o para adelantar un cambio mayor a consumidores que acepten el riesgo.
 - Mientras un proyecto no publique 1.0.0, la sección de SemVer que permite cambios breaking en versiones `0.x` aplica — pero incluso en `0.x` un cambio breaking debe documentarse (no exime de la regla de "análisis de compatibilidad" de la sección 3.2 del Plan Maestro).
 - **Decisión a confirmar:** la herramienta de versionado automático (MinVer/Nerdbank.GitVersioning/GitVersion) todavía no fue elegida. No se adopta ninguna en este documento porque no es objeto de F0-05 (F0-05 define la política, no la tooling de CI/CD de empaquetado, que corresponde a una tarea de Fase 7/8 de publicación). Hasta entonces, cualquier `Directory.Packages.props`/`Version` que se introduzca debe fijarse manualmente siguiendo esta política.
+- **Gate de compatibilidad (F1-03):** el análisis de "impacto en consumidores existentes" que exige el principio de la sección 1 está instrumentado, para la superficie pública de los 11 paquetes de `src/`, con el analyzer `Microsoft.CodeAnalysis.PublicApiAnalyzers` (build local y CI). Ver [`gate-compatibilidad-api.md`](gate-compatibilidad-api.md) para el detalle de cómo funciona, cómo declarar un cambio de superficie como intencional y qué falta (`ApiCompat`/`Microsoft.DotNet.PackageValidation`) a partir de la primera versión efectivamente publicada.
 
 ---
 

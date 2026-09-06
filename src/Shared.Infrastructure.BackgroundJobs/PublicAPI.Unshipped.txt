@@ -1,0 +1,3 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.BackgroundJobsServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.BackgroundJobs.BackgroundJobsServiceCollectionExtensions.AddSharedBackgroundJobs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Quartz.IServiceCollectionQuartzConfigurator!>! configureJobs) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
