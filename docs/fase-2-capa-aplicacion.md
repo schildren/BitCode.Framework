@@ -139,3 +139,17 @@ comandos que deben tolerar reintentos (implementación completa en F1-22).
 
 Ver `docs/adr/0009-contratos-comando-transaccion-explicita.md` para el detalle de la decisión y
 `docs/convenciones.md` (reglas 1, 3 y 4) para la convención vigente.
+
+## Actualización (F1-07 — Épica F1-B, Plan Maestro)
+
+Endurecimiento del pipeline transaccional sobre el diseño de F1-06 (criterio de aceptación:
+"Rollback verificado"): en las ramas de fallo, `TransactionBehavior` ahora revierte la transacción
+(`RollbackAsync`) antes de loguear, para no demorar la liberación de locks con trabajo no esencial
+mientras la transacción sigue abierta. Se documentó como regla dura que ningún handler de
+`ITransactionalCommand` debe hacer llamadas HTTP, a cache distribuido o a un broker de mensajería
+mientras la transacción está abierta. Se verificó, con un comando de prueba de dos escrituras
+dependientes contra SQL Server real (Testcontainers, ver
+`tests/Shared.Infrastructure.Persistence.Tests/Integration/TransactionBehaviorIntegrationTests.cs`),
+que un fallo en la segunda escritura revierte también la primera, ya enviada al motor con un
+`SaveChangesAsync` intermedio. Ver el addendum en
+`docs/adr/0009-contratos-comando-transaccion-explicita.md` para el detalle completo.

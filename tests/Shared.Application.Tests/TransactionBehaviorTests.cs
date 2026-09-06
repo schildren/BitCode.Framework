@@ -92,6 +92,9 @@ public class TransactionBehaviorTests
         await unitOfWork.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
+        // El behavior nunca llama SaveChangesAsync directamente en el camino transaccional: la
+        // persistencia queda enteramente delegada a un único CommitAsync (F1-07).
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -109,6 +112,9 @@ public class TransactionBehaviorTests
         await unitOfWork.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        // Ante un Result fallido, el behavior no debe haber persistido nada: ni SaveChangesAsync
+        // directo ni CommitAsync (que internamente hace SaveChangesAsync) llegan a ejecutarse (F1-07).
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -125,5 +131,6 @@ public class TransactionBehaviorTests
         await unitOfWork.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
         await unitOfWork.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
         await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

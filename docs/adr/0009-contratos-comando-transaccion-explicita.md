@@ -98,3 +98,39 @@ tras un `Result` exitoso) no cambia.
 - **Riesgo:** F1-07 (reducir aún más la duración del pipeline transaccional) puede requerir ajustar
   de nuevo `TransactionBehavior`; este ADR no bloquea esa tarea, solo establece el contrato de qué
   comandos participan de una transacción explícita.
+
+## Addendum — F1-07 (endurecimiento del pipeline transaccional)
+
+F1-07 revisó `TransactionBehavior` bajo el criterio de aceptación "Rollback verificado" y confirmó
+que el diseño de este ADR ya cumple la reducción de duración exigida, sin requerir un rediseño:
+
+- **Apertura/cierre de la transacción:** `BeginTransactionAsync` ya se ejecutaba inmediatamente antes
+  de invocar el handler (lo más tarde posible) y `CommitAsync`/`RollbackAsync` inmediatamente después
+  de que el handler retorna (lo más pronto posible). El único ajuste fue de orden: en las ramas de
+  fallo (`Result` fallido o excepción), el logging se movió a **después** de `RollbackAsync` en lugar
+  de antes, para no demorar la liberación de locks con una llamada a un sink de logging potencialmente
+  remoto mientras la transacción seguía abierta.
+- **Llamadas externas dentro de la transacción:** se relevó el repositorio completo; no existe hoy
+  ningún handler de `ITransactionalCommand` en producción (el único comando real,
+  `CrearProductoCommand`, es un `ICommand` simple sin el marcador) que realice llamadas HTTP, a cache
+  distribuido o a un broker de mensajería. Se documentó como regla dura (`docs/convenciones.md`,
+  regla 3) que ese tipo de llamadas debe diferirse hasta después del commit (por ejemplo, vía Outbox
+  en F1-23) precisamente para prevenir esta clase de problema antes de que aparezca el primer handler
+  real de este tipo.
+- **Control de `SaveChangesAsync`:** `TransactionBehavior` nunca invoca `SaveChangesAsync`
+  directamente en el camino transaccional; delega toda la persistencia final a un único
+  `IUnitOfWork.CommitAsync`. Se agregaron aserciones explícitas (`tests/Shared.Application.Tests/TransactionBehaviorTests.cs`)
+  que verifican, con mocks, que ni éxito ni fallo ni excepción disparan una llamada directa a
+  `SaveChangesAsync` desde el behavior. Se aclaró en la regla dura 1 de `docs/convenciones.md` que un
+  handler de `ITransactionalCommand` sí puede llamar `SaveChangesAsync` de forma intermedia cuando
+  coordina escrituras dependientes entre sí (a diferencia de un `ICommand` simple, que nunca debe
+  hacerlo): esas llamadas intermedias quedan protegidas por la misma transacción de base de datos.
+- **Rollback verificado (criterio de aceptación literal):** no existía ningún comando
+  `ITransactionalCommand` real que coordinara múltiples escrituras, así que se creó
+  `TwoStepTransactionalCommand` (comando de prueba, en
+  `tests/Shared.Infrastructure.Persistence.Tests/Integration/TransactionBehaviorIntegrationTests.cs`)
+  que ejecuta dos escrituras dependientes (con un `SaveChangesAsync` intermedio real hacia SQL Server)
+  y falla intencionalmente en la segunda. Contra un SQL Server real (Testcontainers) y a través del
+  pipeline completo de MediatR (`AddSharedApplication` + `TransactionBehavior` + `AddSharedPersistence`),
+  se verificó que tras el fallo **ningún** dato queda persistido, ni siquiera el de la primera
+  escritura ya enviada al motor antes de que la segunda fallara.
