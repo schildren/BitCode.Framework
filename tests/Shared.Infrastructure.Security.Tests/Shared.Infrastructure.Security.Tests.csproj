@@ -32,6 +32,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <!-- F2-09: Integration/CachedPermissionServiceRedisIntegrationTests.cs registra AddSharedCaching
+         directamente para levantar HybridCache con Redis real como L2. -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Caching\Shared.Infrastructure.Caching.csproj" />
     <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
   </ItemGroup>
 

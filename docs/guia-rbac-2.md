@@ -171,14 +171,161 @@ F2-08, ver `docs/guia-abac.md`). Esto es lo que permite que `AddSharedAbacAuthor
 la llame para garantizar `IPermissionEvaluator` disponible, sin duplicar el registro de
 `IAuthorizationHandler` cuando un proyecto combina RBAC + ABAC en el mismo `IServiceCollection`.
 
+## Cache de permisos (F2-09)
+
+**Criterio de aceptación:** "Sin consulta SQL por request normal".
+
+Antes de F2-09, `PermissionEvaluator` (F2-07) consultaba `IPermissionService.GetPermissionsForUserAsync`/
+`GetPermissionsForRoleAsync` (SQL Server, vía `UserManager`/`RoleManager`) en CADA request autenticado, sin
+ningún cache. F2-09 agrega esa pieza sin tocar `IPermissionEvaluator`/`PermissionEvaluator` ni el
+comportamiento fail-closed ya probado de F2-07/F2-08: decora `IPermissionService` (la única parte de la
+cadena que realmente toca SQL Server) con `CachedPermissionService`
+(`Shared.Infrastructure.Security.Permissions`), reutilizando el mecanismo de cache L1 (memoria)/L2 (Redis)
+ya existente del framework (`HybridCache`/`ITenantAwareCache`, F1-16) en vez de un mecanismo propio.
+
+### Por qué se decora `IPermissionService` y no `IPermissionEvaluator`
+
+La única parte costosa de `PermissionEvaluator.EvaluateAsync` es la consulta SQL de `IPermissionService`;
+la combinación de fuentes (claims del token, narrowing por scope, validación de tenant) ya opera en
+memoria. Decorar en esta capa, en vez del evaluador completo, además da la granularidad de invalidación
+correcta: `GetPermissionsForUserAsync(userId)` y `GetPermissionsForRoleAsync(roleName)` son exactamente
+las dos preguntas que cambian cuando se reasigna un rol a un usuario o se agrega/quita un permiso a un
+rol — invalidar por esa clave es preciso, mientras que invalidar "el resultado de `EvaluateAsync` para
+este `ClaimsPrincipal`" no tendría una clave natural (el principal no es un identificador estable entre
+requests).
+
+### Dos cachés, dos mecanismos
+
+| Método | Mecanismo | Por qué |
+|---|---|---|
+| `GetPermissionsForUserAsync(userId)` | `ITenantAwareCache` (F1-16) | Los permisos de un usuario SÍ son datos sensibles a tenant (regla dura #14, `docs/convenciones.md`) — la clave compone el `TenantId` del scope actual. |
+| `GetPermissionsForRoleAsync(roleName)` | `HybridCache` directo, sin prefijo de tenant | `ApplicationRole` todavía no implementa `ITenantEntity` (gap documentado más abajo): un rol creado en un tenant ya es visible/asignable en cualquier otro, así que sus permisos no son un dato sensible a tenant hoy. |
+
+### TTL por defecto y cómo ajustarlo
+
+`PermissionCacheOptions.Expiration` (default: **60 segundos**) es el tiempo de vida de una entrada
+cacheada, tanto en L1 como en L2. Se configura con el delegado de `AddSharedPermissionCache`:
+
+```csharp
+services.AddSharedPermissionCache(options => options.Expiration = TimeSpan.FromSeconds(30));
+```
+
+Es el límite superior de "cuánto puede tardar en verse reflejado" un cambio de permisos que no pasó por
+invalidación explícita (ver debajo) — un valor corto prioriza corrección sobre reducción de carga en SQL
+Server; un valor largo hace lo contrario. No se lee de `IConfiguration` automáticamente (mismo criterio
+que `AbacOptions`, F2-08): es un parámetro de afinación de infraestructura, no un dato de negocio por
+tenant.
+
+### Cómo y cuándo se invalida
+
+`IPermissionCacheInvalidator` (`Shared.Infrastructure.Security.Permissions`) es la invalidación explícita
+— nunca automática/declarativa, mismo criterio que `IAuthorizationPolicyEvaluator` (F2-08): Identity
+expone las mutaciones de roles/permisos directamente vía `UserManager`/`RoleManager`, sin ningún punto de
+extensión común que el framework pueda interceptar genéricamente.
+
+```csharp
+public interface IPermissionCacheInvalidator
+{
+    ValueTask InvalidateUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    ValueTask InvalidateRoleAsync(string roleName, CancellationToken cancellationToken = default);
+}
+```
+
+Un proyecto consumidor debe invocar el método correspondiente inmediatamente después de:
+
+- **Cambiar la asignación de roles de un usuario** (`UserManager.AddToRoleAsync`/`RemoveFromRoleAsync`, o
+  cualquier otro cambio que afecte qué roles/permisos tiene ESE usuario) → `InvalidateUserAsync(userId)`.
+- **Agregar o quitar un permiso a un rol** → `InvalidateRoleAsync(roleName)`. `RoleManagerPermissionExtensions`
+  (F2-07) agrega en esta tarea `RemovePermissionAsync` (simétrico de `AddPermissionAsync`, ausente hasta
+  ahora) y un overload de cada uno que recibe un `IPermissionCacheInvalidator` e invalida automáticamente
+  si la operación tuvo éxito:
+
+```csharp
+await roleManager.AddPermissionAsync(role, "productos.crear", invalidator, ct);
+await roleManager.RemovePermissionAsync(role, "productos.crear", invalidator, ct);
+
+// Alta/baja de rol de un usuario: Identity no tiene un overload propio -- invalidar explícitamente.
+await userManager.AddToRoleAsync(user, "Ventas");
+await invalidator.InvalidateUserAsync(user.Id, ct);
+```
+
+**Sin invalidación explícita, la entrada cacheada sigue vigente hasta `PermissionCacheOptions.Expiration`**
+— nunca indefinidamente (fail-closed acotado), pero tampoco de forma inmediata. `IPermissionCacheInvalidator`
+se registra por defecto como `NullPermissionCacheInvalidator` (no-op, vía `AddSharedPermissionEvaluation`):
+un proyecto puede inyectarlo siempre, esté o no habilitado el cache, sin condicionar su código — mismo
+patrón que `NullPermissionService`/`NullTenantProvider`.
+
+`InvalidateRoleAsync` **no invalida en cascada** los permisos efectivos ya cacheados de los usuarios que
+tienen ese rol (rastrear la membresía rol→usuarios de forma eficiente no lo expone Identity, y esta tarea
+no lo incorpora): ese caso queda acotado únicamente por el TTL. Es una decisión consciente, no un
+descuido — invalidar solo la clave directamente afectada (el rol, o el usuario concreto) cubre el caso
+común (asignar/quitar un rol a un usuario puntual) con invalidación inmediata, y acepta una ventana
+acotada y documentada para el caso menos común (cambiar los permisos de un rol con muchos usuarios).
+
+### Límite de correctitud en despliegues multi-instancia
+
+`HybridCache` no propaga la invalidación de la capa L1 (memoria) entre instancias del proceso:
+`RemoveAsync` borra la entrada L2 (Redis) y la copia L1 de la instancia que invoca, pero la copia L1 de
+OTRA instancia sigue vigente hasta que expire por `PermissionCacheOptions.Expiration` — mismo límite ya
+documentado para `ITenantAwareCache` (F1-16: "la escritura a Redis L2 es asíncrona, no asumir consistencia
+inmediata entre instancias"). Esto fija el techo real de staleness de un permiso revocado en un despliegue
+de más de una instancia: nunca indefinido, pero tampoco inmediato en todas las instancias. Un proyecto que
+necesite un techo más bajo ajusta `PermissionCacheOptions.Expiration` en consecuencia.
+
+### Registro
+
+`AddSharedPermissionCache(Action<PermissionCacheOptions>? configureOptions = null)`
+(`Shared.Infrastructure.Security.Permissions`) debe llamarse DESPUÉS de `AddSharedSecurity`/
+`AddSharedOidcAuthentication` (o, como mínimo, `AddSharedPermissionEvaluation`) — decora el
+`IPermissionService` ya registrado; sin ese registro previo, lanza `InvalidOperationException` en el
+arranque (nunca en tiempo de request):
+
+```csharp
+services.AddSharedSecurity<ApplicationUser, ApplicationRole, MiDbContext>(configuration); // RBAC, F2-07
+services.AddSharedPermissionCache(); // F2-09, TTL 60s por defecto
+```
+
+Es idempotente (una segunda llamada no vuelve a envolver el `IPermissionService` ya decorado) y registra
+`ITenantAwareCache`/`HybridCache` si el proyecto todavía no llamó a `AddSharedCaching` por su cuenta.
+`IPermissionCacheInvalidator` resuelve a la MISMA instancia que `IPermissionService` dentro del scope
+(ambos son el mismo `CachedPermissionService`).
+
+### Orden de llamada: `AddSharedPermissionCache` NUNCA antes de `AddSharedSecurity`
+
+El orden "DESPUÉS de `AddSharedSecurity`" de arriba no es solo una recomendación de estilo: invertirlo
+deja el cache sin ningún efecto, de forma silenciosa. `AddSharedSecurity` hace
+`services.AddScoped<IPermissionService, PermissionService<TUser, TRole>>()` -- un `Add` simple, no un
+`Replace` -- así que si se llama DESPUÉS de `AddSharedPermissionCache`, agrega un descriptor de
+`IPermissionService` que gana la resolución sobre el `Replace` que ya había hecho el cache, y
+`CachedPermissionService` queda huérfano (nadie lo resuelve) sin ningún error visible en el arranque:
+
+```csharp
+// INCORRECTO -- compila, arranca, y el cache NUNCA se usa (huérfano):
+services.AddSharedPermissionEvaluation();
+services.AddSharedPermissionCache();
+services.AddSharedSecurity<ApplicationUser, ApplicationRole, MiDbContext>(configuration);
+```
+
+Para el caso concreto de invertir el orden respecto de `AddSharedSecurity`, `AddSharedSecurity` detecta
+en su propio registro que `AddSharedPermissionCache` ya decoró `IPermissionService` (mismo criterio de
+idempotencia que usa `AddSharedPermissionCache`, expuesto internamente como
+`IsPermissionCacheAlreadyApplied`) y lanza `InvalidOperationException` de inmediato en el arranque, con
+el mensaje indicando el reordenamiento correcto -- en vez de dejar el bug pasar desapercibido hasta que
+alguien note en producción que el cache "no cachea".
+
+Esta detección NO puede vivir en `AddSharedPermissionCache` en el momento en que se lo invoca: llamarlo
+justo después de `AddSharedPermissionEvaluation` y ANTES de `AddSharedSecurity` es indistinguible, en ese
+instante, del caso legítimo de un proyecto solo-OIDC (`AddSharedOidcAuthentication` sin Identity local)
+que decide "cachear" un `NullPermissionService` que nunca se va a reemplazar -- un no-op inofensivo que
+varias pruebas de este archivo ejercitan a propósito (`PermissionCacheServiceCollectionExtensionsTests`).
+Por eso el chequeo se hace del lado de `AddSharedSecurity`, que es el único punto donde el framework sabe
+con certeza que la implementación real de RBAC está llegando tarde.
+
 ## Qué NO resuelve F2-07 (alcance de tareas posteriores de la Épica F2-B)
 
 - **F2-08 (ABAC):** implementado. `IAuthorizationPolicyEvaluator` (`Shared.Infrastructure.Security.Abac`)
   combina el permiso RBAC de este evaluador con reglas de negocio basadas en atributos del recurso
   (`Subject`/`Resource`/`Action`/`Context`, monto/empresa/sucursal) — ver `docs/guia-abac.md`.
-- **F2-09 (cache de permisos):** `IPermissionEvaluator`/`IPermissionService` siguen consultando SQL
-  Server (vía `UserManager`/`RoleManager`) en cada evaluación — no hay L1/L2 todavía. No usar el
-  resultado de `EvaluateAsync` como si estuviera cacheado entre requests.
 - **F2-10 (operaciones privilegiadas):** step-up, reevaluación y segregación de funciones no están
   cubiertos por el evaluador de F2-07.
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica
@@ -221,12 +368,42 @@ la llame para garantizar `IPermissionEvaluator` disponible, sin duplicar el regi
 - `tests/Shared.Infrastructure.Security.Tests/OidcAuthenticationServiceCollectionExtensionsTests.cs`:
   `AddSharedOidcAuthentication` registra `IPermissionEvaluator`/`IAuthorizationPolicyProvider`/
   `IAuthorizationHandler` sin necesitar `AddSharedSecurity` (el gap que motivó F2-07).
+- `tests/Shared.Infrastructure.Security.Tests/CachedPermissionServiceTests.cs` (F2-09): prueba de
+  componente contra `HybridCache` REAL (L1 en memoria, sin mocks) -- solo `IPermissionService` está
+  sustituido. Cubre hit/miss para usuario y para rol, aislamiento de cache entre usuarios distintos,
+  aislamiento de cache entre tenants distintos para el mismo `userId` (y que `InvalidateUserAsync` de un
+  tenant no afecta al otro), que el cache de rol SÍ se comparte entre tenants (decisión de diseño
+  documentada arriba), expiración por TTL para ambos métodos, e invalidación explícita para ambos
+  métodos.
+- `tests/Shared.Infrastructure.Security.Tests/Integration/CachedPermissionServiceRedisIntegrationTests.cs`
+  (Testcontainers, Redis real): mismo criterio que `HybridCacheRedisIntegrationTests` (F1-16) -- dos
+  `ServiceProvider`/`HybridCache` independientes (dos instancias del proceso) comparten el valor
+  cacheado a través de Redis L2, para `GetPermissionsForUserAsync` y `GetPermissionsForRoleAsync`; y que
+  `InvalidateUserAsync` borra realmente la entrada de Redis (una instancia nueva, con L1 vacía, recalcula
+  en vez de leer el valor viejo).
+- `tests/Shared.Infrastructure.Security.Tests/PermissionCacheServiceCollectionExtensionsTests.cs`: el
+  registro DI (falla sin `IPermissionService` previo, decora correctamente, `IPermissionService`/
+  `IPermissionCacheInvalidator` resuelven a la misma instancia, aplica el delegado de opciones, es
+  idempotente, decora también un `IPermissionService` registrado directamente por el proyecto).
+- `tests/Shared.Infrastructure.Security.Tests/RoleManagerPermissionExtensionsTests.cs`: `RemovePermissionAsync`
+  (nuevo, simétrico de `AddPermissionAsync`) y los overloads con `IPermissionCacheInvalidator` de ambos
+  métodos.
+- `tests/Shared.Infrastructure.Security.Tests/NullPermissionCacheInvalidatorTests.cs`: el no-op.
+- `tests/Shared.Infrastructure.Security.Tests/SecurityServiceCollectionExtensionsTests.cs`: `AddSharedSecurity`
+  registra `NullPermissionCacheInvalidator` por defecto cuando no se llamó a `AddSharedPermissionCache`;
+  además (fix post-revisión de arquitectura de F2-09) `AddSharedSecurity` lanza `InvalidOperationException`
+  si se lo llama DESPUÉS de `AddSharedPermissionCache` (orden invertido, decorador huérfano) y resuelve el
+  `CachedPermissionService` correctamente cuando el orden es el documentado.
 
 ## Referencias
 
 - `src/Shared.Infrastructure.Security/Permissions/` — `IPermissionEvaluator`/`PermissionEvaluator`,
   `PermissionGrant`/`PermissionGrantSources`/`EffectivePermissions`, `ScopeClaimTypes`,
-  `NullPermissionService`, `PermissionEvaluationServiceCollectionExtensions`.
+  `NullPermissionService`, `PermissionEvaluationServiceCollectionExtensions`,
+  `CachedPermissionService`/`IPermissionCacheInvalidator`/`NullPermissionCacheInvalidator`/
+  `PermissionCacheOptions`/`PermissionCacheServiceCollectionExtensions` (F2-09).
+- `docs/adr/0006-cache-hybridcache-valkey-redis.md` — mecanismo de cache reutilizado por F2-09
+  (`HybridCache`/`ITenantAwareCache`, F1-16) en vez de un mecanismo propio.
 - `src/Shared.Infrastructure.Security/Oidc/OidcRoleClaimsTransformation.cs` y
   `OidcOptions.RoleClaimJsonPaths` — proyección de roles anidados (Keycloak `realm_access.roles`) a
   `ClaimTypes.Role`, registrada por `AddSharedOidcAuthentication` (bugfix de correctitud de F2-07).

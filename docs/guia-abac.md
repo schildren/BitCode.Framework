@@ -216,9 +216,13 @@ consulta redundante a `IPermissionEvaluator` (y, transitivamente, a SQL Server) 
   conocen después de leer la entidad — no hay forma genérica de resolverlos desde la ruta/query string de
   un endpoint sin acoplar el contrato a un endpoint específico. `IAuthorizationPolicyEvaluator` se invoca
   explícitamente desde el handler, con el mismo patrón que cualquier otra validación de negocio.
-- **F2-09 (cache de permisos):** cada `EvaluateAsync` de `IAuthorizationPolicyEvaluator` sigue llamando a
-  `IPermissionEvaluator.EvaluateAsync` (F2-07, sin cache todavía) — no hay L1/L2 sobre la decisión
-  combinada tampoco.
+- **Cache de la decisión combinada:** F2-09 (`docs/guia-rbac-2.md`) cachea las consultas SQL de
+  `IPermissionService` que respaldan `IPermissionEvaluator.EvaluateAsync` — `AuthorizationPolicyEvaluator`
+  se beneficia automáticamente de ese cache (sigue llamando a `IPermissionEvaluator`, sin ningún cambio
+  en este archivo) sin dejar de recalcular el resto de la cadena (permiso RBAC combinado con `IAbacRule`)
+  en cada llamada, porque los atributos del recurso (monto, empresa, sucursal) son datos de la instancia
+  concreta evaluada, no del sujeto — cachear la DECISIÓN combinada requeriría una clave que incluya esos
+  atributos y todavía no existe.
 - **F2-10 (operaciones privilegiadas):** step-up, reevaluación y segregación de funciones no están
   cubiertos.
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica completa
