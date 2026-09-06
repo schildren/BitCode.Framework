@@ -4,12 +4,25 @@
     <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
     <ProjectReference Include="..\Shared.Domain\Shared.Domain.csproj" />
     <ProjectReference Include="..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <!-- F2-02: el intercambio de code por tokens y la resolución del documento de metadata OIDC son
+         llamadas HTTP salientes; reutilizan la pipeline de resiliencia estándar del framework (F1-26,
+         AddResilientHttpClient) en vez de un HttpClient crudo. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Http\Shared.Infrastructure.Http.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="10.0.11" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
+    <!-- F2-02: cifra/firma la cookie de correlación (state/code_verifier/nonce) de Authorization Code +
+         PKCE. Paquete NuGet standalone (no requiere FrameworkReference a Microsoft.AspNetCore.App). -->
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.11" />
+    <!-- F2-03: IBffSessionStore persiste la sesión server-side del BFF sobre IDistributedCache, la
+         misma abstracción que ya usa Shared.Infrastructure.Caching (F1-16/F1-25), reutilizada en vez de
+         introducir un mecanismo de sesión nuevo. AddDistributedMemoryCache (fallback de desarrollo sin
+         Redis configurado) vive en el paquete .Memory. -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11" />

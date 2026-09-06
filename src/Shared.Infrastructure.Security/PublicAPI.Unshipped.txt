@@ -57,6 +57,102 @@ BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Token.get -> s
 BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.Token.set -> void
 BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.UserId.get -> System.Guid
 BitCode.Framework.Shared.Infrastructure.Security.Jwt.RefreshToken.UserId.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationCodeExchanger
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationCodeExchanger.ExchangeAsync(string! code, string! codeVerifier, string! redirectUri, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationCodeStateProtector
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationCodeStateProtector.Protect(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState! state) -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationCodeStateProtector.Unprotect(string! protectedState) -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationRequestFactory
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcAuthorizationRequestFactory.CreateAsync(string? returnUrl, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcDiscoveryDocumentProvider
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcDiscoveryDocumentProvider.GetAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeExchanger
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeExchanger.ExchangeAsync(string! code, string! codeVerifier, string! redirectUri, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeExchanger.OidcAuthorizationCodeExchanger(System.Net.Http.HttpClient! httpClient, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions!>! oidcOptions, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcDiscoveryDocumentProvider! discoveryDocumentProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.CorrelationCookieLifetime.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.CorrelationCookieLifetime.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.OidcAuthorizationCodeFlowOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.RedirectUri.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.RedirectUri.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.Scope.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.Scope.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.CodeVerifier.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.CodeVerifier.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Deconstruct(out string! State, out string! CodeVerifier, out string! Nonce, out string! RedirectUri, out string? ReturnUrl) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Nonce.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Nonce.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.OidcAuthorizationCodeState(string! State, string! CodeVerifier, string! Nonce, string! RedirectUri, string? ReturnUrl) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.RedirectUri.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.RedirectUri.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.ReturnUrl.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.ReturnUrl.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.State.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.State.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeStateProtector
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeStateProtector.OidcAuthorizationCodeStateProtector(Microsoft.AspNetCore.DataProtection.IDataProtectionProvider! dataProtectionProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeStateProtector.Protect(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState! state) -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeStateProtector.Unprotect(string! protectedState) -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.AuthorizationUri.get -> System.Uri!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.AuthorizationUri.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.Deconstruct(out System.Uri! AuthorizationUri, out BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState! State) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.OidcAuthorizationRequest(System.Uri! AuthorizationUri, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState! State) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.State.get -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.State.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequestFactory
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequestFactory.CreateAsync(string? returnUrl, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequestFactory.OidcAuthorizationRequestFactory(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.IOidcDiscoveryDocumentProvider! discoveryDocumentProvider, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions!>! oidcOptions, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions!>! flowOptions) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.AuthorizationEndpoint.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.AuthorizationEndpoint.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.TokenEndpoint.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.TokenEndpoint.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentCache
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentCache.GetOrAddAsync(string! metadataAddress, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument!>!>! factory, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentCache.OidcDiscoveryDocumentCache() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentProvider
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentProvider.GetAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentProvider.OidcDiscoveryDocumentProvider(System.Net.Http.HttpClient! httpClient, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions!>! oidcOptions, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocumentCache! cache) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.AccessToken.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.AccessToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.Deconstruct(out string! AccessToken, out string? IdToken, out string? RefreshToken, out string! TokenType, out int? ExpiresInSeconds) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.ExpiresInSeconds.get -> int?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.ExpiresInSeconds.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.IdToken.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.IdToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.OidcTokenResponse(string! AccessToken, string? IdToken, string? RefreshToken, string! TokenType, int? ExpiresInSeconds) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.RefreshToken.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.RefreshToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.TokenType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.TokenType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.PkceGenerator
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcAuthenticationServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.Audience.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.Audience.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.Authority.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.Authority.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.ClientId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.ClientId.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.ClockSkew.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.ClockSkew.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.MetadataAddress.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.MetadataAddress.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.OidcOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RequireHttpsMetadata.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RequireHttpsMetadata.set -> void
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionService.GetPermissionsForUserAsync(System.Guid userId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<string!>!>!
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler
@@ -78,9 +174,139 @@ BitCode.Framework.Shared.Infrastructure.Security.Permissions.RequirePermissionAt
 BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions
 BitCode.Framework.Shared.Infrastructure.Security.SecurityServiceCollectionExtensions
 const BitCode.Framework.Shared.Infrastructure.Security.Jwt.JwtOptions.SectionName = "Jwt" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.SectionName = "Oidc:AuthorizationCode" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.SectionName = "Oidc" -> string!
 const BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionClaimTypes.Permission = "permission" -> string!
 override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> void
 override BitCode.Framework.Shared.Infrastructure.Security.Identity.MultiTenantIdentityDbContext<TUser, TRole>.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.ToString() -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.ToString() -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.ToString() -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.ToString() -> string!
 override BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionAuthorizationHandler.HandleRequirementAsync(Microsoft.AspNetCore.Authorization.AuthorizationHandlerContext! context, BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionRequirement! requirement) -> System.Threading.Tasks.Task!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeServiceCollectionExtensions.AddSharedOidcAuthorizationCodeFlow(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeState? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationRequest? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.PkceGenerator.CreateCodeChallenge(string! codeVerifier) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.PkceGenerator.GenerateCodeVerifier(int length = 64) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.PkceGenerator.GenerateCorrelationToken(int byteLength = 32) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcAuthenticationServiceCollectionExtensions.AddSharedOidcAuthentication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.Action<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions!>? configureJwtBearer = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions.AddPermissionAsync<TRole>(this Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager, TRole! role, string! permission) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
 static BitCode.Framework.Shared.Infrastructure.Security.SecurityServiceCollectionExtensions.AddSharedSecurity<TUser, TRole, TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.PostLogoutRedirectUri.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcAuthorizationCodeFlowOptions.PostLogoutRedirectUri.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.Deconstruct(out string! AuthorizationEndpoint, out string! TokenEndpoint, out string? EndSessionEndpoint) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.EndSessionEndpoint.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.EndSessionEndpoint.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcDiscoveryDocument.OidcDiscoveryDocument(string! AuthorizationEndpoint, string! TokenEndpoint, string? EndSessionEndpoint = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.AccessToken.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.AccessToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.AccessTokenExpiresAtUtc.get -> System.DateTimeOffset?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.AccessTokenExpiresAtUtc.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.BffSession(string! AccessToken, string? RefreshToken, string? IdToken, System.DateTimeOffset? AccessTokenExpiresAtUtc, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Claims) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.Claims.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.Claims.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.Deconstruct(out string! AccessToken, out string? RefreshToken, out string? IdToken, out System.DateTimeOffset? AccessTokenExpiresAtUtc, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Claims) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.IdToken.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.IdToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.RefreshToken.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.RefreshToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.BffSessionOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.CookieName.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.CookieName.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.IdleTimeout.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.IdleTimeout.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.CreateAsync(BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession! session, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.DistributedCacheBffSessionStore(Microsoft.Extensions.Caching.Distributed.IDistributedCache! cache, Microsoft.AspNetCore.DataProtection.IDataProtectionProvider! dataProtectionProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.GetAsync(string! sessionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession?>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.RefreshAsync(string! sessionId, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.RemoveAsync(string! sessionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.RenewAsync(string! sessionId, BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession! session, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.CreateAsync(BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession! session, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.GetAsync(string! sessionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession?>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.RefreshAsync(string! sessionId, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.RemoveAsync(string! sessionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.RenewAsync(string! sessionId, BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession! session, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+const BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionOptions.SectionName = "Bff:Session" -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSession? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.BffSessionServiceCollectionExtensions.AddSharedBffSessionStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.IServiceTokenProvider
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.IServiceTokenProvider.GetAccessTokenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.AccessToken.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.AccessToken.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.Deconstruct(out string! AccessToken, out string! TokenType, out System.DateTimeOffset ExpiresAtUtc) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.Equals(BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.ExpiresAtUtc.get -> System.DateTimeOffset
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.ExpiresAtUtc.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.ServiceAccessToken(string! AccessToken, string! TokenType, System.DateTimeOffset ExpiresAtUtc) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.TokenType.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.TokenType.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityAuthenticationHandler
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityAuthenticationHandler.ServiceIdentityAuthenticationHandler(BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.IServiceTokenProvider! tokenProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.Authority.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.Authority.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.CertificateThumbprint.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.CertificateThumbprint.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.ClientId.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.ClientId.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.ClientSecret.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.ClientSecret.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.MetadataAddress.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.MetadataAddress.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.RequireHttpsMetadata.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.RequireHttpsMetadata.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.Scope.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.Scope.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.ServiceIdentityOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenCache
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenCache.GetOrRefreshAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken!>!>!>! fetchNewToken, System.TimeSpan refreshSkew, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenCache.GetOrResolveTokenEndpointAsync(System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task<string!>!>! resolveTokenEndpoint, System.TimeSpan lifetime, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenCache.ServiceTokenCache() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenProvider
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenProvider.GetAccessTokenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenProvider.ServiceTokenProvider(System.Net.Http.HttpClient! httpClient, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions!>! options, BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceTokenCache! cache) -> void
+const BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityOptions.SectionName = "Oidc:ServiceIdentity" -> string!
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.operator !=(BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken.operator ==(BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken? left, BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceAccessToken? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityServiceCollectionExtensions.AddServiceIdentityAuthentication(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder! builder) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static BitCode.Framework.Shared.Infrastructure.Security.Oidc.ServiceIdentity.ServiceIdentityServiceCollectionExtensions.AddSharedServiceIdentity(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.IBffSessionStore.RevokeAllForSubjectAsync(string! subject, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.Bff.DistributedCacheBffSessionStore.RevokeAllForSubjectAsync(string! subject, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksAutomaticRefreshInterval.get -> System.TimeSpan?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksAutomaticRefreshInterval.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksMinimumRefreshInterval.get -> System.TimeSpan?
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.JwksMinimumRefreshInterval.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RefreshOnIssuerKeyNotFound.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Oidc.OidcOptions.RefreshOnIssuerKeyNotFound.set -> void

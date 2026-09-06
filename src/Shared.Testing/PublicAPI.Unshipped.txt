@@ -1,4 +1,19 @@
 #nullable enable
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.Authority.get -> string!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.InitializeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.KeycloakContainerFixture() -> void
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.OtherRealmAuthority.get -> string!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.RequestAccessTokenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.RequestAccessTokenFromOtherRealmAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Testing.KeycloakContainerFixture.RotateSigningKeyAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.AccessTokenLifespanSeconds = 5 -> int
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.ClientId = "bitcode-api" -> string!
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.ClientSecret = "bitcode-test-client-secret" -> string!
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.OtherRealmClientId = "bitcode-api-other" -> string!
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.OtherRealmName = "bitcode-test-other" -> string!
+const BitCode.Framework.Shared.Testing.KeycloakContainerFixture.RealmName = "bitcode-test" -> string!
 BitCode.Framework.Shared.Testing.RedisContainerFixture
 BitCode.Framework.Shared.Testing.RedisContainerFixture.ConnectionString.get -> string!
 BitCode.Framework.Shared.Testing.RedisContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!

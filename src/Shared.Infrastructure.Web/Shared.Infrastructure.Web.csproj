@@ -4,6 +4,11 @@
     <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
     <ProjectReference Include="..\Shared.Domain\Shared.Domain.csproj" />
     <ProjectReference Include="..\Shared.Modularity\Shared.Modularity.csproj" />
+    <!-- F2-02: MapSharedOidcAuthorizationCodeLogin consume las abstracciones del flujo Authorization
+         Code + PKCE (IOidcAuthorizationRequestFactory/IOidcAuthorizationCodeExchanger/
+         IOidcAuthorizationCodeStateProtector); la dirección de dependencia es Web -> Security, nunca
+         al revés, igual que el resto de los building blocks de infraestructura de este proyecto. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +37,11 @@
          aceptación "Validación automática" sin necesitar Microsoft.OpenApi.Readers, que todavía no tiene
          una versión estable compatible con Microsoft.OpenApi 2.x). -->
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <!-- F2-03 (BFF): proxy hacia las APIs protegidas, adjuntando el access token guardado en la sesión
+         server-side (ver BffAccessTokenRequestTransform). YARP es la tecnología de gateway/reverse
+         proxy fijada por el Plan Maestro (sección 2) y formalizada en el ADR 0007, que explícitamente
+         habilita su construcción (no su habilitación productiva) para F2-03. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
 
 

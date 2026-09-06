@@ -21,6 +21,7 @@ Se adopta YARP como tecnología de API Gateway / reverse proxy para BitCode, a i
 
 - No implica código nuevo en esta tarea; formaliza la dirección para F2-03 (BFF) y para la Fase 4 (runtime de alta disponibilidad).
 - El diseño del gateway debe considerar desde el inicio autenticación (tokens no expuestos al navegador en BFF, ADR 0004) y observabilidad (trazas propagadas end-to-end, `docs/architecture-principles.md` sección 4).
+- **Actualización F2-03 (2026-09-06):** el paquete `Yarp.ReverseProxy` ya se incorporó al código (`src/Shared.Infrastructure.Web/Security/Bff/BffAccessTokenRequestTransform.cs`, `BffProxyServiceCollectionExtensions.AddSharedBffProxy`, `BffProxyEndpointRouteBuilderExtensions.MapSharedBffProxy`) como el proxy del BFF hacia las APIs protegidas, adjuntando el access token de la sesión server-side. Esto es exactamente "diseño y construcción del gateway" que este ADR ya habilitaba sin aprobación adicional -- **no constituye habilitación de tráfico productivo** (sección 13 del Plan Maestro): la topología de rutas/clusters se declara en configuración (`ReverseProxy:Routes`/`Clusters`) por el proyecto consumidor, y desplegar esto contra tráfico real de producción sigue siendo una decisión separada que requiere aprobación humana explícita.
 
 ## Riesgos y mitigación
 
