@@ -8,4 +8,6 @@ public class MultiTenantTestDbContext(DbContextOptions<MultiTenantTestDbContext>
     : MultiTenantDbContext(options, tenantProvider)
 {
     public DbSet<TestEntity> TestEntities => Set<TestEntity>();
+
+    public DbSet<ConcurrentTestEntity> ConcurrentTestEntities => Set<ConcurrentTestEntity>();
 }

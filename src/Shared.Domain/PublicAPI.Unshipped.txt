@@ -1,4 +1,6 @@
 #nullable enable
+BitCode.Framework.Shared.Domain.Persistence.ConcurrencyConflictException
+BitCode.Framework.Shared.Domain.Persistence.ConcurrencyConflictException.ConcurrencyConflictException(string! message, System.Exception! innerException) -> void
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider.IsMultiTenancyEnabled.get -> bool
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider.TenantId.get -> System.Guid?

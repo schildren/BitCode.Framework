@@ -1,4 +1,6 @@
 #nullable enable
+BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator.ApplyConcurrencyTokens(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.AuditableEntitySaveChangesInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor

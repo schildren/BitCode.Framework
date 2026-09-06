@@ -8,8 +8,27 @@ public class UnitOfWork(DbContext dbContext) : IUnitOfWork, IAsyncDisposable
 {
     private IDbContextTransaction? _currentTransaction;
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        dbContext.SaveChangesAsync(cancellationToken);
+    /// <remarks>
+    /// F1-08 (concurrencia optimista): traduce el <see cref="DbUpdateConcurrencyException"/> de EF
+    /// Core —lanzado cuando el token de concurrencia (<c>RowVersion</c>) de una entidad ya cambió
+    /// desde que se cargó— a un <see cref="ConcurrencyConflictException"/> propio del framework.
+    /// <c>Shared.Application</c> no referencia EF Core, así que <c>TransactionBehavior</c> solo puede
+    /// capturar esta excepción de dominio, nunca el tipo concreto de EF Core, para convertirla de
+    /// forma uniforme en un <c>Result.Failure</c>.
+    /// </remarks>
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyConflictException(
+                "Uno o más registros fueron modificados o eliminados por otra operación entre la carga y el guardado.",
+                exception);
+        }
+    }
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -30,7 +49,7 @@ public class UnitOfWork(DbContext dbContext) : IUnitOfWork, IAsyncDisposable
 
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await SaveChangesAsync(cancellationToken);
             await _currentTransaction.CommitAsync(cancellationToken);
         }
         catch

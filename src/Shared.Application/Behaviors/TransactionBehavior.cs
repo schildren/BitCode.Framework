@@ -3,6 +3,7 @@ using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Kernel;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace BitCode.Framework.Shared.Application.Behaviors;
 
@@ -46,9 +47,25 @@ public class TransactionBehavior<TRequest, TResponse>(
     {
         var response = await next();
 
-        if (response.IsSuccess)
+        if (!response.IsSuccess)
+        {
+            return response;
+        }
+
+        try
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (ConcurrencyConflictException exception)
+        {
+            // F1-08: un conflicto de concurrencia optimista es un error de negocio esperado (alguien
+            // más ya modificó el registro), no una excepción inesperada — se traduce aquí mismo a un
+            // Result.Failure uniforme en vez de dejarlo propagar hasta GlobalExceptionHandler.
+            logger.LogInformation(
+                exception,
+                "{RequestName} generó un conflicto de concurrencia al guardar cambios",
+                typeof(TRequest).Name);
+            return CreateConcurrencyConflictResult<TResponse>();
         }
 
         return response;
@@ -84,6 +101,19 @@ public class TransactionBehavior<TRequest, TResponse>(
 
             return response;
         }
+        catch (ConcurrencyConflictException exception)
+        {
+            // F1-08: mismo criterio de "manejo uniforme" que HandleSimpleAsync — un conflicto de
+            // concurrencia optimista no debe propagarse como excepción sin controlar hasta
+            // GlobalExceptionHandler (que lo trataría como 500); se revierte la transacción y se
+            // traduce a un Result.Failure con Error.Type = Conflict (409).
+            await unitOfWork.RollbackAsync(cancellationToken);
+            logger.LogInformation(
+                exception,
+                "{RequestName} generó un conflicto de concurrencia; se revirtió la transacción",
+                requestName);
+            return CreateConcurrencyConflictResult<TResponse>();
+        }
         catch (Exception exception)
         {
             // Mismo criterio: cerrar la transacción (liberar locks) antes de cualquier trabajo
@@ -92,5 +122,30 @@ public class TransactionBehavior<TRequest, TResponse>(
             logger.LogError(exception, "Excepción en {RequestName}; se revirtió la transacción", requestName);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Construye un <c>Result.Failure</c>/<c>Result&lt;TValue&gt;.Failure</c> con
+    /// <see cref="ConcurrencyError.Conflict"/> del tipo concreto <typeparamref name="TResult"/>
+    /// (mismo patrón de reflexión que <c>ValidationBehavior.CreateValidationFailureResult</c>, ya que
+    /// <typeparamref name="TResult"/> puede ser <c>Result</c> o <c>Result&lt;TValue&gt;</c> según el
+    /// comando).
+    /// </summary>
+    private static TResult CreateConcurrencyConflictResult<TResult>()
+        where TResult : Result
+    {
+        if (typeof(TResult) == typeof(Result))
+        {
+            return (TResult)(object)Result.Failure(ConcurrencyError.Conflict);
+        }
+
+        var valueType = typeof(TResult).GetGenericArguments()[0];
+
+        var failureMethod = typeof(Result)
+            .GetMethods()
+            .Single(m => m.Name == nameof(Result.Failure) && m.IsGenericMethod)
+            .MakeGenericMethod(valueType);
+
+        return (TResult)failureMethod.Invoke(null, [ConcurrencyError.Conflict])!;
     }
 }

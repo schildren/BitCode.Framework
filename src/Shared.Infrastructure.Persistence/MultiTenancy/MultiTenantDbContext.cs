@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -25,5 +26,6 @@ public abstract class MultiTenantDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
+        ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
     }
 }

@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -40,5 +41,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
     {
         base.OnModelCreating(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
+        ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
     }
 }

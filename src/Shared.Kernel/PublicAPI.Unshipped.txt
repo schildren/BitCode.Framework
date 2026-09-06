@@ -1,4 +1,8 @@
 #nullable enable
+BitCode.Framework.Shared.Kernel.ConcurrencyError
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.get -> byte[]!
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.set -> void
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot() -> void
 BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot(TId id) -> void
@@ -32,6 +36,8 @@ BitCode.Framework.Shared.Kernel.ErrorType.Forbidden = 5 -> BitCode.Framework.Sha
 BitCode.Framework.Shared.Kernel.ErrorType.NotFound = 2 -> BitCode.Framework.Shared.Kernel.ErrorType
 BitCode.Framework.Shared.Kernel.ErrorType.Unauthorized = 4 -> BitCode.Framework.Shared.Kernel.ErrorType
 BitCode.Framework.Shared.Kernel.ErrorType.Validation = 1 -> BitCode.Framework.Shared.Kernel.ErrorType
+const BitCode.Framework.Shared.Kernel.ConcurrencyError.Code = "Concurrency.Conflict" -> string!
+static readonly BitCode.Framework.Shared.Kernel.ConcurrencyError.Conflict -> BitCode.Framework.Shared.Kernel.Error!
 BitCode.Framework.Shared.Kernel.IAuditedEntity
 BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedAtUtc.get -> System.DateTime
 BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedAtUtc.set -> void
