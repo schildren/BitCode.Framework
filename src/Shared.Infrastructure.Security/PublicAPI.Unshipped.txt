@@ -570,3 +570,57 @@ const BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecr
 const BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions.SectionName = "Secrets" -> string!
 const BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.SectionName = "Secrets:Vault" -> string!
 static BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderServiceCollectionExtensions.AddSharedSecretProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor.AuditActor(string! id, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType type) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor.Id.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor.Type.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType.Service = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType.System = 2 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType.User = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActorType
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Action.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Actor.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.AuditEntry(System.Guid id, System.DateTime occurredAtUtc, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor! actor, System.Guid? tenantId, string! action, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource! resource, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome outcome, string? reason, string? correlationId, string? traceId, string? ipAddress, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! metadata, string! auditHash, string? previousAuditHash = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.AuditHash.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.CorrelationId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Id.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.IpAddress.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Metadata.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.OccurredAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Outcome.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.PreviousAuditHash.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Reason.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.Resource.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry.TraceId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Action.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Actor.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.AuditEntryRequest(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor! actor, System.Guid? tenantId, string! action, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource! resource, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome outcome, string? reason = null, string? correlationId = null, string? traceId = null, string? ipAddress = null, System.Collections.Generic.IReadOnlyDictionary<string!, string?>? metadata = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.CorrelationId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.IpAddress.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Metadata.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Outcome.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Reason.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Resource.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.TraceId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditHashCalculator
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Denied = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Error = 2 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Success = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource.AuditResource(string! type, string? id = null) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource.Id.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource.Type.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter.WriteAsync(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter
+BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter.Entries.get -> System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter.InMemoryAuditWriter() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter.WriteAsync(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>!>!
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditHashCalculator.Compute(System.Guid id, System.DateTime occurredAtUtc, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor! actor, System.Guid? tenantId, string! action, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource! resource, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome outcome, string? reason, string? correlationId, string? traceId, string? ipAddress, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! metadata) -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditServiceCollectionExtensions.AddSharedAuditing(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
