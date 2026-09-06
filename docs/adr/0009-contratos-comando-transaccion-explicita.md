@@ -134,3 +134,58 @@ que el diseño de este ADR ya cumple la reducción de duración exigida, sin req
   pipeline completo de MediatR (`AddSharedApplication` + `TransactionBehavior` + `AddSharedPersistence`),
   se verificó que tras el fallo **ningún** dato queda persistido, ni siquiera el de la primera
   escritura ya enviada al motor antes de que la segunda fallara.
+
+## Addendum — F1-09 (Unit of Work: ownership, nesting y límites transaccionales)
+
+F1-09 revisó `UnitOfWork` bajo el criterio de aceptación "Sin commits implícitos inesperados",
+cubriendo tres preguntas concretas:
+
+- **Ownership (¿quién puede iniciar/cerrar una transacción o llamar `SaveChangesAsync`?):** se
+  relevó todo el repositorio con búsqueda de texto (`dbContext.SaveChangesAsync`,
+  `Database.BeginTransactionAsync`, `IDbContextTransaction.CommitAsync`/`RollbackAsync`) y se
+  confirmó que **solo** `UnitOfWork` (`src/Shared.Infrastructure.Persistence/UnitOfWork.cs`) toca el
+  `DbContext`/`Database` subyacente directamente. `RepositoryBase` no expone ni implementa
+  `SaveChangesAsync` — solo `AddAsync`/`Update`/`Remove`/consultas sobre el `DbSet`. Ningún handler
+  del repositorio (samples incluidos) tiene inyectado un `DbContext` directamente; solo reciben
+  `IRepository<T, TId>` y/o `IUnitOfWork`. **No se encontró ninguna violación real**; no fue necesario
+  remover ningún método de la superficie pública de `RepositoryBase` porque nunca existió ahí.
+- **Nesting (¿qué pasa si un `ITransactionalCommand` despacha otro comando vía `ISender` dentro del
+  mismo scope?):** como `IUnitOfWork` se registra `Scoped` sobre el mismo `DbContext` (ver
+  `PersistenceServiceCollectionExtensions.AddSharedPersistence`), un comando anidado en el mismo scope
+  comparte la misma instancia de `UnitOfWork` y, por lo tanto, la misma transacción física. Se
+  construyó un caso de prueba real (`OuterTransactionalCommand`/`InnerTransactionalCommand`,
+  `tests/Shared.Infrastructure.Persistence.Tests/Integration/TransactionBehaviorIntegrationTests.cs`)
+  que reproduce este escenario contra SQL Server real vía Testcontainers y confirmó un **hallazgo
+  real**: antes de este cambio, el `CommitAsync` del comando interno confirmaba y disponía la
+  transacción física completa de forma prematura (el campo `_currentTransaction` era compartido y se
+  ponía en `null` al primer commit); cuando el comando externo intentaba confirmar su propio trabajo
+  posterior, `CommitAsync` fallaba con `InvalidOperationException` ("No hay una transacción activa
+  para confirmar") — un commit implícito e inesperado exactamente del tipo que el criterio de
+  aceptación de esta tarea busca eliminar. **Corrección aplicada:** `UnitOfWork` agrega un contador
+  `_transactionDepth`: `BeginTransactionAsync` solo abre la transacción física en el nivel más externo
+  (los niveles internos incrementan el contador y reutilizan la transacción existente sin abrir una
+  segunda) y `CommitAsync` solo confirma/dispone físicamente en el nivel más externo (los niveles
+  internos solo hacen `flush` vía `SaveChangesAsync` y decrementan el contador). Se verificó con el
+  mismo test, ahora en verde, que las tres escrituras (externa-antes, interna, externa-después) quedan
+  en una única transacción física y se confirman todas juntas en el commit del nivel externo.
+- **Límites transaccionales (¿qué pasa si el comando anidado falla?):** se decidió que
+  `RollbackAsync`, sea invocado desde el nivel interno o el externo, siempre revierte inmediatamente
+  la transacción física **completa** — no hay "rollback parcial" de un nivel anidado. Se descartó
+  implementar rollback parcial vía *savepoints* de SQL Server (`SaveTransaction`/`RollbackTo`) por ser
+  una superficie nueva y más compleja, sin necesidad de negocio identificada hoy, y porque ambos
+  comandos comparten el mismo `DbContext`/`ChangeTracker`: una falla del comando anidado ya deja
+  entidades del comando contenedor en un estado potencialmente inconsistente en memoria, así que
+  revertir todo es la opción más segura por defecto. Se verificó con un segundo test de integración
+  (`NestedTransactionalCommand_WhenInnerFails_RollsBackOuterWriteBeforeToo`) que, ante el fallo del
+  comando interno, ni siquiera la escritura "antes" del comando externo (ya enviada a SQL Server con un
+  `SaveChangesAsync` intermedio) queda persistida.
+- **Commits implícitos fuera del pipeline:** se revisó si algo distinto del pipeline explícito
+  (`TransactionBehavior`/`UnitOfWork.CommitAsync`) podía disparar un `SaveChangesAsync` — por ejemplo,
+  un `Dispose`/`DisposeAsync` que hiciera flush, o un getter con efecto secundario. No existe tal
+  código: `UnitOfWork.DisposeAsync` solo revierte una transacción todavía abierta (nunca confirma), y
+  ningún otro componente del framework llama `SaveChangesAsync`/`CommitAsync` fuera de
+  `TransactionBehavior`. Sin hallazgos adicionales en este punto.
+
+No se requirió ningún ADR nuevo ni un cambio de contrato público (`IUnitOfWork` no cambió su forma);
+el ajuste es interno a la implementación de `UnitOfWork` y por eso se documenta como addendum de este
+mismo ADR en lugar de uno nuevo.
