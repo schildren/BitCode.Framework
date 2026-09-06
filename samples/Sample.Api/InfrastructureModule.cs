@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Application;
 using BitCode.Framework.Shared.Infrastructure.Persistence;
 using BitCode.Framework.Shared.Infrastructure.Web;
+using BitCode.Framework.Shared.Infrastructure.Web.HealthChecks;
 using BitCode.Framework.Shared.Infrastructure.Web.Modularity;
 using BitCode.Framework.Shared.Modularity;
 using Microsoft.AspNetCore.Builder;
@@ -44,5 +45,9 @@ public class InfrastructureModule : IWebFrameworkModule
     public void ConfigureApplication(WebApplication app)
     {
         app.UseExceptionHandler();
+
+        // F1-25: /health/live (liveness, sin dependencias externas) y /health/ready (readiness,
+        // verifica SQL Server -- y Redis si estuviera configurado) -- ver docs/guia-health-checks.md.
+        app.MapSharedHealthChecks();
     }
 }

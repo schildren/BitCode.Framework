@@ -3,6 +3,7 @@ using BitCode.Framework.Shared.Domain.Inbox;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Security;
+using BitCode.Framework.Shared.Infrastructure.Persistence.HealthChecks;
 using BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Inbox;
@@ -130,6 +131,15 @@ public static class PersistenceServiceCollectionExtensions
         // bien (ver docs/guia-hot-paths.md). Comparte el mismo DbContext de scope que IRepository/
         // IReadRepository/IUnitOfWork de arriba — no abre una conexión ni un DbContext propio.
         services.AddScoped<IHotPathQueryExecutor, HotPathQueryExecutor>();
+
+        // F1-25: check de READINESS — confirma que SQL Server acepta conexión sin ejecutar ninguna
+        // consulta de negocio. Etiquetado "ready": solo el endpoint /health/ready (Shared.
+        // Infrastructure.Web, MapSharedHealthChecks) lo ejecuta; /health/live nunca lo toca por
+        // diseño (ver docs/guia-health-checks.md). AddHealthChecks() es idempotente — un proyecto
+        // que también llame AddSharedCaching (F1-16) agrega su propio check "ready" sobre el mismo
+        // builder.
+        services.AddHealthChecks()
+            .AddCheck<DbContextHealthCheck>("sql-server", tags: ["ready"]);
 
         return services;
     }

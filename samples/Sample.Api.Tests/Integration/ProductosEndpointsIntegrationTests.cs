@@ -22,6 +22,7 @@ namespace Sample.Api.Tests.Integration;
 /// era excluido por el filtro de CI <c>FullyQualifiedName!~Integration</c>, lo que podía producir
 /// falsos rojos en entornos/runners sin Docker.
 /// </summary>
+[Collection(SampleApiSequentialCollection.Name)]
 public class ProductosEndpointsIntegrationTests : IAsyncLifetime
 {
     private readonly SqlServerContainerFixture _sqlServerFixture = new();

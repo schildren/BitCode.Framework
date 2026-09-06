@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Domain.MultiTenancy;
+using BitCode.Framework.Shared.Infrastructure.Caching.HealthChecks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -28,6 +29,13 @@ public static class CachingServiceCollectionExtensions
         if (!string.IsNullOrWhiteSpace(options.RedisConnectionString))
         {
             services.AddStackExchangeRedisCache(redis => redis.Configuration = options.RedisConnectionString);
+
+            // F1-25: check de READINESS -- solo tiene sentido (y solo puede resolver
+            // IDistributedCache) cuando Redis está efectivamente configurado como L2. Etiquetado
+            // "ready", mismo criterio que el check de SQL Server de AddSharedPersistence:
+            // AddHealthChecks() es idempotente entre ambos métodos.
+            services.AddHealthChecks()
+                .AddCheck<RedisDistributedCacheHealthCheck>("redis", tags: ["ready"]);
         }
 
         services.AddHybridCache();

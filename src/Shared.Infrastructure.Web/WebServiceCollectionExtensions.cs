@@ -54,4 +54,22 @@ public static class WebServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Registra <c>HealthCheckService</c> (F1-25) sin ningún check propio. Un proyecto que ya llama
+    /// <c>AddSharedPersistence</c>/<c>AddSharedCaching</c> no necesita invocar este método: ambos
+    /// registran sus propios checks ("sql-server"/"redis", tag "ready") llamando también
+    /// <c>services.AddHealthChecks()</c>, que es idempotente entre sí. Este método existe para un
+    /// proyecto sin persistencia/cache que igual quiera exponer <c>/health/live</c> vía
+    /// <see cref="HealthChecks.HealthCheckEndpointRouteBuilderExtensions.MapSharedHealthChecks"/> —
+    /// sin al menos una llamada a <c>AddHealthChecks()</c> en algún punto del registro,
+    /// <c>MapHealthChecks</c> no puede resolver <c>HealthCheckService</c> del contenedor. Ver
+    /// <c>docs/guia-health-checks.md</c>.
+    /// </summary>
+    public static IServiceCollection AddSharedHealthChecks(this IServiceCollection services)
+    {
+        services.AddHealthChecks();
+
+        return services;
+    }
 }
