@@ -54,6 +54,14 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddSingleton<IShardConnectionStringProvider>(
             _ => new SingleConnectionStringShardProvider(connectionString));
 
+        // F1-14 (estrategia T3, contratos y operación): por defecto ningún tenant tiene base de
+        // datos dedicada — un catálogo vacío es "cero cambio de comportamiento" para T1/T2, igual
+        // que los defaults de IShardResolver/IShardConnectionStringProvider de arriba. Un proyecto
+        // que adopte T3 reemplaza IDedicatedTenantDatabaseCatalog por una implementación productiva
+        // (tabla de control en SQL Server) ANTES de llamar a este método.
+        services.TryAddSingleton<IDedicatedTenantDatabaseCatalog, InMemoryDedicatedTenantDatabaseCatalog>();
+        services.TryAddScoped<DedicatedTenantDatabaseMigrator>();
+
         services.AddScoped<AuditableEntitySaveChangesInterceptor>();
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<TenantSaveChangesInterceptor>();

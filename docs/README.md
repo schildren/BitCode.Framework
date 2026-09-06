@@ -51,3 +51,4 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0008](adr/0008-licencias-open-core.md) | Licencias: Open-Core (Apache-2.0 + propietario) | Proposed |
 | [0009](adr/0009-contratos-comando-transaccion-explicita.md) | Comandos: transacción explícita solo con `ITransactionalCommand` | Accepted |
 | [0010](adr/0010-tenancy-estrategia-t2-sharding-por-grupos-de-tenants.md) | Tenancy: contratos y prototipo de la estrategia T2 (sharding por grupos de tenants) | Proposed |
+| [0011](adr/0011-tenancy-estrategia-t3-base-dedicada-por-tenant.md) | Tenancy: contratos y operación de la estrategia T3 (base dedicada por tenant) | Proposed |

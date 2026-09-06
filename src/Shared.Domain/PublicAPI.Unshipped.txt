@@ -27,6 +27,8 @@ BitCode.Framework.Shared.Domain.MultiTenancy.IShardConnectionStringProvider
 BitCode.Framework.Shared.Domain.MultiTenancy.IShardConnectionStringProvider.GetConnectionStringAsync(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore.TryGetShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId?>!
+BitCode.Framework.Shared.Domain.MultiTenancy.IDedicatedTenantDatabaseCatalog
+BitCode.Framework.Shared.Domain.MultiTenancy.IDedicatedTenantDatabaseCatalog.GetDedicatedTenantIdsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<System.Guid>!>!
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>.AnyAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 BitCode.Framework.Shared.Domain.Persistence.IReadRepository<TEntity, TId>.CountAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
