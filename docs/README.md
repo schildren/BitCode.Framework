@@ -20,3 +20,9 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 - [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
+
+## Plan Maestro vigente
+
+- [plan-maestro-bitcode-ia.md](plan-maestro-bitcode-ia.md) — plan de evolución hacia plataforma empresarial (Fases 0-10), documento rector actual.
+- [inventario-tecnico.md](inventario-tecnico.md) — inventario técnico versionado (F0-01): estructura de la solución, paquetes, dependencias entre proyectos, cobertura de pruebas, pipeline CI y brechas frente al Plan Maestro.
+- [linea-base-rendimiento.md](linea-base-rendimiento.md) — línea base de rendimiento (F0-10): build, pruebas, carga HTTP aproximada y contadores de runtime medidos en el entorno de desarrollo; brechas pendientes frente al entorno de referencia formal de F0-09.

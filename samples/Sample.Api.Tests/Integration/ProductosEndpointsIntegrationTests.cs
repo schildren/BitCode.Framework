@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Sample.Api.Tests;
+namespace Sample.Api.Tests.Integration;
 
 /// <summary>
 /// Verifica el proyecto piloto de la Fase 8 de extremo a extremo contra un SQL Server real
@@ -14,8 +14,15 @@ namespace Sample.Api.Tests;
 /// Web/ProblemDetails (Fase 4) funcionando juntos, tal como los usaría un consumidor real. Este
 /// mismo flujo detectó en desarrollo que AddSharedPersistence no registraba IReadRepository&lt;,&gt;
 /// (corregido en Shared.Infrastructure.Persistence, Fase 1).
+///
+/// Carpeta/namespace/nombre de clase con sufijo "Integration" por convención (ver
+/// docs/convenciones.md, sección Testing): esta prueba usa <see cref="SqlServerContainerFixture"/>
+/// (Testcontainers) y por lo tanto requiere Docker. Renombrada en F0-10 (línea base) tras detectar
+/// que el nombre anterior (<c>Sample.Api.Tests.ProductosEndpointsTests</c>, sin "Integration") no
+/// era excluido por el filtro de CI <c>FullyQualifiedName!~Integration</c>, lo que podía producir
+/// falsos rojos en entornos/runners sin Docker.
 /// </summary>
-public class ProductosEndpointsTests : IAsyncLifetime
+public class ProductosEndpointsIntegrationTests : IAsyncLifetime
 {
     private readonly SqlServerContainerFixture _sqlServerFixture = new();
     private WebApplicationFactory<Program>? _factory;
@@ -31,7 +38,7 @@ public class ProductosEndpointsTests : IAsyncLifetime
         // construirse, sin depender del orden de interceptación de WebApplicationFactory.
         Environment.SetEnvironmentVariable(
             "ConnectionStrings__Default",
-            _sqlServerFixture.BuildIsolatedConnectionString("SampleApiTests", nameof(ProductosEndpointsTests)));
+            _sqlServerFixture.BuildIsolatedConnectionString("SampleApiTests", nameof(ProductosEndpointsIntegrationTests)));
 
         _factory = new WebApplicationFactory<Program>();
         _client = _factory.CreateClient();
