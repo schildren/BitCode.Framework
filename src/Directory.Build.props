@@ -11,7 +11,6 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
-    <Version>0.1.0</Version>
     <Authors>BitCode.Framework contributors</Authors>
     <Company>BitCode.Framework</Company>
     <Product>BitCode.Framework</Product>
@@ -38,7 +37,28 @@
          agregando una licencia sin aprobar. Ver docs/politica-empaquetado.md. -->
   </PropertyGroup>
 
+  <!-- Versionado automático basado en git (F1-04, ver docs/politica-versionado.md, sección 2). MinVer calcula
+       Version/PackageVersion a partir del tag SemVer alcanzable más cercano (prefijo "v", el default de la
+       herramienta) más la distancia de commits desde ese tag ("altura"): si HEAD coincide con un tag, la
+       versión es limpia (ej. "0.1.0"); si hay commits después, agrega prerelease + altura (ej.
+       "0.1.1-alpha.0.3"). Se prefiere MinVer sobre Nerdbank.GitVersioning porque el repo todavía no tiene
+       múltiples líneas de release en paralelo ni necesita height estable entre builds incrementales: MinVer
+       resuelve el criterio de aceptación ("Versiones trazables a source") con una única PackageReference y
+       sin archivo de configuración adicional (no requiere version.json ni build customizado).
+       Trazabilidad al commit exacto: MinVer no agrega el SHA al número de versión SemVer del paquete (Version/
+       PackageVersion queda "0.1.0", sin "+sha", para no romper el ordenamiento de versiones de NuGet, que
+       ignora metadata de build "+..."), pero sí lo agrega automáticamente al AssemblyInformationalVersion de
+       cada DLL (verificado en F1-04: ProductVersion del ensamblado compilado = "0.1.0+<sha-completo>"), y
+       Source Link (PublishRepositoryUrl/EmbedUntrackedSources arriba) escribe ese mismo commit SHA completo en
+       el elemento <repository commit="..."> del .nuspec de cada paquete generado — ambos verificados
+       inspeccionando el .nupkg/.dll reales (ver docs/politica-versionado.md, sección 2). -->
+  <PropertyGroup>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerVerbosity>normal</MinVerVerbosity>
+  </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
     <!-- Gate de compatibilidad de API pública (F1-03, ver docs/gate-compatibilidad-api.md).
