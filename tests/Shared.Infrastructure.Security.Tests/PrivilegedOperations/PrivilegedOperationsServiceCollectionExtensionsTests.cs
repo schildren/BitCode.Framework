@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Infrastructure.Security.Abac;
+using BitCode.Framework.Shared.Infrastructure.Security.Audit;
 using BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -96,5 +97,47 @@ public class PrivilegedOperationsServiceCollectionExtensionsTests
 
         act.Should().Throw<OptionsValidationException>()
             .WithMessage("*pagos.aprobar*AcceptableAuthenticationMethods*");
+    }
+
+    [Fact]
+    public void AddSharedPrivilegedOperationsPolicies_RegistersAuditingDecoratorOverEvaluator()
+    {
+        // Cierre del pendiente explícito de F2-15 -- ver AuditingAuthorizationPolicyEvaluator.
+        var services = new ServiceCollection();
+        services.AddSharedAbacAuthorization();
+
+        services.AddSharedPrivilegedOperationsPolicies();
+
+        using var provider = services.BuildServiceProvider();
+        provider.GetRequiredService<IAuthorizationPolicyEvaluator>().Should().BeOfType<AuditingAuthorizationPolicyEvaluator>();
+        provider.GetRequiredService<IAuditWriter>().Should().NotBeNull();
+    }
+
+    [Fact]
+    public void AddSharedPrivilegedOperationsPolicies_CalledTwice_DoesNotDoubleWrapEvaluator()
+    {
+        var services = new ServiceCollection();
+        services.AddSharedAbacAuthorization();
+
+        services.AddSharedPrivilegedOperationsPolicies();
+        services.AddSharedPrivilegedOperationsPolicies();
+
+        using var provider = services.BuildServiceProvider();
+        var evaluator = provider.GetRequiredService<IAuthorizationPolicyEvaluator>();
+        evaluator.Should().BeOfType<AuditingAuthorizationPolicyEvaluator>();
+        provider.GetServices<IAuthorizationPolicyEvaluator>().Should().ContainSingle();
+    }
+
+    [Fact]
+    public void AddSharedPrivilegedOperationsPolicies_DoesNotDuplicateAuditWriterRegistration()
+    {
+        var services = new ServiceCollection();
+        services.AddSharedAbacAuthorization();
+        services.AddSharedAuditing();
+
+        services.AddSharedPrivilegedOperationsPolicies();
+
+        using var provider = services.BuildServiceProvider();
+        provider.GetServices<IAuditWriter>().Should().ContainSingle();
     }
 }

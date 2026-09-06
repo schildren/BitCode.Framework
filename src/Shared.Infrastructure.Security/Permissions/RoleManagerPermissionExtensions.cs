@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using BitCode.Framework.Shared.Infrastructure.Security.Audit;
 using BitCode.Framework.Shared.Infrastructure.Security.Identity;
 using Microsoft.AspNetCore.Identity;
 
@@ -91,5 +92,90 @@ public static class RoleManagerPermissionExtensions
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Igual que <see cref="AddPermissionAsync{TRole}(RoleManager{TRole}, TRole, string, IPermissionCacheInvalidator, CancellationToken)"/>
+    /// (invalida cache), pero además emite una entrada de auditoría (<see cref="IAuditWriter.WriteAsync"/>)
+    /// con la acción <c>"roles.permission.grant"</c> -- cierre del pendiente explícito de F2-15/F2-D:
+    /// "cambios de permisos/roles de F2-07/F2-09 son candidatas obvias a emitir auditoría" (ver
+    /// <c>docs/guia-auditoria-inmutable.md</c>). El resultado se audita tanto si Identity concede el
+    /// permiso (<see cref="AuditOutcome.Success"/>) como si falla (<see cref="AuditOutcome.Error"/>,
+    /// <c>Reason</c> con la descripción concatenada de <see cref="IdentityResult.Errors"/>) -- un intento
+    /// fallido de modificar permisos es igual de relevante para auditoría que uno exitoso.
+    /// </summary>
+    public static async Task<IdentityResult> AddPermissionAsync<TRole>(
+        this RoleManager<TRole> roleManager,
+        TRole role,
+        string permission,
+        IPermissionCacheInvalidator invalidator,
+        IAuditWriter auditWriter,
+        AuditActor actor,
+        Guid? tenantId = null,
+        CancellationToken cancellationToken = default)
+        where TRole : ApplicationRole
+    {
+        var result = await roleManager.AddPermissionAsync(role, permission, invalidator, cancellationToken);
+
+        await WriteRolePermissionAuditEntryAsync(
+            auditWriter, actor, tenantId, "roles.permission.grant", role, permission, result, cancellationToken);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Igual que <see cref="RemovePermissionAsync{TRole}(RoleManager{TRole}, TRole, string, IPermissionCacheInvalidator, CancellationToken)"/>
+    /// (invalida cache), pero además emite una entrada de auditoría con la acción
+    /// <c>"roles.permission.revoke"</c> -- ver la documentación del overload equivalente de
+    /// <see cref="AddPermissionAsync{TRole}(RoleManager{TRole}, TRole, string, IPermissionCacheInvalidator, IAuditWriter, AuditActor, Guid?, CancellationToken)"/>.
+    /// </summary>
+    public static async Task<IdentityResult> RemovePermissionAsync<TRole>(
+        this RoleManager<TRole> roleManager,
+        TRole role,
+        string permission,
+        IPermissionCacheInvalidator invalidator,
+        IAuditWriter auditWriter,
+        AuditActor actor,
+        Guid? tenantId = null,
+        CancellationToken cancellationToken = default)
+        where TRole : ApplicationRole
+    {
+        var result = await roleManager.RemovePermissionAsync(role, permission, invalidator, cancellationToken);
+
+        await WriteRolePermissionAuditEntryAsync(
+            auditWriter, actor, tenantId, "roles.permission.revoke", role, permission, result, cancellationToken);
+
+        return result;
+    }
+
+    private static async Task WriteRolePermissionAuditEntryAsync<TRole>(
+        IAuditWriter auditWriter,
+        AuditActor actor,
+        Guid? tenantId,
+        string action,
+        TRole role,
+        string permission,
+        IdentityResult result,
+        CancellationToken cancellationToken)
+        where TRole : ApplicationRole
+    {
+        var outcome = result.Succeeded ? AuditOutcome.Success : AuditOutcome.Error;
+        var reason = result.Succeeded
+            ? null
+            : string.Join("; ", result.Errors.Select(e => e.Description));
+
+        var request = new AuditEntryRequest(
+            actor: actor,
+            tenantId: tenantId,
+            action: action,
+            resource: new AuditResource("roles", role.Id.ToString()),
+            outcome: outcome,
+            reason: reason,
+            metadata: new Dictionary<string, string?> { ["permission"] = permission, ["roleName"] = role.Name });
+
+        // Fallo de escritura descartado a propósito -- mismo criterio que
+        // AuditingAuthorizationPolicyEvaluator: no bloquear la operación de negocio (alta/baja de permiso)
+        // ya resuelta por que el almacenamiento de auditoría tuvo un problema transitorio.
+        _ = await auditWriter.WriteAsync(request, cancellationToken);
     }
 }

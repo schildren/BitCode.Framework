@@ -84,24 +84,67 @@ await auditWriter.WriteAsync(new AuditEntryRequest(
 Igual que `AbacResource` (F2-08), el llamador arma `AuditActor`/`AuditResource` explícitamente a partir de
 datos ya resueltos — no hay ninguna resolución automática desde `HttpContext` dentro de este módulo.
 
-## Pendiente explícito (fuera de alcance de F2-15)
+## Integraciones cableadas (cierre del pendiente explícito de F2-15)
 
-- **Integraciones no cableadas todavía**: operaciones privilegiadas de F2-10 (step-up, segregación de
-  funciones) y cambios de permisos/roles (F2-07/F2-09) son candidatas obvias a emitir auditoría y hoy no lo
-  hacen — cablear esas integraciones queda fuera de esta tarea (alcance mínimo y cohesionado, sección 3.2
-  del Plan Maestro) y debería abordarse como parte del gate de salida de fase ("operaciones críticas
-  generan auditoría íntegra") antes de cerrar la Fase 2.
+El pendiente dejado por F2-15 ("operaciones privilegiadas de F2-10 y cambios de permisos/roles de
+F2-07/F2-09 son candidatas obvias a emitir auditoría y hoy no lo hacen") quedó cableado así:
+
+| Origen | Punto de cableado | Acción auditada | Outcome |
+|---|---|---|---|
+| F2-10 (step-up authentication) | `AuditingAuthorizationPolicyEvaluator`, decorador de `IAuthorizationPolicyEvaluator` registrado por `AddSharedPrivilegedOperationsPolicies` | `"{resourceType}.{action}"` de toda evaluación cuyo (tipo de recurso, acción) tenga al menos un `StepUpRequirement` aplicable | `Success` (step-up satisfecho) / `Denied` (evidencia faltante o vencida — `Reason` con el código de `StepUpAbacRule`) |
+| F2-10 (segregación de funciones) | mismo decorador | ídem, para toda evaluación con un `MakerCheckerRule` aplicable, o CUALQUIER evaluación si hay al menos un `MutuallyExclusivePermissionPair` configurado (restricción de identidad, no depende del recurso/acción) | `Success` / `Denied` (`Reason` con el código de `SegregationOfDutiesAbacRule`, por ejemplo `sod:same-actor:...` o `sod:mutually-exclusive-permissions:...`) |
+| F2-07/F2-09 (alta/baja de permiso de un rol) | `RoleManagerPermissionExtensions.AddPermissionAsync`/`RemovePermissionAsync`, overload que recibe `IAuditWriter`+`AuditActor` | `"roles.permission.grant"` / `"roles.permission.revoke"`, recurso `"roles"` con `Id` = `role.Id`, metadata `permission`/`roleName` | `Success` / `Error` (fallo técnico de Identity, por ejemplo un conflicto de concurrencia — `Reason` con la descripción de `IdentityResult.Errors`) |
+
+`AuditingAuthorizationPolicyEvaluator` decora el evaluador combinado real (RBAC + ABAC + privilegiadas)
+sin crear un pipeline paralelo — SIEMPRE delega la decisión y nunca la altera; un fallo transitorio de
+`IAuditWriter.WriteAsync` (un `Result` fallido) no bloquea ni cambia la decisión de autorización ya
+tomada. Deliberadamente NO audita cada evaluación ABAC genérica de F2-08 (`AttributeScopeAbacRule`,
+`AmountLimitAbacRule`) — solo aquella que efectivamente esté protegida por una política de operaciones
+privilegiadas configurada, para no generar ruido de auditoría sobre operaciones que el Plan Maestro no
+clasifica como críticas.
+
+`AddSharedPrivilegedOperationsPolicies` (F2-10) llama internamente a `AddSharedAuditing` si todavía no fue
+llamado (idempotente, mismo criterio que el resto de los `AddShared*`) — un proyecto que adopta step-up o
+segregación de funciones obtiene auditoría cableada sin un paso de registro adicional. El overload de
+`RoleManagerPermissionExtensions` con `IAuditWriter` es opt-in: un proyecto que gestiona permisos de rol
+sin ese overload sigue funcionando exactamente igual que antes (sin auditoría de esa operación puntual),
+la migración al overload auditado es responsabilidad del código de aplicación que invoca esos métodos.
+
+### Qué NO quedó cableado todavía
+
+- **Alta/baja de un ROL completo** (`RoleManager.CreateAsync`/`DeleteAsync`) y la asignación de un rol a un
+  usuario (`UserManager.AddToRoleAsync`/`RemoveFromRoleAsync`) no tienen un overload auditado — solo el
+  alta/baja de un permiso individual dentro de un rol ya existente. Candidata para una tarea de
+  seguimiento si el gate de Fase 2 lo exige explícitamente.
+- **Cambios directos sobre `ApplicationUser`** (creación de usuario, bloqueo/desbloqueo, cambio de
+  contraseña) siguen sin auditoría cableada — fuera del alcance literal de F2-07/F2-09/F2-10 (RBAC/ABAC/
+  operaciones privilegiadas), no de gestión de identidad de usuario.
+- **Invalidación de cache de permisos** (F2-09, `IPermissionCacheInvalidator`) no emite auditoría propia —
+  es un efecto secundario técnico de la operación ya auditada (alta/baja de permiso), no una operación de
+  negocio distinta.
+
+## Pendiente explícito (fuera de alcance de F2-15/este cierre)
+
 - **Almacenamiento persistente real**: la elección definitiva (tabla SQL append-only vs. event store vs.
   otro destino) es una decisión arquitectónica pendiente de un ADR propio — ver sección "Decisiones" del
   reporte de cierre de F2-15.
 - **Lectura/consulta administrativa**: es F2-20; `InMemoryAuditWriter.Entries` no es esa API.
 - **Redacción de PII**: es F2-19; hasta entonces, es responsabilidad de cada llamador no volcar datos
-  sensibles sin redactar en `Metadata`/`Reason`.
+  sensibles sin redactar en `Metadata`/`Reason` — la metadata que este cierre agrega (`abacDecisionReason`,
+  `permission`, `roleName`) son identificadores/códigos de negocio, no PII.
 
 ## Referencias
 
 - `src/Shared.Infrastructure.Security/Audit/` — implementación (`AuditEntry`, `AuditEntryRequest`,
   `AuditActor`, `AuditResource`, `AuditHashCalculator`, `IAuditWriter`, `InMemoryAuditWriter`,
   `AuditServiceCollectionExtensions`).
+- `src/Shared.Infrastructure.Security/PrivilegedOperations/AuditingAuthorizationPolicyEvaluator.cs` —
+  cableado de auditoría sobre step-up/segregación de funciones (F2-10).
+- `src/Shared.Infrastructure.Security/Permissions/RoleManagerPermissionExtensions.cs` — cableado de
+  auditoría sobre alta/baja de permiso de un rol (F2-07/F2-09).
 - `tests/Shared.Infrastructure.Security.Tests/Audit/` — suite de pruebas (campos críticos completos,
   determinismo/sensibilidad del hash, ausencia de update/delete).
+- `tests/Shared.Infrastructure.Security.Tests/PrivilegedOperations/AuditingAuthorizationPolicyEvaluatorTests.cs`
+  y `PrivilegedOperationsEndToEndTests.cs` — suite de pruebas del cableado de F2-10.
+- `tests/Shared.Infrastructure.Security.Tests/RoleManagerPermissionExtensionsTests.cs` — suite de pruebas
+  del cableado de F2-07/F2-09.
