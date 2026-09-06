@@ -12,9 +12,56 @@ namespace BitCode.Framework.Shared.Infrastructure.Security.Audit;
 /// necesite auditoría persistente conecta su propia implementación (tabla SQL append-only, event store, o
 /// el destino WORM de F2-18) registrándola después de <c>AddSharedAuditing</c>.
 /// </summary>
+/// <remarks>
+/// F2-16 (cadena de integridad): mantiene el último <see cref="AuditEntry.AuditHash"/> escrito por cadena
+/// (una cadena por <see cref="AuditEntry.TenantId"/>, incluido <see langword="null"/> para operaciones de
+/// plataforma sin tenant -- ver <see cref="AuditEntry.PreviousAuditHash"/>). La clave que identifica una
+/// cadena es <see cref="ChainKey"/>, no <c>Guid?</c> directamente: un diccionario concurrente no admite
+/// realmente una clave <see langword="null"/> en tiempo de ejecución (un <c>Guid?</c> sin valor se boxea a
+/// una referencia nula real) -- <see cref="ChainKey"/> es una <see langword="struct"/> que nunca es
+/// <see langword="null"/> en tiempo de ejecución, sea cual sea el <c>TenantId</c> que representa.
+/// <para>
+/// Determinar el <c>previousAuditHash</c> de una entrada nueva (leer el último hash de la cadena) y hacer
+/// visible esa misma entrada en <see cref="Entries"/> (<c>Enqueue</c>) NO son operaciones independientes:
+/// deben ejecutarse como una única sección atómica por cadena, porque <see cref="Entries"/> se recorre en
+/// orden de aparición y ese orden tiene que coincidir siempre con el orden lógico del enlace
+/// <see cref="AuditEntry.PreviousAuditHash"/> que <see cref="IAuditIntegrityVerifier.Verify"/> valida. Si
+/// se hicieran por separado (como en una versión anterior de este tipo, que actualizaba el "último hash"
+/// con <see cref="ConcurrentDictionary{TKey,TValue}.AddOrUpdate(TKey, System.Func{TKey,TValue},
+/// System.Func{TKey,TValue,TValue})"/> y recién después encolaba), dos escrituras concurrentes para el
+/// mismo tenant podían completar esas dos operaciones en órdenes relativos distintos entre sí (T1 fija el
+/// enlace antes que T2, pero T2 encola antes que T1) -- el resultado es una entrada cuyo
+/// <c>PreviousAuditHash</c> no coincide con el hash de la entrada que la antecede en <see cref="Entries"/>,
+/// que <see cref="IAuditIntegrityVerifier.Verify"/> reporta como <see
+/// cref="AuditIntegrityBreakReason.PreviousHashLinkMismatch"/>: un falso positivo de manipulación de la
+/// cadena causado únicamente por esta condición de carrera de implementación, no por ningún dato alterado.
+/// Para evitarlo, este tipo usa un <see langword="lock"/> por cadena (<see cref="_chainLocks"/>) que
+/// envuelve tanto la lectura/actualización del último hash como el <c>Enqueue</c> de esa misma cadena;
+/// cadenas de tenants distintos usan objetos de lock distintos y no se bloquean entre sí.
+/// </para>
+/// </remarks>
 public sealed class InMemoryAuditWriter : IAuditWriter
 {
     private readonly ConcurrentQueue<AuditEntry> _entries = new();
+
+    // Último AuditHash escrito por cadena (F2-16) -- una entrada de diccionario por TenantId distinto,
+    // incluida la cadena de operaciones de plataforma sin tenant (ChainKey.ForTenant(null)). El acceso a
+    // esta cadena en particular siempre ocurre bajo el lock de _chainLocks correspondiente (ver WriteAsync)
+    // -- ConcurrentDictionary se usa acá solo porque distintas cadenas (distintos locks) pueden tocar el
+    // diccionario al mismo tiempo, no porque se dependa de su atomicidad interna para esta invariante.
+    private readonly ConcurrentDictionary<ChainKey, string> _lastHashByChain = new();
+
+    // Un objeto de lock por cadena (F2-16): serializa, para una misma cadena, la sección
+    // "leer último hash -> construir la entrada -> encolarla" para que el orden de aparición en _entries
+    // sea siempre consistente con el orden lógico del enlace PreviousAuditHash. Cadenas distintas
+    // (TenantId distinto) usan objetos de lock distintos y nunca se bloquean entre sí.
+    private readonly ConcurrentDictionary<ChainKey, object> _chainLocks = new();
+
+    private readonly record struct ChainKey(bool HasTenant, Guid TenantId)
+    {
+        public static ChainKey ForTenant(Guid? tenantId) =>
+            tenantId.HasValue ? new ChainKey(true, tenantId.Value) : new ChainKey(false, default);
+    }
 
     public Task<Result<AuditEntry>> WriteAsync(AuditEntryRequest request, CancellationToken cancellationToken = default)
     {
@@ -28,15 +75,31 @@ public sealed class InMemoryAuditWriter : IAuditWriter
             request.Outcome, request.Reason, request.CorrelationId, request.TraceId, request.IpAddress,
             request.Metadata);
 
-        var entry = new AuditEntry(
-            id, occurredAtUtc, request.Actor, request.TenantId, request.Action, request.Resource,
-            request.Outcome, request.Reason, request.CorrelationId, request.TraceId, request.IpAddress,
-            request.Metadata, auditHash);
+        var chainKey = ChainKey.ForTenant(request.TenantId);
+        var chainLock = _chainLocks.GetOrAdd(chainKey, static _ => new object());
 
-        // Append-only: la única operación sobre _entries en todo este tipo es Enqueue -- no existe ningún
-        // camino de código (acá ni en la interfaz IAuditWriter) que remueva o reemplace un elemento ya
-        // agregado.
-        _entries.Enqueue(entry);
+        AuditEntry entry;
+        lock (chainLock)
+        {
+            // F2-16: encadena esta entrada con la última ya escrita para el mismo tenant (o `null` para
+            // el primer registro de esa cadena -- el "génesis"). Leer el último hash, construir la entrada
+            // y encolarla ocurren dentro del mismo lock de cadena para que el orden de aparición en
+            // _entries coincida siempre con el orden lógico de este enlace (ver comentario de <remarks>
+            // de este tipo).
+            _lastHashByChain.TryGetValue(chainKey, out var previousAuditHash);
+
+            entry = new AuditEntry(
+                id, occurredAtUtc, request.Actor, request.TenantId, request.Action, request.Resource,
+                request.Outcome, request.Reason, request.CorrelationId, request.TraceId, request.IpAddress,
+                request.Metadata, auditHash, previousAuditHash);
+
+            _lastHashByChain[chainKey] = auditHash;
+
+            // Append-only: la única operación sobre _entries en todo este tipo es Enqueue -- no existe
+            // ningún camino de código (acá ni en la interfaz IAuditWriter) que remueva o reemplace un
+            // elemento ya agregado.
+            _entries.Enqueue(entry);
+        }
 
         return Task.FromResult(Result.Success(entry));
     }

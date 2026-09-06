@@ -35,6 +35,18 @@ public class AuditServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddSharedAuditing_RegistraAuditIntegrityVerifierPorDefecto()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSharedAuditing();
+        var provider = services.BuildServiceProvider();
+
+        var verifier = provider.GetRequiredService<IAuditIntegrityVerifier>();
+        verifier.Should().BeOfType<AuditIntegrityVerifier>();
+    }
+
+    [Fact]
     public void AddSharedAuditing_UnaImplementacionPropiaRegistradaDespues_GanaLaResolucion()
     {
         var services = new ServiceCollection();

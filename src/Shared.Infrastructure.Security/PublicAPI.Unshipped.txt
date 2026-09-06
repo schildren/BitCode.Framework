@@ -607,6 +607,19 @@ BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.Resourc
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.TenantId.get -> System.Guid?
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest.TraceId.get -> string?
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditHashCalculator
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason.HashMismatch = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason.PreviousHashLinkMismatch = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.BrokenAtIndex.get -> int?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.BrokenEntryId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.IsValid.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.Reason.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason?
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerifier
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerifier.AuditIntegrityVerifier() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerifier.Verify(System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>! chain) -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult!
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditIntegrityVerifier
+BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditIntegrityVerifier.Verify(System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>! chain) -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult!
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Denied = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
 BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome.Error = 2 -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome
@@ -624,6 +637,8 @@ BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter.InMem
 BitCode.Framework.Shared.Infrastructure.Security.Audit.InMemoryAuditWriter.WriteAsync(BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntryRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditEntry!>!>!
 static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditHashCalculator.Compute(System.Guid id, System.DateTime occurredAtUtc, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor! actor, System.Guid? tenantId, string! action, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditResource! resource, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditOutcome outcome, string? reason, string? correlationId, string? traceId, string? ipAddress, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! metadata) -> string!
 static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditServiceCollectionExtensions.AddSharedAuditing(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.Invalid(int brokenAtIndex, System.Guid brokenEntryId, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityBreakReason reason) -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult!
+static BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult.Valid() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditIntegrityVerificationResult!
 BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.AuditingAuthorizationPolicyEvaluator
 BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.AuditingAuthorizationPolicyEvaluator.AuditingAuthorizationPolicyEvaluator(BitCode.Framework.Shared.Infrastructure.Security.Abac.IAuthorizationPolicyEvaluator! inner, BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter! auditWriter, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.PrivilegedOperationsOptions!>! options) -> void
 BitCode.Framework.Shared.Infrastructure.Security.PrivilegedOperations.AuditingAuthorizationPolicyEvaluator.EvaluateAsync(System.Security.Claims.ClaimsPrincipal! principal, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacResource! resource, string! action, BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacContext? context = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Security.Abac.AbacDecision!>!

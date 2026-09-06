@@ -83,12 +83,20 @@ public sealed class AuditEntry
     public string AuditHash { get; }
 
     /// <summary>
-    /// Reservado para F2-16 (cadena de integridad): hash del registro de auditoría inmediatamente anterior
-    /// de la misma cadena, para poder detectar la eliminación/reordenamiento de un registro completo (algo
-    /// que el hash de un registro aislado, por sí solo, no detecta). F2-15 no calcula ningún encadenamiento
-    /// todavía -- esta propiedad queda siempre en <see langword="null"/> hasta que el servicio de
-    /// integridad de F2-16 la complete; se deja definida ahora para no requerir un cambio de esquema/
-    /// contrato público breaking cuando F2-16 se implemente.
+    /// Hash del registro de auditoría inmediatamente anterior de la misma cadena (F2-16, Épica F2-D), para
+    /// poder detectar la eliminación/reordenamiento de un registro completo -- algo que el hash de un
+    /// registro aislado (<see cref="AuditHash"/>), por sí solo, no detecta. <see langword="null"/> para el
+    /// registro génesis de una cadena (el primero escrito).
+    /// <para>
+    /// "Misma cadena" es <b>por tenant</b>: <see cref="IAuditWriter"/> mantiene una cadena de integridad
+    /// independiente por cada valor distinto de <see cref="TenantId"/> (incluida una cadena propia para
+    /// <see cref="TenantId"/> <see langword="null"/>, operaciones de plataforma sin tenant). Esta es una
+    /// decisión deliberada de F2-16, no un detalle de implementación: la auditoría de tenants distintos ya
+    /// es lógicamente independiente entre sí (ningún caso de uso necesita verificar la integridad conjunta
+    /// de auditoría de dos tenants distintos en una sola cadena), y una cadena única global mezclaría el
+    /// orden de escritura de operaciones de tenants sin relación entre sí, dificultando la verificación
+    /// (<see cref="IAuditIntegrityVerifier"/>) y la futura exportación WORM (F2-18) por tenant.
+    /// </para>
     /// </summary>
     public string? PreviousAuditHash { get; }
 }
