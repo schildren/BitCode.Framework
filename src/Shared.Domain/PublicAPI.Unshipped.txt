@@ -4,6 +4,9 @@ BitCode.Framework.Shared.Domain.Persistence.ConcurrencyConflictException.Concurr
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider.IsMultiTenancyEnabled.get -> bool
 BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext.TenantId.get -> System.Guid?
 BitCode.Framework.Shared.Domain.MultiTenancy.TenantClaimTypes
 BitCode.Framework.Shared.Domain.MultiTenancy.TenantResolutionException
 BitCode.Framework.Shared.Domain.MultiTenancy.TenantResolutionException.TenantResolutionException(string! message) -> void

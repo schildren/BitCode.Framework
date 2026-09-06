@@ -9,6 +9,11 @@ BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvid
 BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.HttpContextTenantProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor! httpContextAccessor) -> void
 BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.IsMultiTenancyEnabled.get -> bool
 BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware.TenantLogEnrichmentMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next) -> void
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantContextApplicationBuilderExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantContextApplicationBuilderExtensions.UseTenantContextLogging(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
 BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions
 BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions
 static BitCode.Framework.Shared.Infrastructure.Web.Modularity.WebApplicationModularityExtensions.UseModules(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!

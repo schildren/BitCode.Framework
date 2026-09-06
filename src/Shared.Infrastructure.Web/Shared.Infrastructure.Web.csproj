@@ -10,5 +10,11 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Solo para Serilog.Context.LogContext (F1-15, TenantLogEnrichmentMiddleware): el resto de
+         la configuración de Serilog (sinks, niveles) vive en Shared.Infrastructure.Observability. -->
+    <PackageReference Include="Serilog" Version="4.2.0" />
+  </ItemGroup>
+
 
 </Project>

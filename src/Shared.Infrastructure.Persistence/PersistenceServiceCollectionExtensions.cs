@@ -45,6 +45,15 @@ public static class PersistenceServiceCollectionExtensions
         services.TryAddScoped<ITenantProvider, NullTenantProvider>();
         services.TryAddScoped<ICurrentUserProvider, NullCurrentUserProvider>();
 
+        // F1-15: ITenantContext envuelve el ITenantProvider ya registrado arriba (el que haya
+        // ganado — NullTenantProvider por defecto, o el que el proyecto consumidor haya registrado
+        // antes de este método, p. ej. HttpContextTenantProvider) y memoiza el TenantId resuelto
+        // para todo el scope. No es una alternativa a ITenantProvider: MultiTenantDbContext y
+        // TenantSaveChangesInterceptor siguen consumiendo ITenantProvider directamente (F1-12), sin
+        // cambios, para no introducir un breaking change en el filtro global de EF Core ya
+        // productivo.
+        services.TryAddScoped<ITenantContext, TenantContext>();
+
         // F1-13 (estrategia T2, contratos y prototipo): por defecto todo tenant resuelve al shard
         // T1 (base de datos compartida) contra la misma connectionString ya configurada — cero
         // cambio de comportamiento para un proyecto que no optó explícitamente por sharding. Un

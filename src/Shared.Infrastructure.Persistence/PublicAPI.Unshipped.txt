@@ -14,6 +14,10 @@ BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvi
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.IsMultiTenancyEnabled.get -> bool
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.NullTenantProvider() -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.TenantContext(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.TenantId.get -> System.Guid?
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.Create(Microsoft.EntityFrameworkCore.DbContext! context, bool designTime) -> object!
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.PerInstanceModelCacheKeyFactory() -> void

@@ -97,4 +97,36 @@ public class HttpContextTenantProviderTests
         provider.TenantId.Should().BeNull(
             "el tenant nunca debe resolverse desde un header o query string controlado por el cliente");
     }
+
+    /// <summary>
+    /// F1-15 — criterio de aceptación literal "el tenant no puede sobrescribirse desde el payload":
+    /// un usuario autenticado con su propio TenantId en el claim JWT que además envía en el cuerpo
+    /// (body) del request un campo <c>tenantId</c> apuntando a otro tenant (por ejemplo, un intento
+    /// de acceder a datos de un tenant ajeno) no logra ningún efecto — <see cref="HttpContextTenantProvider"/>
+    /// nunca lee <see cref="HttpContext.Request.Body"/>, solo el claim ya validado por el middleware
+    /// de autenticación.
+    /// </summary>
+    [Fact]
+    public void TenantId_IgnoresTenantIdInRequestBody_OnlyReadsFromUserClaims()
+    {
+        var realTenantId = Guid.NewGuid();
+        var spoofedTenantIdInBody = Guid.NewGuid();
+        var identity = new ClaimsIdentity(
+            [new Claim(TenantClaimTypes.TenantId, realTenantId.ToString())],
+            authenticationType: "Test");
+        var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
+
+        var bodyJson = $$"""{"tenantId":"{{spoofedTenantIdInBody}}","nombre":"cualquier payload"}""";
+        var bodyBytes = System.Text.Encoding.UTF8.GetBytes(bodyJson);
+        httpContext.Request.Body = new MemoryStream(bodyBytes);
+        httpContext.Request.ContentLength = bodyBytes.Length;
+        httpContext.Request.ContentType = "application/json";
+
+        var provider = CreateProvider(httpContext);
+
+        provider.TenantId.Should().Be(realTenantId,
+            "el TenantId resuelto debe ser siempre el del claim JWT autenticado, nunca el que el cliente " +
+            "haya podido incluir en el cuerpo del request");
+        provider.TenantId.Should().NotBe(spoofedTenantIdInBody);
+    }
 }
