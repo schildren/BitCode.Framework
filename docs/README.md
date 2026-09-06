@@ -28,6 +28,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [architecture-principles.md](architecture-principles.md) — principios de arquitectura (F0-03): modularidad, consistencia, seguridad, observabilidad y compatibilidad, cada uno anclado a una regla o componente vigente del repositorio. **Estado: Propuesto, pendiente de aprobación humana.**
 - [adr/](adr/) — Architecture Decision Records (F0-04): arquitectura, persistencia, tenancy, identidad, mensajería, cache, gateway y licencias. Ver índice de estados abajo.
 - [linea-base-rendimiento.md](linea-base-rendimiento.md) — línea base de rendimiento (F0-10): build, pruebas, carga HTTP aproximada y contadores de runtime medidos en el entorno de desarrollo; brechas pendientes frente al entorno de referencia formal de F0-09.
+- [threat-model.md](threat-model.md) — threat model (F0-07): activos, actores, fronteras de confianza, amenazas STRIDE y mitigaciones (existentes/planeadas/huecos sin plan), anclado al código y a los ADR ya vigentes. **Estado: Completado, pendiente de revisión de seguridad.**
 
 ### ADR (docs/adr/)
 
