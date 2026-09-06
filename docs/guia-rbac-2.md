@@ -332,7 +332,8 @@ con certeza que la implementación real de RBAC está llegando tarde.
   F2-08, no como parte del evaluador de F2-07 en sí — ver `docs/guia-abac.md`, sección "Operaciones
   privilegiadas (F2-10)".
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica
-  completa son una tarea separada; F2-07 solo prueba el evaluador en sí (ver más abajo).
+  completa viven en `tests/Shared.Infrastructure.Security.Tests/AuthorizationMatrix/` (ver
+  `docs/guia-abac.md`, sección "Pruebas"); F2-07 solo prueba el evaluador en sí (ver más abajo).
 - **Roles tenant-scoped:** `ApplicationRole` (Identity) sigue sin implementar `ITenantEntity` — un rol
   creado en un tenant sigue siendo visible/asignable en cualquier otro tenant del mismo proyecto. Es
   un cambio de esquema del modelo multi-tenant (Plan Maestro, sección 13: requiere aprobación humana

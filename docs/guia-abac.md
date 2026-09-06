@@ -375,7 +375,8 @@ consulta redundante a `IPermissionEvaluator` (y, transitivamente, a SQL Server) 
   [Operaciones privilegiadas (F2-10)](#operaciones-privilegiadas-f2-10-step-up-y-segregación-de-funciones)
   más arriba; ya cubiertas por este mismo documento.
 - **F2-11 (pruebas de autorización):** la matriz allow/deny y las pruebas de bypass de la épica completa
-  son una tarea separada.
+  viven en `tests/Shared.Infrastructure.Security.Tests/AuthorizationMatrix/` — ver el último bloque de la
+  sección [Pruebas](#pruebas) más abajo.
 
 ## Pruebas
 
@@ -419,6 +420,24 @@ consulta redundante a `IPermissionEvaluator` (y, transitivamente, a SQL Server) 
   de aceptación literal de F2-10 ("operaciones críticas protegidas") de punta a punta: step-up
   cumplido/vencido/ausente, maker-checker mismo/distinto actor, pares mutuamente excluyentes, y el caso
   default-deny de "sin permiso RBAC base, ninguna evidencia de step-up salva la decisión".
+- `tests/Shared.Infrastructure.Security.Tests/AuthorizationMatrix/AuthorizationMatrixTests.cs` (F2-11):
+  la matriz allow/deny consolidada de la Épica F2-B completa (RBAC de F2-07 + ABAC de F2-08 + operaciones
+  privilegiadas de F2-10), compuesta sobre el mismo contenedor de DI real que usa un proyecto consumidor
+  (`AddSharedAbacAuthorization`/`AddSharedPrivilegedOperationsPolicies`, sin mockear
+  `IAuthorizationPolicyEvaluator` ni ninguna `IAbacRule` incorporada). A diferencia de las suites de arriba
+  (una por regla, en aislamiento), reúne en tablas `[Theory]`/`TheoryData` los ejes combinados —
+  alcance (empresa/sucursal), monto, aislamiento de permisos por tenant, y step-up + maker-checker — y
+  cierra con el caso de un sujeto no autenticado, que en TODA fila termina denegado salvo que exista una
+  regla explícita que conceda (criterio de aceptación literal de F2-11: default deny).
+- `tests/Shared.Infrastructure.Security.Tests/AuthorizationMatrix/AuthorizationBypassTests.cs` (F2-11):
+  intentos de bypass adversariales contra el mismo stack real — claims forjados sin autenticar, tenant_id
+  del token distinto del tenant ya resuelto server-side, un scope OAuth2 que declara un permiso que RBAC
+  nunca concedió (el scope solo angosta, nunca amplía), confusión de tipo de recurso (un permiso de
+  "pedidos" no autoriza "facturas"), segregación de funciones que aplica a cualquier recurso/acción (no
+  solo al que motivó su configuración), variación de casing del id de actor en maker-checker,
+  `auth_time` forjado a futuro en step-up, y la ventana de cache de F2-09 que un permiso revocado en el
+  origen sigue "concediendo" hasta que se invoca `IPermissionCacheInvalidator` explícitamente — y deja de
+  hacerlo de inmediato después.
 
 ## Referencias
 
