@@ -42,5 +42,6 @@ public abstract class MultiTenantIdentityDbContext<TUser, TRole>
         base.OnModelCreating(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
         ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
+        TenantIndexModelConfigurator.ApplyTenantIndexes(modelBuilder);
     }
 }

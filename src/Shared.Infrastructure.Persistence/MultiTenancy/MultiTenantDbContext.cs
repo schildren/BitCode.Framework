@@ -27,5 +27,6 @@ public abstract class MultiTenantDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         MultiTenancyModelConfigurator.ApplyGlobalFilters(modelBuilder, _tenantId, _isMultiTenancyEnabled);
         ConcurrencyModelConfigurator.ApplyConcurrencyTokens(modelBuilder);
+        TenantIndexModelConfigurator.ApplyTenantIndexes(modelBuilder);
     }
 }

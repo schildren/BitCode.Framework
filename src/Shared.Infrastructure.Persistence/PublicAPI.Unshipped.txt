@@ -8,6 +8,8 @@ BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInter
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.TenantSaveChangesInterceptor(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator.ApplyTenantIndexes(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.MultiTenantDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider
