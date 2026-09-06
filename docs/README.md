@@ -49,3 +49,4 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0006](adr/0006-cache-hybridcache-valkey-redis.md) | Cache: HybridCache + Valkey/Redis | Accepted |
 | [0007](adr/0007-gateway-yarp.md) | Gateway: YARP | Proposed |
 | [0008](adr/0008-licencias-open-core.md) | Licencias: Open-Core (Apache-2.0 + propietario) | Proposed |
+| [0009](adr/0009-contratos-comando-transaccion-explicita.md) | Comandos: transacción explícita solo con `ITransactionalCommand` | Accepted |

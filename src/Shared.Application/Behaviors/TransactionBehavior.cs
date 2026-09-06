@@ -7,9 +7,12 @@ using Microsoft.Extensions.Logging;
 namespace BitCode.Framework.Shared.Application.Behaviors;
 
 /// <summary>
-/// Envuelve la ejecución en una transacción explícita del Unit of Work. Se aplica únicamente a
-/// TRequest : IBaseCommand (ICommand/ICommand&lt;T&gt;): las queries son de solo lectura por
-/// convención y no necesitan overhead transaccional.
+/// Persiste los cambios de un comando (TRequest : IBaseCommand) al finalizar el pipeline. Se aplica
+/// únicamente a comandos: las queries son de solo lectura por convención y no necesitan overhead de
+/// persistencia. Solo los comandos que implementan explícitamente <see cref="ITransactionalCommand"/>
+/// abren una transacción real de base de datos con rollback coordinado ante fallo; un
+/// <see cref="IBaseCommand"/> simple confía en que <see cref="IUnitOfWork.SaveChangesAsync"/> por sí
+/// solo ya es atómico para el conjunto de cambios rastreados en ese único <c>SaveChanges</c>.
 /// </summary>
 public class TransactionBehavior<TRequest, TResponse>(
     IUnitOfWork unitOfWork,
@@ -18,8 +21,29 @@ public class TransactionBehavior<TRequest, TResponse>(
     where TRequest : IBaseCommand, IRequest<TResponse>
     where TResponse : Result
 {
-    public async Task<TResponse> Handle(
+    public Task<TResponse> Handle(
         TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken) =>
+        request is ITransactionalCommand
+            ? HandleTransactionalAsync(next, cancellationToken)
+            : HandleSimpleAsync(next, cancellationToken);
+
+    private async Task<TResponse> HandleSimpleAsync(
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        var response = await next();
+
+        if (response.IsSuccess)
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
+        return response;
+    }
+
+    private async Task<TResponse> HandleTransactionalAsync(
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {

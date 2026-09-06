@@ -13,6 +13,14 @@ public class TestCommandHandler : IRequestHandler<TestCommand, Result<string>>
         Task.FromResult(Result.Success($"Hola, {request.Name}"));
 }
 
+public record TestTransactionalCommand(string Name) : ICommand<string>, ITransactionalCommand;
+
+public class TestTransactionalCommandHandler : IRequestHandler<TestTransactionalCommand, Result<string>>
+{
+    public Task<Result<string>> Handle(TestTransactionalCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult(Result.Success($"Hola, {request.Name}"));
+}
+
 public class TestQueryHandler : IRequestHandler<TestQuery, Result<string>>
 {
     public Task<Result<string>> Handle(TestQuery request, CancellationToken cancellationToken) =>

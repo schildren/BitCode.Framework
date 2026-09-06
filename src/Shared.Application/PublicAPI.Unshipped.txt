@@ -16,5 +16,7 @@ BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TRes
 BitCode.Framework.Shared.Application.Messaging.IBaseCommand
 BitCode.Framework.Shared.Application.Messaging.ICommand
 BitCode.Framework.Shared.Application.Messaging.ICommand<TResponse>
+BitCode.Framework.Shared.Application.Messaging.IIdempotentCommand
 BitCode.Framework.Shared.Application.Messaging.IQuery<TResponse>
+BitCode.Framework.Shared.Application.Messaging.ITransactionalCommand
 static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

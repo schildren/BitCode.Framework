@@ -17,9 +17,11 @@ public class CrearProductoCommandValidator : AbstractValidator<CrearProductoComm
     }
 }
 
-// No llama IUnitOfWork.SaveChangesAsync explícitamente: TransactionBehavior (Fase 2) ya envuelve
-// todo ICommand en una transacción y hace el commit (que incluye el SaveChanges) después de que
-// el handler retorna un Result exitoso. Ver Shared.Application/Behaviors/TransactionBehavior.cs.
+// No llama IUnitOfWork.SaveChangesAsync explícitamente: TransactionBehavior ya lo hace después de
+// que el handler retorna un Result exitoso. Este comando modifica un único agregado en una sola
+// operación, por lo que no necesita ser ITransactionalCommand (transacción explícita con rollback
+// coordinado); ver Shared.Application/Behaviors/TransactionBehavior.cs y
+// Shared.Application/Messaging/ICommand.cs.
 public class CrearProductoCommandHandler(IRepository<Producto, Guid> repository)
     : IRequestHandler<CrearProductoCommand, Result<Guid>>
 {

@@ -37,12 +37,14 @@ Un feature = una carpeta = un `IWebFrameworkModule` con `[DependsOn(typeof(Infra
 
 Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse de ellas rompe garantías que el resto del framework asume:
 
-1. **Un handler nunca llama `IUnitOfWork.SaveChangesAsync` explícitamente en un `ICommand`.** `TransactionBehavior` (Fase 2) ya lo hace al confirmar la transacción. Ver el comentario en `CrearProductoCommandHandler` del piloto.
+1. **Un handler nunca llama `IUnitOfWork.SaveChangesAsync` explícitamente en un `ICommand`.** `TransactionBehavior` ya lo hace al finalizar el pipeline con un `Result` exitoso. Ver el comentario en `CrearProductoCommandHandler` del piloto.
 2. **Un `IQuery` nunca modifica datos.** `TransactionBehavior` está restringido a `IBaseCommand` — una query que escribe no tiene la protección transaccional y puede dejar cambios a medias sin que el framework lo detecte.
-3. **Nunca exponer `IQueryable` desde un repositorio.** Toda consulta pasa por `ISpecification<T>` o por los métodos tipados de `IRepository`/`IReadRepository`.
-4. **Un error de negocio esperado es un `Result.Failure`, nunca una excepción.** Las excepciones son para lo verdaderamente inesperado; `GlobalExceptionHandler` las trata como error 500 sin distinción.
-5. **Toda entidad que necesite auditoría/soft-delete/multi-tenancy implementa la interfaz correspondiente (`IAuditedEntity`/`ISoftDelete`/`ITenantEntity`) y nada más** — el framework detecta las interfaces por reflexión, no requiere configuración adicional en `OnModelCreating`.
-6. **Un endpoint siempre termina en `.ToOkOrProblem()` o `.ToProblemDetails()` sobre el `Result` que devuelve el `Sender`**, nunca inspeccionando manualmente `IsSuccess`/`Error` para construir la respuesta HTTP a mano.
+3. **Solo un comando que implementa explícitamente `ITransactionalCommand` abre una transacción real de base de datos con rollback coordinado.** Un `ICommand`/`ICommand<T>` simple (sin `ITransactionalCommand`) persiste sus cambios automáticamente vía `SaveChangesAsync` al finalizar con éxito, pero **no** abre una transacción explícita — usalo para el caso común de un único agregado por comando. Reservá `ITransactionalCommand` para comandos que coordinan más de una operación de escritura (varios agregados, varios `SaveChanges`, efectos que deben confirmarse o revertirse en conjunto). Ver ADR `docs/adr/0009-contratos-comando-transaccion-explicita.md`.
+4. **`IIdempotentCommand` es el contrato marcador para comandos que deben tolerar reintentos sin duplicar efectos.** La implementación del middleware de detección de duplicados es una tarea aparte (F1-22); declarar la interfaz hoy no activa ningún comportamiento adicional todavía.
+5. **Nunca exponer `IQueryable` desde un repositorio.** Toda consulta pasa por `ISpecification<T>` o por los métodos tipados de `IRepository`/`IReadRepository`.
+6. **Un error de negocio esperado es un `Result.Failure`, nunca una excepción.** Las excepciones son para lo verdaderamente inesperado; `GlobalExceptionHandler` las trata como error 500 sin distinción.
+7. **Toda entidad que necesite auditoría/soft-delete/multi-tenancy implementa la interfaz correspondiente (`IAuditedEntity`/`ISoftDelete`/`ITenantEntity`) y nada más** — el framework detecta las interfaces por reflexión, no requiere configuración adicional en `OnModelCreating`.
+8. **Un endpoint siempre termina en `.ToOkOrProblem()` o `.ToProblemDetails()` sobre el `Result` que devuelve el `Sender`**, nunca inspeccionando manualmente `IsSuccess`/`Error` para construir la respuesta HTTP a mano.
 
 ## Cuándo usar qué
 

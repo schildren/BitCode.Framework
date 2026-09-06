@@ -17,7 +17,10 @@ public static class ApplicationServiceCollectionExtensions
     /// (o Mapster.IMapFrom&lt;TSource&gt; para el caso simple de propiedades homónimas); ambos son
     /// descubiertos automáticamente por TypeAdapterConfig.Scan sobre los assemblies indicados.
     /// TransactionBehavior solo se ejecuta para requests que implementan IBaseCommand (ICommand);
-    /// las queries pasan por Logging y Validation únicamente.
+    /// las queries pasan por Logging y Validation únicamente. Dentro de TransactionBehavior, solo
+    /// los comandos que implementan ITransactionalCommand abren una transacción explícita con
+    /// rollback coordinado; un ICommand simple persiste sus cambios vía SaveChangesAsync sin
+    /// transacción explícita.
     /// </summary>
     public static IServiceCollection AddSharedApplication(
         this IServiceCollection services,
