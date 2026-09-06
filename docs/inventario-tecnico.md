@@ -205,7 +205,7 @@ Todo esto son insumos para tareas posteriores (F0-06 política de dependencias c
 
 | # | Brecha | Evidencia | Tarea de remediación probable |
 |---|---|---|---|
-| 1 | `TargetFramework` en `net8.0` en todo el repo | `Directory.Build.props:4`; overrides idénticos en `Sample.Api.csproj` y `Sample.Api.Tests.csproj` | F1-01 (stack objetivo: .NET 10 LTS) |
+| 1 | ~~`TargetFramework` en `net8.0` en todo el repo~~ — **Resuelta en F1-01** (ver sección 9): migrado a `net10.0` en `Directory.Build.props`, `Sample.Api.csproj` y `Sample.Api.Tests.csproj`; paquetes Microsoft.Extensions/AspNetCore/EF Core que fijaban 8.x/9.0.0 actualizados a 10.0.11; `Microsoft.AspNetCore.TestHost` actualizado de 8.0.10 a 10.0.11 (el desfasaje de versión contra el runtime net10.0 causaba un fallo real en `GlobalExceptionHandlerTests`, corregido por la actualización) | `Directory.Build.props:4`; overrides idénticos en `Sample.Api.csproj` y `Sample.Api.Tests.csproj` | Resuelta (F1-01) |
 | 2 | Sin Central Package Management | No existe `Directory.Packages.props` en la raíz; cada `.csproj` fija versión propia | Fase 0/1, gestión de dependencias |
 | 3 | Deriva de versión de paquetes Microsoft.Extensions entre 8.0.x y 9.0.0 dentro de proyectos `net8.0` | `Shared.Infrastructure.Caching.Tests`, `Shared.Infrastructure.Observability.Tests`, `Shared.Modularity.Tests` usan `Microsoft.Extensions.{Configuration,DependencyInjection}` 9.0.0 mientras el resto usa 8.0.x; `Shared.Infrastructure.Caching` (no test) usa `Microsoft.Extensions.Caching.Hybrid` 9.5.0 | F0-06 / CPM |
 | 4 | `NuGet.Config` solo declara `nuget.org`, sin mirror interno ni política de fuentes | `NuGet.Config:1-8` | F0-06 |
@@ -227,3 +227,19 @@ Todo esto son insumos para tareas posteriores (F0-06 política de dependencias c
 dotnet build BitCode.Framework.slnx --configuration Release --verbosity minimal
 ```
 Resultado: **Compilación correcta — 0 advertencias, 0 errores** (24 proyectos, SDK .NET 10.0.302 compilando destino `net8.0`, ~14.6 s). Confirma que la solución tiene una línea base de build reproducible al momento del relevamiento. No se ejecutó la batería completa de pruebas (unitarias + integración con Testcontainers) como parte de esta tarea de inventario, dado que F0-01 es de mapeo documental y no requiere evidencia de ejecución de test suite; esa evidencia corresponde a las tareas de "Pruebas obligatorias de la fase" cuando se ejecuten cambios de código.
+
+---
+
+## 9. Actualización — F1-01: Migración a .NET 10 LTS (resuelta)
+
+`TargetFramework` migrado de `net8.0` a `net10.0` en `Directory.Build.props` (fuente única para todos los proyectos salvo los dos overrides idénticos en `samples/Sample.Api/Sample.Api.csproj` y `samples/Sample.Api.Tests/Sample.Api.Tests.csproj`, también migrados). Cambios de paquetes necesarios para resolver el bump:
+
+- `Shared.Infrastructure.Observability`: `Microsoft.Extensions.Configuration.Binder` 8.0.2 → 10.0.11 (la cadena transitiva de OpenTelemetry 1.18.0 exigía ≥10.0.0 y generaba `NU1605` como error por `TreatWarningsAsErrors`).
+- `Shared.Infrastructure.Observability.Tests`: `Microsoft.Extensions.Configuration`/`Microsoft.Extensions.DependencyInjection` 9.0.0 → 10.0.11, por la misma razón.
+- Todos los `PackageReference` de `Microsoft.AspNetCore.*`, `Microsoft.EntityFrameworkCore.*` y `Microsoft.Extensions.*` que fijaban explícitamente 8.0.x/9.0.0 actualizados a 10.0.11 (última versión estable publicada en NuGet.org al momento de esta tarea) para alinear con el runtime objetivo net10.0.
+- `Microsoft.AspNetCore.TestHost` 8.0.10 → 10.0.11 en `Shared.Infrastructure.Web.Tests`: el desfasaje de versión contra el shared framework net10.0 causaba un fallo real (no un flake) en `GlobalExceptionHandlerTests.UnhandledException_ReturnsProblemDetailsWithInternalServerError` — `ExceptionHandlerMiddleware` rethrow-eaba la excepción original en lugar de invocar `GlobalExceptionHandler`. Corregido al alinear la versión del paquete de test host con el TFM.
+- `tests/Templates.Tests/TemplateVerificationTests.cs`: el fixture de test que genera un `.csproj` scratch para verificar que el código scaffolded compila fijaba `net8.0` hardcodeado; actualizado a `net10.0` (no es parte de los templates de producción en `templates/`, que no fijan target framework).
+
+No se detectó ningún paquete sin versión compatible con net10.0 (no hubo bloqueos). No se introdujo Central Package Management (fuera de alcance de F1-01; la brecha #3 de la sección 7 sigue abierta para una tarea futura de CPM). `.github/workflows/ci.yml` actualizado: los 4 jobs (`build`, `test-unit`, `test-integration`, `dependency-scan`) usan `dotnet-version: "10.0.x"`.
+
+Resultado tras la migración: `dotnet build BitCode.Framework.slnx -c Release` → correcto, 0 errores. `dotnet test --filter "FullyQualifiedName!~Integration"` → 90/90 correctas. `dotnet test --filter "FullyQualifiedName~Integration"` (con Testcontainers SQL Server/Redis) → 12/12 correctas.
