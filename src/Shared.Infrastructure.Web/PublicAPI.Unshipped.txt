@@ -5,9 +5,14 @@ BitCode.Framework.Shared.Infrastructure.Web.Exceptions.GlobalExceptionHandler.Tr
 BitCode.Framework.Shared.Infrastructure.Web.Modularity.IWebFrameworkModule
 BitCode.Framework.Shared.Infrastructure.Web.Modularity.IWebFrameworkModule.ConfigureApplication(Microsoft.AspNetCore.Builder.WebApplication! app) -> void
 BitCode.Framework.Shared.Infrastructure.Web.Modularity.WebApplicationModularityExtensions
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.HttpContextTenantProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor! httpContextAccessor) -> void
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.TenantId.get -> System.Guid?
 BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions
 BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions
 static BitCode.Framework.Shared.Infrastructure.Web.Modularity.WebApplicationModularityExtensions.UseModules(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!
 static BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions.ToOkOrProblem<TValue>(this BitCode.Framework.Shared.Kernel.Result<TValue>! result) -> Microsoft.AspNetCore.Http.IResult!
 static BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions.ToProblemDetails(this BitCode.Framework.Shared.Kernel.Result! result) -> Microsoft.AspNetCore.Http.IResult!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddHttpContextTenantProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedExceptionHandling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

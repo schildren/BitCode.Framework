@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
@@ -50,6 +51,41 @@ public class JwtTokenGeneratorTests
         jwt.ValidTo.Should().BeCloseTo(
             DateTime.UtcNow.AddMinutes(Options.AccessTokenExpirationMinutes),
             TimeSpan.FromSeconds(10));
+    }
+
+    /// <summary>
+    /// F1-12: el TenantId del usuario viaja como claim firmado dentro del propio JWT — es la fuente
+    /// que HttpContextTenantProvider (Shared.Infrastructure.Web) usa para resolver el tenant, nunca
+    /// un header/query string controlado por el cliente.
+    /// </summary>
+    [Fact]
+    public void GenerateAccessToken_IncludesTenantClaim_WhenUserHasTenantId()
+    {
+        var generator = CreateGenerator();
+        var tenantId = Guid.NewGuid();
+        var user = new TestApplicationUser { Id = Guid.NewGuid(), UserName = "jperez", TenantId = tenantId };
+
+        var token = generator.GenerateAccessToken(user, [], []);
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+
+        jwt.Claims.Should().Contain(c => c.Type == TenantClaimTypes.TenantId && c.Value == tenantId.ToString());
+    }
+
+    /// <summary>
+    /// Guid.Empty representa "sin tenant asignado" (proyecto de un solo tenant): no debe emitirse
+    /// como si fuera un tenant real, porque HttpContextTenantProvider trataría Guid.Empty como un
+    /// tenant válido en vez de tratarlo como "sin claim".
+    /// </summary>
+    [Fact]
+    public void GenerateAccessToken_OmitsTenantClaim_WhenUserHasNoTenantId()
+    {
+        var generator = CreateGenerator();
+        var user = new TestApplicationUser { Id = Guid.NewGuid(), UserName = "jperez", TenantId = Guid.Empty };
+
+        var token = generator.GenerateAccessToken(user, [], []);
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
+
+        jwt.Claims.Should().NotContain(c => c.Type == TenantClaimTypes.TenantId);
     }
 
     [Fact]

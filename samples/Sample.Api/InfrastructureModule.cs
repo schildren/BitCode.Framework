@@ -22,6 +22,13 @@ public class InfrastructureModule : IWebFrameworkModule
         var connectionString = configuration.GetConnectionString("Default")
             ?? throw new InvalidOperationException("Falta ConnectionStrings:Default en la configuración.");
 
+        // F1-12: AddHttpContextTenantProvider() ANTES de AddSharedPersistence — registra la
+        // implementación productiva de ITenantProvider (resuelve el TenantId desde el claim JWT del
+        // request, nunca desde un header/query string) para que gane sobre el NullTenantProvider por
+        // defecto (TryAddScoped). Producto (Sample.Api) todavía no implementa ITenantEntity, así que
+        // esto no cambia su comportamiento visible hoy: es la referencia de cómo un proyecto
+        // consumidor multi-tenant real debe cablear la resolución de tenant.
+        services.AddHttpContextTenantProvider();
         services.AddSharedPersistence<SampleDbContext>(connectionString);
         services.AddSharedApplication(typeof(InfrastructureModule).Assembly);
         services.AddSharedExceptionHandling();

@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Security.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,16 @@ public class JwtTokenGenerator(IOptions<JwtOptions> options) : IJwtTokenGenerato
         if (!string.IsNullOrWhiteSpace(user.Email))
         {
             claims.Add(new Claim(JwtRegisteredClaimNames.Email, user.Email));
+        }
+
+        // F1-12: el TenantId viaja como claim firmado dentro del propio JWT — nunca se resuelve
+        // desde un header o query string que el cliente pueda manipular (docs/threat-model.md, S2).
+        // Guid.Empty se omite a propósito: representa "sin tenant asignado" (proyecto de un solo
+        // tenant, o ApplicationUser creado sin TenantId todavía) y no debe emitirse como si fuera un
+        // tenant real — HttpContextTenantProvider trata la ausencia del claim como "sin tenant".
+        if (user.TenantId != Guid.Empty)
+        {
+            claims.Add(new Claim(TenantClaimTypes.TenantId, user.TenantId.ToString()));
         }
 
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
