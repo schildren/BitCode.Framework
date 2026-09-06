@@ -516,3 +516,41 @@ static BitCode.Framework.Shared.Infrastructure.Security.Permissions.PermissionCa
 static BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions.AddPermissionAsync<TRole>(this Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager, TRole! role, string! permission, BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionCacheInvalidator! invalidator, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
 static BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions.RemovePermissionAsync<TRole>(this Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager, TRole! role, string! permission) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
 static BitCode.Framework.Shared.Infrastructure.Security.Permissions.RoleManagerPermissionExtensions.RemovePermissionAsync<TRole>(this Microsoft.AspNetCore.Identity.RoleManager<TRole!>! roleManager, TRole! role, string! permission, BitCode.Framework.Shared.Infrastructure.Security.Permissions.IPermissionCacheInvalidator! invalidator, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Identity.IdentityResult!>!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProvider
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProvider.ConfigurationSecretProvider(Microsoft.Extensions.Configuration.IConfiguration! configuration, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProvider.GetSecretAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions.ConfigurationSecretProviderOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions.ValuesSectionPath.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions.ValuesSectionPath.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ISecretProvider
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.ISecretProvider.GetSecretAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind.Configuration = 0 -> BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind.Vault = 1 -> BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions.Provider.get -> BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderKind
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions.Provider.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions.SecretProviderOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProvider
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProvider.GetSecretAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<string!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProvider.VaultSecretProvider(System.Net.Http.HttpClient! httpClient, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions!>! options) -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.Address.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.Address.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.AllowInsecureHttp.get -> bool
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.AllowInsecureHttp.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.MountPath.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.MountPath.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.PathPrefix.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.PathPrefix.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.Token.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.Token.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.ValueFieldName.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.ValueFieldName.set -> void
+BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.VaultSecretProviderOptions() -> void
+const BitCode.Framework.Shared.Infrastructure.Security.Secrets.ConfigurationSecretProviderOptions.SectionName = "Secrets:Configuration" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderOptions.SectionName = "Secrets" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.Secrets.VaultSecretProviderOptions.SectionName = "Secrets:Vault" -> string!
+static BitCode.Framework.Shared.Infrastructure.Security.Secrets.SecretProviderServiceCollectionExtensions.AddSharedSecretProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

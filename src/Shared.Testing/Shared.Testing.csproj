@@ -7,6 +7,10 @@
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <!-- F2-12: VaultContainerFixture usa el builder genérico (sin un paquete Testcontainers.Vault
+         dedicado en el ecosistema .NET); referencia explícita al paquete base en vez de depender de
+         que quede disponible transitivamente por Testcontainers.Keycloak/.MsSql/.Redis. -->
+    <PackageReference Include="Testcontainers" Version="3.10.0" />
     <PackageReference Include="Testcontainers.Keycloak" Version="3.10.0" />
     <PackageReference Include="Testcontainers.MsSql" Version="3.10.0" />
     <PackageReference Include="Testcontainers.Redis" Version="3.10.0" />

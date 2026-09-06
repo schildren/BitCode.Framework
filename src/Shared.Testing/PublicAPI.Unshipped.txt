@@ -27,3 +27,9 @@ BitCode.Framework.Shared.Testing.SqlServerContainerFixture.InitializeAsync() -> 
 BitCode.Framework.Shared.Testing.SqlServerContainerFixture.SqlServerContainerFixture() -> void
 BitCode.Framework.Shared.Testing.SqlServerContainerFixtureExtensions
 static BitCode.Framework.Shared.Testing.SqlServerContainerFixtureExtensions.BuildIsolatedConnectionString(this BitCode.Framework.Shared.Testing.SqlServerContainerFixture! fixture, string! databasePrefix, string! testName) -> string!
+BitCode.Framework.Shared.Testing.VaultContainerFixture
+BitCode.Framework.Shared.Testing.VaultContainerFixture.VaultContainerFixture() -> void
+BitCode.Framework.Shared.Testing.VaultContainerFixture.Address.get -> string!
+BitCode.Framework.Shared.Testing.VaultContainerFixture.InitializeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.VaultContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
+const BitCode.Framework.Shared.Testing.VaultContainerFixture.RootToken = "bitcode-test-root-token" -> string!
