@@ -79,3 +79,39 @@ jobs:
         with:
           name: integration-test-results
           path: ./TestResults
+
+  dependency-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      # SCA mínimo (F0-06, docs/politica-dependencias.md sección 5): audita vulnerabilidades
+      # conocidas (directas y transitivas) contra el NuGet Advisory feed. `dotnet list
+      # package --vulnerable` siempre devuelve exit code 0, por eso el bloqueo real se hace
+      # con el grep de abajo. Umbral deliberadamente conservador (solo Critical bloquea):
+      # ver justificación completa en docs/politica-dependencias.md sección 5 sobre las
+      # vulnerabilidades High/Moderate transitivas preexistentes (Testcontainers, EF Core
+      # SqlServer/Sqlite) que no son responsabilidad de esta tarea.
+      - name: Auditoría de vulnerabilidades de dependencias (SCA)
+        run: |
+          dotnet list BitCode.Framework.slnx package --vulnerable --include-transitive | tee vulnerability-report.txt
+          if grep -q "Critical" vulnerability-report.txt; then
+            echo "::error::Se encontraron vulnerabilidades de severidad Critical. Ver docs/politica-dependencias.md."
+            exit 1
+          fi
+          echo "Sin vulnerabilidades Critical. Revisar el reporte completo arriba: severidades High/Moderate/Low quedan registradas como hallazgos (ver docs/politica-dependencias.md, sección 3) y no bloquean el pipeline por ahora."
+
+      - name: Publicar reporte de vulnerabilidades
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-vulnerability-report
+          path: vulnerability-report.txt
