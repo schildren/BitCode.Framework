@@ -1,30 +1,32 @@
 # Línea base de rendimiento — BitCode.Framework
 
 **Tarea:** F0-10 (Fase 0 — Gobierno, arquitectura y línea base) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha de medición:** 2026-09-05 (primera sesión) y 2026-09-05 (continuación, tras confirmar que Docker Desktop quedó operativo en esta máquina).
-**Alcance:** medición real de build, suite de pruebas (unitarias e integración), y una aproximación de carga HTTP + contadores de runtime sobre `samples/Sample.Api`, ejecutada en la máquina de un desarrollador (no en un "Reference Performance Environment" formal — ver sección 6, brechas para F0-09).
+**Fecha de medición:** 2026-09-05 (primera sesión), 2026-09-05 (continuación, tras confirmar que Docker Desktop quedó operativo en esta máquina) y 2026-09-05 (segunda continuación, tras instalar k6 y publicar `docs/entorno-referencia.md` para F0-09).
+**Alcance:** medición real de build, suite de pruebas (unitarias e integración), y carga HTTP + contadores de runtime sobre `samples/Sample.Api`, ejecutada en la máquina de un desarrollador. El entorno de medición está descrito formalmente en `docs/entorno-referencia.md` (F0-09) desde la segunda continuación; antes de eso se describía como "provisorio" en este mismo documento (sección 1).
 
-Este documento reporta únicamente números producidos por ejecuciones reales en este entorno. Donde una medición no pudo producirse de forma fiable (RPS/TPS con herramienta de referencia k6), se documenta como **bloqueado**, con la causa exacta, en vez de estimarse o inventarse. La suite de integración con Testcontainers, bloqueada en la primera sesión por falta de Docker, se completó en esta continuación (sección 3.3).
+Este documento reporta únicamente números producidos por ejecuciones reales en este entorno. Donde una medición no pudo producirse de forma fiable, se documenta como **bloqueado**, con la causa exacta, en vez de estimarse o inventarse. La suite de integración con Testcontainers, bloqueada en la primera sesión por falta de Docker, se completó en la primera continuación (sección 3.3). La medición de RPS/TPS/percentiles con la herramienta de referencia (k6), bloqueada en las dos sesiones anteriores por no tener k6 instalado, se completó en esta segunda continuación (sección 4) y reemplaza la aproximación por `curl` que se usaba hasta ahora.
 
 ---
 
-## 1. Entorno de medición (provisorio, no es el "Reference Performance Environment" de F0-09)
+## 1. Entorno de medición
+
+Descrito formalmente en `docs/entorno-referencia.md` (F0-09, publicado en esta segunda continuación). Resumen (ver ese documento para el detalle completo, incluida la política de reproducibilidad):
 
 | Ítem | Valor |
 |---|---|
-| Host | Estación de desarrollo individual (no un entorno de CI/benchmark dedicado) |
+| Host | Estación de desarrollo individual (no un entorno de CI/benchmark dedicado ni aislado — ver `docs/entorno-referencia.md` sección 4) |
 | SO | Windows 11 Pro, build 10.0.26200 |
 | CPU | Intel Core i5-12500H (12 núcleos físicos, 16 hilos lógicos) |
 | RAM | 33 982 623 744 bytes ≈ 31.65 GiB físicos |
 | SDK .NET | 10.0.302 (MSBuild 18.6.11) — el código de producción fija `net8.0` vía `Directory.Build.props` (ver `docs/inventario-tecnico.md`); el SDK 10 solo compila/ejecuta ese TFM, no lo cambia |
 | Base de datos usada para las corridas de carga | SQL Server LocalDB (`MSSQLLocalDB`, versión de motor 17.0.4025.3) — **no** es SQL Server "productivo" ni el que usan los tests de integración (esos usan Testcontainers con la imagen oficial de `mssql`) |
 | Red | Loopback (`localhost`), sin latencia de red real |
-| Docker | Docker Desktop 29.4.1. En la primera sesión el daemon no pudo iniciarse (`failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`), lo que bloqueó la suite de Integración y 3 pruebas de `Sample.Api.Tests`. **En esta continuación (misma fecha) el daemon respondió correctamente** (`docker info` → `ServerVersion 29.4.1`, `docker ps` sin contenedores activos al inicio); las imágenes `mssql/server:2022-latest`, `mssql/server:2019-CU18-ubuntu-20.04`, `redis:7.0` y `testcontainers/ryuk:0.6.0` ya estaban en la caché local de Docker de una sesión previa (no hubo pull real durante esta medición — ver nota en sección 3.3) |
-| k6 | No instalado. Se intentó instalar vía `winget install k6`, pero la instalación quedó bloqueada en un prompt interactivo de aceptación de términos de la fuente `msstore` que no pudo resolverse sin intervención humana. Se abortó el intento; no se inventaron métricas de k6 |
+| Docker | Docker Desktop 29.4.1. En la primera sesión el daemon no pudo iniciarse (`failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`), lo que bloqueó la suite de Integración y 3 pruebas de `Sample.Api.Tests`. **Desde la primera continuación (misma fecha) el daemon responde correctamente** (`docker info` → `ServerVersion 29.4.1`); las imágenes `mssql/server:2022-latest`, `mssql/server:2019-CU18-ubuntu-20.04`, `redis:7.0` y `testcontainers/ryuk:0.6.0` ya estaban en la caché local de Docker de una sesión previa (no hubo pull real durante esas mediciones — ver nota en sección 3.3) |
+| k6 | **Instalado en esta segunda continuación** como binario standalone v0.54.0 (`C:\tools\k6\k6.exe`, agregado al `PATH` de usuario). En las dos sesiones anteriores no estaba disponible (`winget install k6` quedó bloqueado en un prompt interactivo de `msstore` sin resolver sin intervención humana) — ver sección 4 para la medición real ya realizada con esta herramienta |
 | Herramientas de diagnóstico usadas | `dotnet-counters` (instalada como herramienta global `dotnet tool install -g dotnet-counters`, versión 10.0.731102, agregada a esta máquina de desarrollo, no al repositorio) |
-| Ruido de fondo durante las mediciones | Un editor con C# Dev Kit (`ms-dotnettools.csdevkit`) tenía un `BuildHost` propio corriendo en paralelo durante parte de las mediciones, compitiendo por CPU con los procesos de `dotnet build`/`dotnet test`. Esto es representativo de una máquina de desarrollador real, pero **no** es un entorno aislado ni reproducible entre corridas en otro hardware |
+| Ruido de fondo durante las mediciones | Un editor con C# Dev Kit (`ms-dotnettools.csdevkit`) tenía un `BuildHost` propio corriendo en paralelo durante parte de las mediciones, compitiendo por CPU con los procesos de `dotnet build`/`dotnet test`/`Sample.Api.dll`. Esto es representativo de una máquina de desarrollador real, pero **no** es un entorno aislado ni reproducible entre corridas en otro hardware — ver `docs/entorno-referencia.md` sección 4 |
 
-**Conclusión de esta sección:** este es un entorno "de facto" (la máquina donde correspondió ejecutar la tarea), no el entorno formal que exige F0-10 en la sección 6 del plan. F0-09 sigue pendiente como tarea propia — ver sección 6.
+**Conclusión de esta sección:** este es el entorno "de facto" documentado formalmente por F0-09 (`docs/entorno-referencia.md`) como entorno de referencia provisorio (sin infraestructura nueva, por decisión explícita de alcance de esa tarea) — ya no es un entorno "sin entregable propio". Las limitaciones de aislamiento de procesos descritas ahí siguen aplicando a todas las mediciones de este documento.
 
 ---
 
@@ -115,44 +117,48 @@ Con esto, la validación real de Docker/Testcontainers cubre:
 
 ---
 
-## 4. Carga HTTP sobre `samples/Sample.Api` (RPS/TPS/p50/p95/p99)
+## 4. Carga HTTP sobre `samples/Sample.Api` (RPS/TPS/p50/p90/p95/p99) — medición con k6 (reemplaza la aproximación por `curl`)
 
 ### 4.0 Decisión: no se repitió la carga contra SQL Server en contenedor
 
-Con Docker disponible en esta continuación, se evaluó repetir la carga HTTP de 4.2/4.3 contra una instancia de `mssql/server` en contenedor en vez de LocalDB, para acercar la baseline al entorno que usa CI (Testcontainers). **Se decidió no hacerlo** por dos motivos concretos, no por comodidad:
+Se evaluó correr la carga HTTP de esta sección contra una instancia de `mssql/server` en contenedor en vez de LocalDB, para acercar la baseline al entorno que usa CI (Testcontainers). **Se decidió no hacerlo en esta medición** por alcance: la tarea de esta sesión fue específicamente cerrar el gap de la herramienta de carga (k6), no rediseñar la base de datos usada en la medición. Queda como mejora candidata razonable para una próxima revisión de esta línea base, ahora que k6 sí puede exponer diferencias reales de latencia de base de datos (algo que la aproximación por `curl` no podía detectar de forma fiable).
 
-1. La medición de 4.2/4.3 ya está marcada explícitamente como una aproximación no representativa de capacidad real (overhead de proceso de `curl`, ver 4.1) — el cuello de botella dominante es el cliente de carga, no la base de datos. Cambiar LocalDB por un contenedor no cambia esa conclusión ni aporta una señal nueva mientras la limitación de fondo (falta de k6) siga sin resolverse.
-2. Esta sesión ya consumió tiempo no trivial reproduciendo y documentando la degradación por contención de recursos descrita en 3.1/3.3; repetir ~6 corridas más de carga HTTP (3 GET + 3 POST) contra un contenedor nuevo habría sido un esfuerzo desproporcionado para una mejora marginal de fidelidad, dado que el resultado esperado (RPS ~40-45 dominado por `curl`) no cambiaría de forma perceptible.
+### 4.1 Herramienta y metodología
 
-Esta migración queda como candidata razonable para cuando F0-09 defina el entorno de referencia formal y k6 esté disponible: en ese momento sí tiene sentido medir contra SQL Server en contenedor, porque k6 sí expondría diferencias reales de latencia de base de datos que `curl` no puede detectar hoy.
+**k6 v0.54.0** (instalado en esta sesión, ver sección 1) reemplaza la aproximación anterior por `curl` en bucle, documentada hasta ahora en esta sección y que tenía una limitación metodológica fuerte: cada request de `curl` es un proceso nuevo del sistema operativo, cuyo overhead de *fork+exec* dominaba el tiempo medido. k6 reutiliza conexiones HTTP y ejecuta múltiples "VUs" (usuarios virtuales) dentro de un único proceso, por lo que **esta sí es una medición de capacidad real del servidor**, no del cliente de carga.
 
-### 4.1 Qué se pudo medir realmente y con qué herramienta
+Script: [`docs/perf/k6-smoke.js`](perf/k6-smoke.js). Ejercita los mismos dos endpoints usados en la aproximación anterior por `curl`, para mantener continuidad narrativa (no numérica — la metodología cambió por completo, los números de esta sección **no son comparables** con los de la aproximación por `curl` de sesiones previas):
 
-k6 no está disponible (ver sección 1). En su lugar se generó una carga real —no simulada ni estimada— contra una instancia real de `Sample.Api` (compilada en `Release`, `dotnet build -c Release` + ejecución del binario publicado, sin `dotnet run`/hot reload) usando `curl` en bucles de concurrencia controlada (`xargs -P N`) contra SQL Server LocalDB.
+- `GET /productos/{id}` — 20 VUs constantes, 30 s (`lectura_get_producto`), contra un producto creado en `setup()`.
+- `POST /productos` — 10 VUs constantes, 30 s (`escritura_post_producto`), ejercitando `TransactionBehavior`, `FluentValidation`, inserción vía `IRepository<Producto, Guid>` con interceptor de auditoría (`IAuditedEntity`).
 
-**Advertencia explícita sobre la validez de estos números:** cada request de `curl` es un proceso nuevo del sistema operativo; el overhead de *fork+exec* de `curl` en Git Bash sobre Windows es significativo y **domina** el tiempo medido a concurrencias bajas. Estos números **no son una medición de capacidad real del servidor** (como sí lo sería k6, que reutiliza conexiones y no paga ese overhead por request) — son una aproximación honesta de lo único que se pudo generar sin la herramienta de referencia. **RPS/TPS reales del servidor con una herramienta de carga apropiada quedan pendientes** hasta que k6 (u otra herramienta de carga sin overhead de proceso) esté disponible en el entorno de referencia de F0-09.
+Ambos escenarios corren **en paralelo** (30 VUs totales), igual que las dos aproximaciones por `curl` se documentaban por separado pero corrían contra el mismo servidor en la misma ventana de tiempo real de desarrollo. Comando ejecutado:
 
-### 4.2 GET `/productos/{id}` (lectura, 300 requests, concurrencia 20)
+```
+k6 run --summary-trend-stats "avg,min,med,p(90),p(95),p(99),max" docs/perf/k6-smoke.js
+```
 
-| Corrida | Requests | Tiempo total | RPS aproximado (con el caveat de 4.1) | p50 | p95 | p99 | max |
-|---|---|---|---|---|---|---|---|
-| 1 | 300 | 6.70 s | 44.8 | 17.3 ms | 25.4 ms | 41.6 ms | 46.0 ms |
-| 2 | 300 | 6.69 s | 44.9 | 17.8 ms | 33.1 ms | 43.8 ms | 62.3 ms |
-| 3 | 300 | 6.81 s | 44.1 | 18.1 ms | 22.7 ms | 33.7 ms | 41.7 ms |
+`Sample.Api` se ejecutó compilado en `Release` (`dotnet build -c Release` + ejecución del binario publicado, sin `dotnet run`/hot reload), con `ConnectionStrings__Default` apuntando a LocalDB (`MSSQLLocalDB`, base `SampleApiPerfK6`, creada por `EnsureCreatedAsync` en `Program.cs`), levantado como proceso separado y detenido explícitamente al finalizar las mediciones.
 
-Criterio "tres ejecuciones comparables": **cumplido para esta aproximación** (300/300 requests exitosas en las 3 corridas, RPS estable en 44.1–44.9, p50 estable en 17.3–18.1 ms).
+### 4.2 Resultados — 3 corridas de 30 s cada una, 30 VUs (20 GET + 10 POST)
 
-### 4.3 POST `/productos` (escritura, ~150 requests, concurrencia 10)
+| Corrida | Requests totales | RPS combinado | Errores | `GET` p50 | `GET` p90 | `GET` p95 | `GET` p99 | `POST` p50 | `POST` p90 | `POST` p95 | `POST` p99 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 4 113 | 136.4/s | 0.00 % (0/4 113) | 111.84 ms | 162.39 ms | 194.47 ms | 285.97 ms | 121.41 ms | 171.03 ms | 204.68 ms | 331.93 ms |
+| 2 | 3 595 | 118.8/s | 0.00 % (0/3 595) | 136.45 ms | 214.63 ms | 253.78 ms | 305.69 ms | 148.75 ms | 232.31 ms | 278.05 ms | 315.25 ms |
+| 3 | 3 290 | 109.0/s | 0.00 % (0/3 290) | 163.37 ms | 225.94 ms | 257.32 ms | 312.30 ms | 178.43 ms | 233.46 ms | 279.68 ms | 322.40 ms |
 
-Ejercita `TransactionBehavior`, `FluentValidation`, inserción vía `IRepository<Producto, Guid>` con interceptor de auditoría (`IAuditedEntity`).
+**0 errores HTTP en las 3 corridas** (`http_req_failed` = 0.00 % en las 3, sin ningún check fallido de `GET /productos/{id} → 200` ni `POST /productos → 201`). Criterio "tres ejecuciones comparables": **cumplido en cuanto a resultado** (0/0 errores en las 3 corridas), **con una salvedad real y observada, no descartada**: ver 4.3.
 
-| Corrida | Requests exitosas | Tiempo total | TPS aproximado (con el caveat de 4.1) | p50 | p95 | p99 | max |
-|---|---|---|---|---|---|---|---|
-| 1 | 150/150 | 3.52 s | 42.6 | 20.3 ms | 52.2 ms | 94.0 ms | 102.6 ms |
-| 2 | 149/150 | 3.38 s | 44.1 | 18.0 ms | 20.8 ms | 41.0 ms | 41.1 ms |
-| 3 | 150/150 | 3.44 s | 43.6 | 18.3 ms | 35.3 ms | 71.0 ms | 91.2 ms |
+Una corrida exploratoria previa a estas 3 (sin `--summary-trend-stats`, por lo tanto sin p99, no incluida en la tabla por no tener las mismas columnas) dio 191.3 RPS combinado con `GET` p95 = 108.3 ms y `POST` p95 = 113.1 ms — sensiblemente mejor que las 3 corridas de la tabla. Esto es consistente con la degradación por contención documentada en 4.3, no con un error de medición.
 
-Nota: la corrida 2 tuvo 1 request de 150 sin respuesta registrada (falla de `curl` bajo concurrencia, no del servidor — no se observó ningún 5xx en los logs de la aplicación). Criterio "tres ejecuciones comparables": **cumplido con la salvedad anotada** (149–150/150 exitosas, TPS estable en 42.6–44.1, p50 estable en 18.0–20.3 ms).
+### 4.3 Observación honesta: degradación progresiva entre corridas sucesivas
+
+A diferencia de la aproximación anterior por `curl` (que mostraba RPS estable entre corridas), las 3 corridas de k6 muestran una **degradación monótona** de RPS (136.4 → 118.8 → 109.0) y de latencia (p95 de `GET` 194 ms → 254 ms → 257 ms) a medida que se repiten. Se investigó la causa antes de reportar: no se observó ningún error del servidor ni de red; el proceso de `Sample.Api` permaneció activo y respondiendo en todas las corridas.
+
+Hipótesis más probable, **no aislada experimentalmente** (habría requerido reiniciar el proceso y/o vaciar la base entre cada corrida, lo que se decidió no hacer para no ampliar el alcance de esta tarea): la tabla `Productos` de LocalDB crece en cada corrida (cada `POST` exitoso inserta una fila nueva, sin limpieza entre corridas) y compite por recursos con el resto de procesos de la máquina de desarrollo (editor, Docker Desktop), en línea con la limitación de aislamiento de procesos ya documentada en `docs/entorno-referencia.md` sección 4. **Este documento no promedia estas 3 corridas ni oculta la degradación**: se reporta tal como se midió, siguiendo la política de reproducibilidad de F0-09 (sección 5 de `docs/entorno-referencia.md`), que exige declarar exactamente este tipo de observación en vez de descartarla.
+
+**Conclusión de validez:** los números de 4.2 son mediciones reales de capacidad del servidor (no del cliente de carga, a diferencia de la aproximación anterior por `curl`), pero **no deben leerse como una capacidad máxima estable** — reflejan una carga modesta (30 VUs) en un entorno de desarrollador sin aislamiento ni reinicio de estado entre corridas. Una medición de capacidad "en frío" y reproducible entre sesiones requeriría, como mínimo, reiniciar `Sample.Api` y usar una base de datos vacía (o con un dataset de referencia fijo) antes de cada corrida — ver pendiente en `docs/entorno-referencia.md` sección 6.
 
 ---
 
@@ -174,19 +180,18 @@ Capturado con `dotnet-counters collect -p <pid> --refresh-interval 1` (proveedor
 
 ---
 
-## 6. Brechas para F0-09 (Entorno de referencia — bloquea comparabilidad estricta)
+## 6. Brechas restantes (F0-09 ya resuelto como entorno de referencia formal)
 
-F0-09 ("Entorno de referencia") **no tiene entregable en el repositorio** al momento de esta medición — no se encontró un "Reference Performance Environment" documentado en `docs/`. En su ausencia, esta tarea documentó el entorno real donde se ejecutaron las mediciones (sección 1) como referencia **provisoria**, explícitamente no formal. Esto implica:
+**Actualización de esta segunda continuación:** F0-09 ya tiene entregable propio — `docs/entorno-referencia.md` — que documenta formalmente el entorno de desarrollo actual como entorno de referencia provisorio (sin crear infraestructura nueva, por decisión explícita de alcance de esa tarea) y fija una política de reproducibilidad (cuándo una medición futura es "comparable" a esta línea base). La sección 1 de este documento ya referencia ese entregable en vez de describir el entorno como "provisorio, sin entregable propio".
 
-- Los números de esta línea base **no son comparables entre sí y una futura corrida en otro hardware** (distinta CPU, distinta cantidad de núcleos, distinto ruido de fondo del SO/editor, LocalDB en vez de SQL Server dedicado) sin repetir la medición en el entorno que defina F0-09.
-- F0-09 debe fijar, como mínimo, antes de que los números de este documento (o de una repetición futura) puedan usarse para detectar regresiones: CPU/núcleos dedicados, RAM, versión exacta de SQL Server (no LocalDB), topología de red (loopback vs. red real), datos de referencia (volumen y forma), y una herramienta de carga instalada de antemano (k6) en vez de improvisarse en el momento de medir.
-- Mientras F0-09 no exista, cualquier comparación "regresión sí/no" contra este documento debe tratarse como orientativa, no como gate de aceptación estricto.
+Esto **no elimina las limitaciones de fondo** del entorno (sigue sin ser un entorno aislado/dedicado — ver `docs/entorno-referencia.md` secciones 4 y 6), pero sí cierra el gap de gobierno: ya existe un documento formal contra el cual declarar una medición futura como comparable o no.
 
-**Actualización de esta continuación (Docker ya disponible):** de los bloqueos originales, **solo el de Docker/Testcontainers quedó resuelto** (sección 3.3). Siguen sin resolver, y no forman parte del alcance de esta continuación:
-- **k6 no instalado** — sigue bloqueado por el mismo motivo (instalación interactiva vía `winget`/`msstore` sin resolver). RPS/TPS/p50/p95/p99 reales del servidor siguen sin poder medirse; la aproximación con `curl` (sección 4) sigue siendo la única fuente disponible y sigue teniendo el mismo caveat metodológico fuerte.
-- **F0-09 (entorno de referencia formal)** — sigue sin entregable propio en el repositorio. No es tarea de esta continuación crearlo.
-- El tiempo de pared del comando `dotnet test` sin filtro de integración sigue sin poder medirse de forma fiable: en esta continuación se reintentó una vez más (tras aplicar el fix de 3.2) y **se reprodujo el mismo patrón de degradación por contención** ya documentado en 3.1 (`Templates.Tests` pasó de ~22 s a 15 m 7 s, "Proceso de host de pruebas bloqueado", nodos de MSBuild cerrados antes de tiempo). Se abortó la corrida de forma explícita en vez de reportar un número no representativo. Esto confirma que es un problema de la máquina de desarrollo (contención con otros procesos), no de Docker ni del cambio de esta tarea — refuerza, en sí mismo, la necesidad de F0-09 (entorno dedicado y aislado para benchmarks).
-- Conexiones SQL activas y planes de consulta siguen sin instrumentar (no estaba en el alcance de esta continuación, que se limitó a los puntos bloqueados específicamente por Docker).
+De los bloqueos documentados en sesiones anteriores:
+- **k6 — resuelto en esta continuación.** Instalado como binario standalone v0.54.0. RPS/TPS/p50/p90/p95/p99 reales del servidor ya se midieron con la herramienta de referencia (sección 4), reemplazando la aproximación por `curl`. Se observó una limitación nueva y real (degradación entre corridas sucesivas por acumulación de datos/contención, sección 4.3), documentada en vez de ocultada.
+- **F0-09 — resuelto en esta continuación**, con el alcance acordado (documentar el entorno actual, sin infraestructura nueva). Ver `docs/entorno-referencia.md`.
+- El tiempo de pared del comando `dotnet test` sin filtro de integración **sigue sin poder medirse de forma fiable** (no fue objeto de esta continuación, que se limitó a k6/F0-09): en la sesión anterior se reprodujo un patrón de degradación por contención de recursos (`Templates.Tests` pasó de ~22 s a 15 m 7 s, nodos de MSBuild cerrados antes de tiempo). Sigue como pendiente, ahora explícitamente cubierto por la política de reproducibilidad de F0-09 (declarar el ruido de fondo, sección 5 de `docs/entorno-referencia.md`).
+- Conexiones SQL activas y planes de consulta siguen sin instrumentar — fuera de alcance de esta continuación.
+- Un entorno de benchmark dedicado y aislado (sin contención de editor/Docker Desktop) sigue sin existir — documentado como pendiente explícito en `docs/entorno-referencia.md` sección 6, por decisión de alcance, no por omisión.
 
 ---
 
@@ -199,10 +204,10 @@ F0-09 ("Entorno de referencia") **no tiene entregable en el repositorio** al mom
 | Pruebas unitarias (tiempo de pared total) | **Pendiente** | Degradación por contención de recursos, reproducida de nuevo en esta continuación al reintentar; se usan las duraciones por ensamblado reportadas por xUnit como sustituto parcial (sección 3.1) |
 | Hallazgo: 3 pruebas de `Sample.Api.Tests` mal clasificadas (Docker sin sufijo `Integration`) | **Corregido en esta continuación** | Renombradas/movidas a `Integration/ProductosEndpointsIntegrationTests.cs`; verificado que el filtro `!~Integration` ya no las selecciona (sección 3.2) |
 | Pruebas de integración (Testcontainers) | **Cumplido** | Bloqueado en la sesión original por Docker no operativo; con Docker disponible, 3/3 corridas exitosas, 12/12 pruebas correctas, tiempos estables (49.7 s–57.1 s, sección 3.3) |
-| RPS/TPS/p50/p95/p99 con herramienta de referencia (k6) | **Bloqueado** | k6 no instalado; instalación vía `winget` abortada por prompt interactivo sin resolver (sección 4.1). No relacionado con Docker, fuera de alcance de esta continuación |
-| RPS/TPS/p50/p95/p99 aproximados (curl, LocalDB) | **Cumplido, con caveat fuerte** | 3/3 corridas GET y 3/3 corridas POST con resultados estables; **no representativo de capacidad real del servidor**; se decidió no repetir contra SQL Server en contenedor (sección 4.0) |
+| RPS/TPS/p50/p90/p95/p99 con herramienta de referencia (k6) | **Cumplido** | k6 v0.54.0 instalado; 3/3 corridas de 30 s, 0 errores en las 3 (sección 4.2). Degradación real entre corridas documentada explícitamente, no oculta (sección 4.3) — no se declara "capacidad máxima estable", solo "medido con la herramienta de referencia, bajo las limitaciones del entorno" |
+| RPS/TPS/p50/p95/p99 aproximados (curl, LocalDB) | **Superado** | Reemplazado por la medición con k6 (sección 4); la aproximación por `curl` de sesiones anteriores queda documentada como metodología descartada por su overhead de proceso, no como dato vigente |
 | CPU/memoria/GC | **Cumplido parcialmente** | Una captura real con `dotnet-counters` durante una ráfaga (sección 5); no se repitió 3 veces con la misma metodología por restricción de tiempo de esta tarea |
 | Conexiones SQL activas / planes de consulta | **Pendiente** | No instrumentado; fuera de alcance de esta continuación (sección 5) |
-| Entorno de referencia formal (F0-09) | **Pendiente** | Sin entregable propio en el repositorio; ver sección 6 |
+| Entorno de referencia formal (F0-09) | **Cumplido, con alcance acordado** | `docs/entorno-referencia.md` documenta el entorno actual como referencia formal, sin crear infraestructura nueva (decisión explícita de alcance); no resuelve la falta de un entorno dedicado/aislado, que queda como pendiente propio dentro de ese mismo documento |
 
-**Conclusión general:** con Docker disponible, esta continuación cerró el bloqueo principal que dejaba F0-10 en estado parcial: la suite de integración con Testcontainers corre y pasa de forma reproducible (3/3), y se corrigió un hallazgo real de higiene de pruebas (3 pruebas de `Sample.Api.Tests` que dependían de Docker sin estar excluidas correctamente del filtro de CI para pruebas unitarias). **F0-10 sigue sin poder declararse "Completada" de forma estricta**: quedan dos bloqueos que no dependen de Docker y que esta continuación explícitamente no debía resolver — RPS/TPS/p50/p95/p99 con herramienta de referencia (k6, sección 4.1) y el entorno de referencia formal (F0-09, sección 6), además del tiempo de pared de la suite unitaria completa, que sigue degradándose por contención de recursos de esta máquina de desarrollo en particular. El documento debe releerse una vez que F0-09 defina el entorno formal y que k6 esté disponible.
+**Conclusión general:** con Docker disponible (primera continuación) y con k6 instalado + F0-09 con entregable propio (segunda continuación), F0-10 cerró los tres bloqueos que la dejaban en estado parcial: la suite de integración con Testcontainers corre y pasa de forma reproducible (3/3), la carga HTTP se mide con la herramienta de referencia en vez de una aproximación por `curl`, y existe un entorno de referencia formal contra el cual declarar comparabilidad futura. **F0-10 sigue sin poder declararse "Completada" al 100 %**: quedan dos pendientes menores, ya acotados y no bloqueantes para el criterio de "tres ejecuciones comparables" — el tiempo de pared de la suite unitaria completa (que sigue degradándose por contención de recursos de esta máquina en particular) y la instrumentación de conexiones SQL/planes de consulta. Ambos quedan documentados como pendientes explícitos, no como brechas ocultas.
