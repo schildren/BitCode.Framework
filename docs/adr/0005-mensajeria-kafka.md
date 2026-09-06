@@ -35,3 +35,28 @@ Este ADR se mantiene `Proposed` (Kafka en sí sigue sin implementarse, sigue req
 - `OutboxSaveChangesInterceptor` (Shared.Infrastructure.Persistence) escribe cada `DomainEvent` levantado por un `AggregateRoot<TId>` (`Shared.Kernel`, vía `RaiseDomainEvent`/`IHasDomainEvents`) como fila `OutboxMessage` (Shared.Domain) dentro del MISMO `SaveChangesAsync` que persiste el cambio de negocio del agregado — nunca en una escritura separada. Esto es lo que garantiza el criterio de aceptación de F1-23 ("evento no se pierde tras commit"): si el commit tiene éxito, el evento ya está en la base junto con el cambio de negocio; si la transacción hace rollback, ninguno de los dos queda persistido.
 - `OutboxMessage.ProcessedAtUtc` queda siempre en `null` tras F1-23 — no existe todavía ningún proceso que lo marque como publicado. El relay/publisher que lea las filas pendientes (`ProcessedAtUtc IS NULL`, ya indexado por `OutboxModelConfigurator`) y las publique a Kafka es trabajo de Fase 3, condicionado a la aprobación humana de este ADR; F1-23 no lo implementa.
 - Ver `docs/convenciones.md` (regla dura 3 y la nueva entrada de Outbox) para cómo levantar un evento desde un agregado, y `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxIntegrationTests.cs` para la verificación de atomicidad contra SQL Server real.
+
+## Addendum F1-24 (Inbox base — lado receptor, sin consumidor real todavía)
+
+Este ADR se mantiene `Proposed` (Kafka en sí sigue sin implementarse). Del lado del Inbox mencionado en
+la Decisión de arriba ("construirse en Fase 3 sobre el patrón Outbox/Inbox de Fase 1") también queda
+resuelto el mecanismo genérico:
+
+- `InboxMessage` (Shared.Domain) registra, por `MessageId` (el identificador único que traería el
+  mensaje del broker/productor original), si un mensaje ya fue procesado con éxito. `IInboxMessageProcessor`
+  / `InboxMessageProcessor` (Shared.Application) es el punto de entrada que un futuro consumidor real
+  invocaría una vez por cada mensaje entregado por el broker, ANTES de reconocer/hacer commit del
+  offset: si el mensaje ya tiene una fila con `ProcessedAtUtc` no nulo, se descarta sin ejecutar el
+  handler de negocio (criterio de aceptación de F1-24, "duplicados descartados") — necesario porque
+  Kafka (como la mayoría de los brokers reales) ofrece entrega "at-least-once", no "exactly-once" (ver
+  la sección de Consecuencias de este ADR: el Plan Maestro prohíbe prometer exactly-once de punta a
+  punta en mensajería).
+- Igual que con el Outbox, `InboxMessageProcessor` nunca llama a `SaveChangesAsync` hasta que el handler
+  de negocio termina con éxito: si el handler lanza una excepción, ninguna fila de `InboxMessage` queda
+  persistida, así que un reintento posterior con el mismo `MessageId` no se trata como duplicado —
+  vuelve a ejecutar el handler con normalidad. Ver el `remarks` de `InboxMessageProcessor` para el
+  razonamiento completo y `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxIntegrationTests.cs`
+  para la verificación contra SQL Server real de ambos casos.
+- Ningún consumidor real de Kafka existe todavía: `IInboxMessageProcessor` es, por ahora, un mecanismo
+  genérico invocable manualmente (o desde pruebas), sin ninguna suscripción a un broker — igual que
+  F1-23, esto sigue siendo trabajo de Fase 3, condicionado a la aprobación humana de este ADR.

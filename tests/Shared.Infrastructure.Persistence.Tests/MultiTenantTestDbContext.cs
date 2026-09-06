@@ -14,4 +14,8 @@ public class MultiTenantTestDbContext(DbContextOptions<MultiTenantTestDbContext>
     // F1-23 (Outbox base): agregado de prueba dedicado a OutboxIntegrationTests, con eventos de
     // dominio reales (AggregateRoot<TId>) para ejercitar OutboxSaveChangesInterceptor.
     public DbSet<Integration.TestAccount> TestAccounts => Set<Integration.TestAccount>();
+
+    // F1-24 (Inbox base): agregado de prueba dedicado a InboxIntegrationTests, para ejercitar el
+    // efecto de negocio de un handler invocado por IInboxMessageProcessor.
+    public DbSet<Integration.InboxTestAccount> InboxTestAccounts => Set<Integration.InboxTestAccount>();
 }

@@ -19,6 +19,13 @@ BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChang
 BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChangesInterceptor.OutboxSaveChangesInterceptor(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxModelConfigurator
 static BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.EfInboxStore(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.FindAsync(string! messageId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Inbox.InboxMessage?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.Add(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.Discard(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.InboxModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.InboxModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator
 BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator
 static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator.ApplyTenantIndexes(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void

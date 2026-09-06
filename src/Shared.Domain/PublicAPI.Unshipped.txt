@@ -135,3 +135,27 @@ BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.get -> int
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.set -> void
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.get -> string?
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.set -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.InboxMessage() -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.Id.get -> System.Guid
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.Id.init -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.TenantId.set -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.MessageId.get -> string!
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.MessageId.init -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.MessageType.get -> string!
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.MessageType.init -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.PayloadJson.get -> string!
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.PayloadJson.init -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.ReceivedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.ReceivedAtUtc.init -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.ProcessedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.ProcessedAtUtc.set -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.RetryCount.get -> int
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.RetryCount.set -> void
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.Error.get -> string?
+BitCode.Framework.Shared.Domain.Inbox.InboxMessage.Error.set -> void
+BitCode.Framework.Shared.Domain.Inbox.IInboxStore
+BitCode.Framework.Shared.Domain.Inbox.IInboxStore.FindAsync(string! messageId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Inbox.InboxMessage?>!
+BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Add(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Discard(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void

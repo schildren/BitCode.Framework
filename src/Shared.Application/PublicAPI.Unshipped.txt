@@ -30,6 +30,14 @@ BitCode.Framework.Shared.Application.Messaging.ICommand<TResponse>
 BitCode.Framework.Shared.Application.Messaging.IIdempotentCommand
 BitCode.Framework.Shared.Application.Messaging.IQuery<TResponse>
 BitCode.Framework.Shared.Application.Messaging.ITransactionalCommand
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Processed = 0 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Discarded = 1 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.IInboxMessageProcessor
+BitCode.Framework.Shared.Application.Inbox.IInboxMessageProcessor.ProcessAsync(string! messageId, string! messageType, string! payload, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>! handler, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome>!
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor.InboxMessageProcessor(BitCode.Framework.Shared.Domain.Inbox.IInboxStore! inboxStore, BitCode.Framework.Shared.Domain.Persistence.IUnitOfWork! unitOfWork, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor!>! logger) -> void
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor.ProcessAsync(string! messageId, string! messageType, string! payload, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>! handler, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome>!
 static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions!>! configureIdempotency, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyRequired -> BitCode.Framework.Shared.Kernel.Error!

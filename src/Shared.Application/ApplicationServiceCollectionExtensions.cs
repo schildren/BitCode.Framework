@@ -1,6 +1,7 @@
 using System.Reflection;
 using BitCode.Framework.Shared.Application.Behaviors;
 using BitCode.Framework.Shared.Application.Idempotency;
+using BitCode.Framework.Shared.Application.Inbox;
 using BitCode.Framework.Shared.Domain.Idempotency;
 using FluentValidation;
 using Mapster;
@@ -52,6 +53,13 @@ public static class ApplicationServiceCollectionExtensions
         // llamando AddHttpContextIdempotencyKeyProvider() (Shared.Infrastructure.Web) ANTES de este
         // método, mismo patrón que AddHttpContextTenantProvider().
         services.TryAddScoped<IIdempotencyKeyProvider, NullIdempotencyKeyProvider>();
+
+        // F1-24 (Inbox base): mecanismo genérico de deduplicación para un futuro consumidor de
+        // mensajería (Fase 3) — no depende de MediatR, se resuelve como un servicio de scope normal,
+        // invocado directamente por el consumidor por cada mensaje recibido (no es un pipeline
+        // behavior, a diferencia de IdempotencyBehavior, porque un mensaje de Inbox no llega como un
+        // IRequest de MediatR).
+        services.AddScoped<IInboxMessageProcessor, InboxMessageProcessor>();
 
         services.AddMediatR(config =>
         {
