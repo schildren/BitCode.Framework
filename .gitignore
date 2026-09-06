@@ -2,3 +2,6 @@ bin/
 obj/
 .vs/
 *.user
+
+# Salida local de `dotnet pack` (docs/politica-empaquetado.md) — nunca se versiona.
+artifacts/

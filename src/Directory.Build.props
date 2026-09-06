@@ -1,0 +1,45 @@
+<Project>
+
+  <!-- Encadena el Directory.Build.props de la raíz (TargetFramework/Nullable/ImplicitUsings). MSBuild solo
+       auto-importa el Directory.Build.props más cercano en el árbol, por eso hace falta importar el de la
+       raíz explícitamente aquí (ver docs/politica-empaquetado.md). -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- Metadatos NuGet comunes a todos los proyectos de src/ (paquetes públicos del framework, ver
+       docs/politica-empaquetado.md). No se usa Central Package Management (Directory.Packages.props);
+       esta es la única fuente centralizada de metadatos de empaquetado, no de versiones de PackageReference. -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>BitCode.Framework contributors</Authors>
+    <Company>BitCode.Framework</Company>
+    <Product>BitCode.Framework</Product>
+    <Description Condition="'$(Description)' == ''">Building block del framework BitCode.Framework: $(MSBuildProjectName).</Description>
+    <PackageTags>bitcode;framework;dotnet</PackageTags>
+    <RepositoryUrl>https://github.com/schildren/BitCode.Framework</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/schildren/BitCode.Framework</PackageProjectUrl>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../artifacts/packages/</PackageOutputPath>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Símbolos y Source Link -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Licencia: NO se fija PackageLicenseExpression/PackageLicenseFile a propósito. El ADR 0008
+         (docs/adr/0008-licencias-open-core.md) está en estado "Proposed": la licencia del producto es una
+         decisión pendiente de aprobación humana explícita (Plan Maestro, sección 13) y ese mismo ADR
+         indica que no corresponde fijar de facto una licencia en artefactos antes de esa aprobación.
+         `dotnet pack` emitirá la advertencia NU5128/ausencia de licencia; es esperado y no debe silenciarse
+         agregando una licencia sin aprobar. Ver docs/politica-empaquetado.md. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

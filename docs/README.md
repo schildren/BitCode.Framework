@@ -33,6 +33,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [threat-model.md](threat-model.md) — threat model (F0-07): activos, actores, fronteras de confianza, amenazas STRIDE y mitigaciones (existentes/planeadas/huecos sin plan), anclado al código y a los ADR ya vigentes. **Estado: Completado, pendiente de revisión de seguridad.**
 - [politica-versionado.md](politica-versionado.md) — política de versionado y compatibilidad (F0-05): SemVer de paquetes, deprecación, versionado de API HTTP/eventos/esquemas de base de datos y casos de ejemplo. **Estado: Propuesto, casos de ejemplo pendientes de aprobación humana.**
 - [politica-dependencias.md](politica-dependencias.md) — política de dependencias (F0-06): licencias permitidas/prohibidas, proceso de excepción, SCA/CVE y actualización. **Estado: Aplicada parcialmente en CI** (gate `dependency-scan` en `.github/workflows/ci.yml`, pendiente de primera corrida real en GitHub Actions).
+- [politica-empaquetado.md](politica-empaquetado.md) — política de empaquetado NuGet (F1-02): paquetes públicos vs. internos, convención de metadatos, símbolos/Source Link y procedimiento de verificación local de instalación (sin publicar a ningún feed real). **Estado: Aplicado**, verificado con instalación en app limpia.
 
 ### ADR (docs/adr/)
 
