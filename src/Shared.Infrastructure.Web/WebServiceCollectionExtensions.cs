@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using BitCode.Framework.Shared.Domain.Idempotency;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Web.Exceptions;
@@ -69,6 +70,45 @@ public static class WebServiceCollectionExtensions
     public static IServiceCollection AddSharedHealthChecks(this IServiceCollection services)
     {
         services.AddHealthChecks();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registra el mecanismo de versionado de API HTTP (F1-27, Asp.Versioning.Http) con el
+    /// mecanismo decidido en <c>docs/politica-versionado.md</c> (sección 4): la versión viaja como
+    /// segmento de ruta (<c>/api/v{version}/...</c>), nunca en un header ni en el media type. El
+    /// proyecto consumidor sigue siendo responsable de:
+    /// <list type="bullet">
+    /// <item>Declarar la ruta con el parámetro de ruta <c>{version:apiVersion}</c> (la restricción de
+    /// ruta <c>apiVersion</c> la agrega el propio paquete al llamar este método).</item>
+    /// <item>Construir un <c>ApiVersionSet</c> por grupo de endpoints con
+    /// <c>app.NewApiVersionSet().HasApiVersion(new ApiVersion(1))...Build()</c> (namespace
+    /// <c>Asp.Versioning.Builder</c>) y aplicarlo con <c>.WithApiVersionSet(versionSet)</c> sobre el
+    /// <c>RouteGroupBuilder</c> del módulo.</item>
+    /// <item>Marcar cada mapeo de endpoint con <c>.HasApiVersion(...)</c> (versión soportada) o
+    /// <c>.MapToApiVersion(...)</c> (versión adicional del mismo path que resuelve a un handler
+    /// distinto) — ver <c>samples/Sample.Api/Productos/ProductosModule.cs</c> como referencia de v1 y
+    /// v2 coexistiendo sobre el mismo grupo de rutas.</item>
+    /// </list>
+    /// <c>AssumeDefaultVersionWhenUnspecified = false</c> es intencional: como la versión siempre
+    /// viaja en la ruta, un request sin segmento de versión ya no matchea ningún endpoint mapeado
+    /// (404 de enrutamiento, no un fallback silencioso a una versión por defecto). Con
+    /// <c>ReportApiVersions = true</c>, toda respuesta de un endpoint versionado incluye los headers
+    /// estándar de este paquete (<c>api-supported-versions</c>/<c>api-deprecated-versions</c>) — ver
+    /// <c>docs/guia-versionado-api.md</c> para el detalle de cómo deprecar una versión con
+    /// <c>HasDeprecatedApiVersion</c> y qué headers exactos agrega el paquete (no son los headers
+    /// IETF <c>Sunset</c>/<c>Deprecation</c> de RFC 8594, sino la convención propia de
+    /// Asp.Versioning).
+    /// </summary>
+    public static IServiceCollection AddSharedApiVersioning(this IServiceCollection services)
+    {
+        services.AddApiVersioning(options =>
+        {
+            options.ApiVersionReader = new UrlSegmentApiVersionReader();
+            options.ReportApiVersions = true;
+            options.AssumeDefaultVersionWhenUnspecified = false;
+        });
 
         return services;
     }

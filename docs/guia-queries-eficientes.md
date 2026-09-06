@@ -135,7 +135,7 @@ return await repository.ListPagedAsync(
 ```
 
 Ver `ListarProductosQuery`/`ListarProductosQueryHandler` en `samples/Sample.Api/Productos/` para el
-patrón de referencia completo (incluye el endpoint `GET /productos?page=&pageSize=`) y
+patrón de referencia completo (incluye el endpoint `GET /api/v1/productos?page=&pageSize=`, F1-27) y
 `ListarProductos_ConPageSizeSuperiorAlMaximo_Retorna400ConErrorDeValidacion_SinTruncarEnSilencio` en
 `samples/Sample.Api.Tests/Integration/ProductosEndpointsIntegrationTests.cs` para la verificación de
 punta a punta.
@@ -183,5 +183,5 @@ documentado antes de bypasear el patrón genérico.
 - `samples/Sample.Api/Productos/ListarProductosQuery.cs` (F1-21) — patrón de referencia end-to-end
 - `tests/Shared.Kernel.Tests/PageRequestTests.cs` (F1-21) — validación de límites (min/max, sin truncar en silencio)
 - `tests/Shared.Infrastructure.Persistence.Tests/ReadOnlyRepositoryBaseTests.cs` — pruebas de comportamiento (`ChangeTracker.Entries()` vacío tras una lectura vía `IReadRepository`, proyección, paginación, overloads de `PageRequest` y recorte defensivo de `NormalizePaging`).
-- `samples/Sample.Api.Tests/Integration/ProductosEndpointsIntegrationTests.cs` — verificación de punta a punta de "ningún endpoint ilimitado" contra el endpoint real `GET /productos`.
+- `samples/Sample.Api.Tests/Integration/ProductosEndpointsIntegrationTests.cs` — verificación de punta a punta de "ningún endpoint ilimitado" contra el endpoint real `GET /api/v1/productos`.
 - `docs/convenciones.md` — regla dura #2 (`IQuery` nunca muta), regla dura #5 (nunca exponer `IQueryable`) y regla dura (F1-21) sobre límites de paginación.

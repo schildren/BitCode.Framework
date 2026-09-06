@@ -28,3 +28,4 @@ static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtension
 static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedHealthChecks(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 BitCode.Framework.Shared.Infrastructure.Web.HealthChecks.HealthCheckEndpointRouteBuilderExtensions
 static BitCode.Framework.Shared.Infrastructure.Web.HealthChecks.HealthCheckEndpointRouteBuilderExtensions.MapSharedHealthChecks(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedApiVersioning(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

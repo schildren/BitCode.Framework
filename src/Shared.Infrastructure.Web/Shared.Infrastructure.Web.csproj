@@ -14,6 +14,15 @@
     <!-- Solo para Serilog.Context.LogContext (F1-15, TenantLogEnrichmentMiddleware): el resto de
          la configuración de Serilog (sinks, niveles) vive en Shared.Infrastructure.Observability. -->
     <PackageReference Include="Serilog" Version="4.2.0" />
+    <!-- F1-27: versionado de API HTTP por segmento de ruta (Asp.Versioning, sucesor mantenido por la
+         comunidad .NET de Microsoft.AspNetCore.Mvc.Versioning). Solo el paquete .Http alcanza porque
+         el repositorio usa Minimal API en todos sus proyectos Web (MapGroup/MapGet/MapPost), no
+         controllers MVC: Asp.Versioning.Mvc.ApiExplorer no aplica. La superficie de extensión para
+         Minimal API (NewApiVersionSet/WithApiVersionSet/HasApiVersion/MapToApiVersion/
+         HasDeprecatedApiVersion, namespace Asp.Versioning.Builder) fluye transitivamente a cualquier
+         proyecto que referencie Shared.Infrastructure.Web (ver samples/Sample.Api/Productos/
+         ProductosModule.cs), sin que el consumidor declare su propio PackageReference. -->
+    <PackageReference Include="Asp.Versioning.Http" Version="10.2.3" />
   </ItemGroup>
 
 

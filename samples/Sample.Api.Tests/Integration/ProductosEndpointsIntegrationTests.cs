@@ -53,7 +53,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     /// </summary>
     private Task<HttpResponseMessage> PostProductoAsync(object payload, string? idempotencyKey = null)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/productos")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/productos")
         {
             Content = JsonContent.Create(payload),
         };
@@ -69,7 +69,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         crearResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var id = await crearResponse.Content.ReadFromJsonAsync<Guid>();
 
-        var obtenerResponse = await _client!.GetAsync($"/productos/{id}");
+        var obtenerResponse = await _client!.GetAsync($"/api/v1/productos/{id}");
         obtenerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var producto = await obtenerResponse.Content.ReadFromJsonAsync<ProductoDto>();
         producto!.Nombre.Should().Be("Teclado");
@@ -78,7 +78,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ObtenerProducto_Inexistente_Retorna404ConProblemDetails()
     {
-        var response = await _client!.GetAsync($"/productos/{Guid.NewGuid()}");
+        var response = await _client!.GetAsync($"/api/v1/productos/{Guid.NewGuid()}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         var body = await response.Content.ReadAsStringAsync();
@@ -120,7 +120,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
             "el segundo POST con la misma Idempotency-Key debe devolver el mismo resultado ya " +
             "obtenido, sin volver a ejecutar el handler");
 
-        var listado = await _client!.GetAsync("/productos?page=1&pageSize=100");
+        var listado = await _client!.GetAsync("/api/v1/productos?page=1&pageSize=100");
         var pagina = await listado.Content.ReadFromJsonAsync<PagedResultDto>();
         pagina!.Items.Count(p => p.Nombre == "Teclado mecánico").Should().Be(
             1,
@@ -151,7 +151,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         var body = await segundaRespuesta.Content.ReadAsStringAsync();
         body.Should().Contain("Idempotency.KeyReused");
 
-        var listado = await _client!.GetAsync("/productos?page=1&pageSize=100");
+        var listado = await _client!.GetAsync("/api/v1/productos?page=1&pageSize=100");
         var pagina = await listado.Content.ReadFromJsonAsync<PagedResultDto>();
         pagina!.Items.Should().NotContain(p => p.Nombre == "Producto distinto");
         pagina.Items.Count(p => p.Nombre == "Producto original").Should().Be(1);
@@ -165,7 +165,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task CrearProducto_SinIdempotencyKey_Retorna400ConErrorDeValidacion()
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/productos")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/productos")
         {
             Content = JsonContent.Create(new { nombre = "Sin clave", precio = 5m }),
         };
@@ -184,7 +184,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         await PostProductoAsync(new { nombre = "Mouse", precio = 15m });
         await PostProductoAsync(new { nombre = "Monitor", precio = 199m });
 
-        var response = await _client!.GetAsync("/productos?page=1&pageSize=1");
+        var response = await _client!.GetAsync("/api/v1/productos?page=1&pageSize=1");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var pagina = await response.Content.ReadFromJsonAsync<PagedResultDto>();
@@ -199,7 +199,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
         // Criterio de aceptación F1-21: "ningún endpoint ilimitado". Pedir un pageSize
         // arbitrariamente alto debe fallar de forma explícita, nunca ejecutarse truncado en silencio
         // ni devolver todas las filas.
-        var response = await _client!.GetAsync("/productos?page=1&pageSize=10000");
+        var response = await _client!.GetAsync("/api/v1/productos?page=1&pageSize=10000");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
@@ -209,7 +209,7 @@ public class ProductosEndpointsIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task ListarProductos_ConPageSizeCero_Retorna400ConErrorDeValidacion()
     {
-        var response = await _client!.GetAsync("/productos?page=1&pageSize=0");
+        var response = await _client!.GetAsync("/api/v1/productos?page=1&pageSize=0");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();

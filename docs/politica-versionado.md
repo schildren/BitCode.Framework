@@ -1,8 +1,8 @@
 # Política de versionado y compatibilidad — BitCode.Framework
 
-**Tarea:** F0-05 (Fase 0 — Gobierno, arquitectura y línea base) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Sección 2 actualizada por F1-04 (Fase 1 — Épica F1-A, "Versionado") con la elección de herramienta de versionado automático, ya aplicada en código (`src/Directory.Build.props`).
-**Fecha:** 2026-09-05
-**Estado:** Propuesto — el criterio de aceptación de F0-05 exige "casos de ejemplo aprobados". Los casos de ejemplo de la sección 7 están redactados y listos para revisión, pero **no fueron aprobados todavía por un responsable humano**. Este documento no debe tratarse como vigente hasta esa aprobación explícita en lo que respecta a esos casos. La sección 2 (herramienta de versionado automático, F1-04) es una decisión de tooling ya aplicada, no un caso de ejemplo pendiente de aprobación.
+**Tarea:** F0-05 (Fase 0 — Gobierno, arquitectura y línea base) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Sección 2 actualizada por F1-04 (Fase 1 — Épica F1-A, "Versionado") con la elección de herramienta de versionado automático, ya aplicada en código (`src/Directory.Build.props`). Sección 4 actualizada por F1-27 (Fase 1 — Épica F1-E, "API versioning"): el mecanismo de versionado de API HTTP dejó de ser propuesta y quedó implementado en código (`Asp.Versioning.Http`, `samples/Sample.Api`).
+**Fecha:** 2026-09-06
+**Estado:** Parcialmente propuesto — el criterio de aceptación de F0-05 exige "casos de ejemplo aprobados". Los casos de ejemplo de la sección 7 están redactados y listos para revisión, pero **no fueron aprobados todavía por un responsable humano**. Este documento no debe tratarse como vigente hasta esa aprobación explícita en lo que respecta a esos casos. La sección 2 (herramienta de versionado automático, F1-04) y la sección 4 (mecanismo de versionado de API HTTP, F1-27) son decisiones de diseño técnico ya aplicadas en código, no casos de ejemplo pendientes de aprobación humana.
 
 Este documento desarrolla el eje "Compatibilidad" de [`architecture-principles.md`](architecture-principles.md) (sección 5) y aplica las reglas de compatibilidad de la sección 11 del Plan Maestro ("Estrategia de migración desde BitCode actual") a los cuatro tipos de contrato que el framework expone hoy o expondrá: paquetes NuGet, API HTTP, eventos de dominio/integración y esquemas de base de datos.
 
@@ -61,9 +61,9 @@ Todo lo que sigue es una instrumentación concreta de ese principio para cada ti
 
 ## 4. Versionado de API HTTP
 
-**Estado actual (verificado en código):** `samples/Sample.Api/Productos/ProductosModule.cs` expone hoy `/productos` y `/productos/{id}` **sin ningún prefijo ni mecanismo de versión** (`app.MapGroup("/productos")`). No hay convención previa en el repositorio que condicione la elección — no hay uso de `Asp.Versioning`, cabeceras `api-version`, ni `Accept` con media-type versionado en ningún proyecto.
+**Estado actual (F1-27, implementado):** `samples/Sample.Api/Productos/ProductosModule.cs` expone `GET/POST /api/v1/productos` y, como demostración de coexistencia, `GET /api/v2/productos/{id}` con un contrato de respuesta distinto (agrega `CreadoEnUtc`) — ambas versiones activas simultáneamente en el mismo despliegue. El mecanismo se implementó con `Asp.Versioning.Http` (`services.AddSharedApiVersioning()`, Shared.Infrastructure.Web), tal como quedaba planteado en la propuesta original de esta sección, sin cambios respecto a la decisión de mecanismo (segmento de ruta). Ver `docs/guia-versionado-api.md` para el detalle operativo completo (cómo versionar un endpoint nuevo, cómo deprecar una versión, qué headers agrega realmente el paquete y qué código de error responde una versión no soportada — 404, no el 400 originalmente asumido en el caso 1 de la sección 7).
 
-**Propuesta (decisión a confirmar por un responsable humano, dado que no hay precedente vigente que la imponga):**
+**Decisión adoptada (promovida de "propuesta" a "implementada" en F1-27 — decisión de diseño técnico del framework, no una de las reservadas a aprobación humana de la sección 13 del Plan Maestro):**
 
 - **Mecanismo elegido: versionado por segmento de ruta** (`/api/v{mayor}/...`, por ejemplo `/api/v1/productos`). Razones para la propuesta:
   - Es explícito y visible en logs, documentación OpenAPI, dashboards de gateway (YARP, ADR 0007) y trazas de OpenTelemetry sin necesitar inspeccionar cabeceras.
@@ -75,7 +75,7 @@ Todo lo que sigue es una instrumentación concreta de ese principio para cada ti
 - **Alternativas descartadas para esta propuesta** (quedan documentadas para que la persona que apruebe pueda objetar con conocimiento de las opciones):
   - Versionado por cabecera custom (`X-Api-Version`): menos visible en trazas/logs de acceso, más difícil de probar manualmente con curl/navegador.
   - Versionado por media-type (`Accept: application/vnd.bitcode.v1+json`): más "correcto" según REST puro, pero agrega fricción de adopción y no hay ningún precedente ni cliente ya construido contra ese esquema en el repositorio.
-- Mientras esta decisión no sea aprobada, los endpoints existentes de `Sample.Api` **no se modifican** como parte de F0-05 (cambiar la ruta de un endpoint ya publicado sería en sí mismo un breaking change no aprobado, sección 13 del Plan Maestro). La adopción del prefijo `/api/v1` se aplicará recién cuando se apruebe esta política y se ejecute como tarea explícita de migración (con su propio análisis de compatibilidad).
+- **Migración ejecutada en F1-27:** al momento de esta decisión, `samples/Sample.Api` era un proyecto piloto/demo sin consumidores externos reales (`docs/inventario-tecnico.md`), por lo que migrar `/productos` a `/api/v1/productos` en la propia tarea F1-27 no constituye un breaking change contra un consumidor real — es la migración explícita ya prevista en este párrafo, ejecutada en cuanto la propuesta de mecanismo quedó adoptada sin objeciones técnicas. Un proyecto consumidor real con tráfico productivo existente sobre un endpoint sin versión sí requeriría el análisis de compatibilidad e implicaría breaking change (sección 13 del Plan Maestro) al agregar el prefijo de versión.
 
 ---
 
@@ -109,22 +109,22 @@ Todo lo que sigue es una instrumentación concreta de ese principio para cada ti
 
 ## 7. Casos de ejemplo (pendientes de aprobación)
 
-Estos casos ilustran la aplicación conjunta de las secciones 2 a 6. **Ninguno de estos tres casos fue aprobado todavía por un responsable humano** — se presentan para revisión, no como precedente ya vigente.
+Estos casos ilustran la aplicación conjunta de las secciones 2 a 6. **Ninguno de estos tres casos fue aprobado todavía por un responsable humano** — se presentan para revisión, no como precedente ya vigente. El caso 1 se redactó antes de F1-27, cuando el endpoint todavía no tenía versión de ruta; el mecanismo que describe como "una vez aprobado" ya está implementado (ver sección 4) — el caso en sí (agregar `stockDisponible`) sigue siendo hipotético y no se implementó, solo el mecanismo genérico que necesitaría.
 
 ### Caso 1 — Endpoint que agrega un campo requerido a la respuesta
 
-**Escenario:** `GET /productos/{id}` (hoy sin versión de ruta) hoy devuelve `{ id, nombre, precio }`. Se necesita agregar `stockDisponible` como campo **requerido** en la respuesta (el consumidor asume que siempre está presente y no tolera su ausencia).
+**Escenario:** `GET /api/v1/productos/{id}` devuelve `{ id, nombre, precio }`. Se necesita agregar `stockDisponible` como campo **requerido** en la respuesta (el consumidor asume que siempre está presente y no tolera su ausencia).
 
 **Incorrecto (viola la política):**
 ```csharp
-// Modificar directamente el DTO de respuesta existente y el mismo endpoint /productos/{id}
+// Modificar directamente el DTO de respuesta existente y el mismo endpoint /api/v1/productos/{id}
 public record ProductoResponse(Guid Id, string Nombre, decimal Precio, decimal StockDisponible);
 ```
 Esto es un cambio breaking silencioso: un consumidor que deserializa con un contrato estricto (o que genera un cliente tipado desde el OpenAPI anterior) puede fallar, y el endpoint no cambió de versión.
 
-**Correcto (según esta política, una vez aprobado el mecanismo de la sección 4):**
+**Correcto (según esta política y el mecanismo ya implementado en la sección 4):**
 1. Si `stockDisponible` puede tener un valor por defecto razonable (por ejemplo `0` o `null` cuando no aplica) → es un cambio **aditivo**, se agrega como campo opcional en el mismo endpoint sin nueva versión.
-2. Si de verdad debe ser requerido y sin default aceptable → se publica `GET /api/v2/productos/{id}` con el nuevo contrato, se mantiene `GET /api/v1/productos/{id}` (o `/productos/{id}` como alias de v1, según cómo se resuelva la migración) sirviendo el contrato anterior durante la ventana de coexistencia, se marca `/productos/{id}` como obsoleto en la documentación OpenAPI (`[Obsolete]`/`Deprecated: true` en el esquema) y se retira solo tras confirmar que no hay consumidores de v1 y con aprobación de breaking change (sección 13 del Plan Maestro).
+2. Si de verdad debe ser requerido y sin default aceptable → se publica `GET /api/v2/productos/{id}` con el nuevo contrato (`.MapToApiVersion(new ApiVersion(2))`, ver `docs/guia-versionado-api.md`), se mantiene `GET /api/v1/productos/{id}` sirviendo el contrato anterior sin cambios durante la ventana de coexistencia, se marca v1 como obsoleta (`HasDeprecatedApiVersion`, o `[Obsolete]`/`Deprecated: true` en el esquema una vez exista OpenAPI, F1-28) y se retira solo tras confirmar que no hay consumidores de v1 y con aprobación de breaking change (sección 13 del Plan Maestro).
 
 ### Caso 2 — Evento de integración que cambia el tipo de un campo
 
@@ -159,7 +159,8 @@ migrationBuilder.AddColumn<string>(
 - [`architecture-principles.md`](architecture-principles.md) — sección 5, Compatibilidad.
 - [`convenciones.md`](convenciones.md) — reglas duras vigentes (`ToOkOrProblem`, `Result`, patrón de módulos).
 - [`inventario-tecnico.md`](inventario-tecnico.md) — estado real de paquetes, CI y ausencia de CPM/versionado automático.
-- `samples/Sample.Api/Productos/ProductosModule.cs` — estado actual del enrutamiento (sin versión), referenciado en la sección 4.
+- `samples/Sample.Api/Productos/ProductosModule.cs` — estado actual del enrutamiento (`/api/v1`/`/api/v2` coexistiendo, F1-27), referenciado en la sección 4.
+- `docs/guia-versionado-api.md` — guía operativa completa del mecanismo de versionado de API HTTP implementado en F1-27.
 
 ## Aprobación
 

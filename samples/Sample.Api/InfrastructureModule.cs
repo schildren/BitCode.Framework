@@ -40,6 +40,10 @@ public class InfrastructureModule : IWebFrameworkModule
         services.AddHttpContextIdempotencyKeyProvider();
         services.AddSharedApplication(typeof(InfrastructureModule).Assembly);
         services.AddSharedExceptionHandling();
+
+        // F1-27: versionado de API HTTP por segmento de ruta (/api/v{version}/...). Ver
+        // ProductosModule para el ApiVersionSet de referencia (v1 deprecada + v2 coexistiendo).
+        services.AddSharedApiVersioning();
     }
 
     public void ConfigureApplication(WebApplication app)
