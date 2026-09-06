@@ -65,3 +65,4 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0014](adr/0014-secretos-proveedor-vault-propuesto.md) | Secretos: `ISecretProvider` (Accepted) + HashiCorp Vault (Accepted, proveedor concreto) | Accepted |
 | [0015](adr/0015-mtls-contrato-operativo-servicio-a-servicio.md) | mTLS: contrato operativo servicio-a-servicio para extracción futura | Accepted |
 | [0016](adr/0016-firma-lotes-auditoria-hmac-simetrico.md) | Auditoría: firma de lotes con HMAC-SHA256 simétrico (F2-17) | Accepted |
+| [0017](adr/0017-worm-proveedor-minio-object-lock-propuesto.md) | Auditoría WORM: `IWormStorage` (Accepted) + MinIO/S3 Object Lock (Proposed, proveedor concreto) (F2-18) | Proposed |

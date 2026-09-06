@@ -1,20 +1,20 @@
-# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad y firma de lotes (F2-15/F2-16/F2-17)
+# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad, firma de lotes y exportación WORM (F2-15/F2-16/F2-17/F2-18)
 
-**Tareas:** F2-15, F2-16 y F2-17 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17).
-**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17).
+**Tareas:** F2-15, F2-16, F2-17 y F2-18 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
+**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17); pipeline de retención WORM (F2-18).
+**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17); "Escritura y lectura probadas" (F2-18).
 
-F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad) y F2-17 (firma de lotes,
-esta guía las cubre ambas) son piezas ADICIONALES que se apoyan en ese esquema sin haber requerido ningún
-cambio de contrato público breaking (`AuditEntry` ya reservaba `PreviousAuditHash` desde F2-15). Las tareas
-siguientes de la épica siguen pendientes:
+F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad), F2-17 (firma de lotes) y
+F2-18 (exportación WORM, esta guía las cubre las tres últimas) son piezas ADICIONALES que se apoyan en ese
+esquema sin haber requerido ningún cambio de contrato público breaking (`AuditEntry` ya reservaba
+`PreviousAuditHash` desde F2-15). Las tareas siguientes de la épica siguen pendientes:
 
-- **F2-18** (WORM): un destino de exportación inmutable, consumiendo las entradas ya escritas.
 - **F2-19** (PII y redacción): política de qué puede/no puede volcarse en
   `AuditEntryRequest.Metadata`/`Reason`.
 - **F2-20** (consulta de auditoría): una API de lectura sobre el almacenamiento real detrás de
   `IAuditWriter` (ni F2-15 ni F2-16 incluyen ningún mecanismo de lectura más allá de
-  `InMemoryAuditWriter.Entries`, pensado solo para inspección en pruebas/desarrollo local).
+  `InMemoryAuditWriter.Entries`, pensado solo para inspección en pruebas/desarrollo local -- F2-18 sí agrega
+  lectura, pero acotada a lo que el propio proyecto exportó a WORM, no una API administrativa general).
 
 ## Qué resuelve esta tarea
 
@@ -292,6 +292,134 @@ la lea.
   adicional para el caso en que además se necesite una prueba resistente a la reconstrucción completa de la
   cadena por quien tiene acceso de escritura al almacenamiento.
 
+## Exportación a almacenamiento WORM: `IWormStorage` e `IAuditWormExportPipeline` (F2-18)
+
+### Qué hueco cierra, exactamente
+
+`IAuditIntegrityVerifier` (F2-16) e `IAuditBatchSigner` (F2-17) detectan y prueban manipulación, pero
+ninguna de las dos piezas anteriores IMPIDE la manipulación en primer lugar: ambas siguen operando sobre lo
+que sea que devuelva el almacenamiento subyacente de `IAuditWriter` (en desarrollo, `InMemoryAuditWriter`;
+en producción, lo que cada proyecto conecte). Un atacante -- o un operador con privilegios administrativos
+excesivos -- con acceso de escritura a ESE almacenamiento puede alterar o eliminar datos antes de que
+cualquier verificación posterior tenga oportunidad de ejecutarse. F2-18 cierra ese hueco con un destino de
+exportación cuya propia semántica de almacenamiento rechaza la sobrescritura o eliminación mientras la
+retención esté vigente -- no depende de ningún control de aplicación adicional, es una propiedad del
+almacenamiento mismo.
+
+### Dos capas: `IWormStorage` (primitiva genérica) e `IAuditWormExportPipeline` (política de retención)
+
+```csharp
+public interface IWormStorage
+{
+    Task<Result<WormObjectMetadata>> WriteAsync(WormWriteRequest request, CancellationToken cancellationToken = default);
+    Task<Result<WormObject>> ReadAsync(string key, CancellationToken cancellationToken = default);
+    Task<Result> DeleteAsync(string key, CancellationToken cancellationToken = default);
+}
+```
+
+`IWormStorage` es deliberadamente genérica ("clave -> bytes con retención"), sin conocer nada de
+`AuditEntry` -- el framework no tenía previamente ninguna abstracción de blob/object storage
+(`IBlobStorage`/`IObjectStorage`) que F2-18 pudiera reutilizar, así que esta interfaz nace con esta tarea,
+siguiendo el mismo patrón que `ISecretProvider` (F2-12) e `IEncryptionProvider` (F2-13): intercambiable por
+implementación, sin que el código consumidor referencie nunca un tipo concreto.
+
+Sobre esa primitiva, `IAuditWormExportPipeline` es la pieza que sí conoce `AuditEntry` y es el entregable
+concreto de F2-18 ("Pipeline de retención"): serializa un lote ya escrito (`AuditWormBatchSerializer`,
+JSON) y lo persiste vía `IWormStorage` aplicando una retención configurada centralmente
+(`AuditWormExportOptions.RetentionPeriod`) en lugar de que cada llamador la calcule por su cuenta en cada
+exportación:
+
+```csharp
+public interface IAuditWormExportPipeline
+{
+    Task<Result<WormObjectMetadata>> ExportAsync(AuditWormExportRequest request, CancellationToken cancellationToken = default);
+    Task<Result<AuditWormExportedBatch>> ReadAsync(string key, CancellationToken cancellationToken = default);
+}
+```
+
+```csharp
+var exportResult = await auditWormExportPipeline.ExportAsync(
+    new AuditWormExportRequest(key: $"{tenantId}/{DateTime.UtcNow:yyyy/MM/dd}/{batchId}", batch: loteFirmado, signature: firma));
+// ... más tarde, para verificar/auditar (F2-20 futuro, o un proceso de cumplimiento propio):
+var readResult = await auditWormExportPipeline.ReadAsync(exportResult.Value.Key);
+```
+
+### Semántica WORM que toda implementación debe cumplir
+
+- **Write-once real, no solo durante la retención**: escribir con una clave ya usada falla SIEMPRE
+  (`Worm.ObjectAlreadyExists`, `ErrorType.Conflict`), incluso si el objeto original ya fue eliminado tras
+  expirar su retención -- permitir reutilizar una clave abriría la puerta a fabricar un reemplazo bajo el
+  mismo identificador que un registro legítimo ya eliminado.
+- **Retención bloquea eliminación, no lectura**: eliminar antes de `WormObjectMetadata.RetentionExpiresAtUtc`
+  falla con un ERROR DE NEGOCIO (`Worm.RetentionPeriodNotExpired`, `ErrorType.Conflict`), nunca con una
+  excepción no controlada. Leer nunca depende del estado de retención mientras el objeto no haya sido
+  eliminado.
+- **Eliminación después de expirar la retención SÍ es válida** -- WORM significa "eliminación prohibida
+  mientras la retención esté vigente", no "eliminación prohibida para siempre"; cumplir una política de
+  expurgo tras vencer la retención legal/regulatoria sigue soportado.
+
+### Implementación de referencia: `InMemoryWormStorage` -- EXACTAMENTE el mismo criterio que `InMemoryAuditWriter`
+
+`AddSharedAuditWormExport` registra `InMemoryWormStorage` como implementación por defecto de
+`IWormStorage` (`TryAddSingleton`). Modela correctamente la semántica de arriba (probado en
+`tests/Shared.Infrastructure.Security.Tests/Audit/Worm/InMemoryWormStorageTests.cs`: escritura+lectura
+íntegra, rechazo de sobrescritura, rechazo de eliminación con retención vigente, eliminación válida tras
+expirar, rechazo de reescritura de una clave ya eliminada) pero **no persiste entre reinicios ni entre
+instancias del proceso** -- un objeto "inmutable" que desaparece al reiniciar el proceso no cumple ningún
+objetivo real de retención regulatoria. Es un placeholder de desarrollo, no una fuente de verdad WORM
+productiva, con el mismo tratamiento explícito que `InMemoryAuditWriter` (F2-15) y
+`ConfigurationSecretProvider` (F2-12).
+
+### Proveedor productivo real: pendiente de aprobación humana (ADR 0017, `Proposed`)
+
+Igual que ocurrió con el proveedor de secretos (F2-12, ADR 0014), la elección de un backend WORM productivo
+real es una decisión de infraestructura sujeta a la sección 13 del Plan Maestro ("nueva base de datos o
+broker"). **ADR 0017** propone MinIO/S3 Object Lock (modo `COMPLIANCE`) como candidato -- imagen oficial de
+contenedor apta para Testcontainers, self-hosteable, y con la semántica WORM ya resuelta por el propio
+protocolo S3 -- pero lo deja explícitamente `Proposed`, no `Accepted`: esta tarea NO construye ese
+proveedor, a la espera de la misma aprobación explícita que recibió Vault. Un proyecto que necesite
+cumplimiento regulatorio real HOY debe conectar su propio `IWormStorage` (por ejemplo, contra un S3/MinIO/
+Azure Blob Storage con Immutable Storage ya aprobado en su propia organización) registrándolo después de
+`AddSharedAuditWormExport` -- gana la resolución, mismo principio que el resto de los `AddShared*`.
+
+### Integración con F2-17: acoplada, decisión explícita
+
+`AuditWormExportRequest` acepta un `AuditBatchSignature?` OPCIONAL: si el llamador firmó el lote con
+`IAuditBatchSigner` (F2-17) antes de exportarlo, `AuditWormExportPipeline` serializa datos y firma JUNTOS en
+el mismo objeto WORM (`AuditWormBatchSerializer`, formato JSON con `Entries` + `Signature` serializada vía
+`AuditBatchSignature.ToString()`), y `ReadAsync` devuelve ambos de vuelta. Se eligió esta integración
+ACOPLADA (en lugar de mantener exportación y firma completamente desacopladas, cada una en un objeto
+distinto) porque:
+
+- Un objeto WORM que contiene datos y prueba de integridad juntos es autocontenido -- un proceso de
+  cumplimiento que lea SOLO del almacenamiento WORM (sin acceso al almacenamiento operacional de
+  `IAuditWriter`) puede verificar la firma sin necesitar correlacionar dos objetos distintos.
+- No es obligatorio: `Signature` es opcional en `AuditWormExportRequest` -- un proyecto que decida mantener
+  firma y exportación desacopladas (por ejemplo, firmar una vez y exportar el mismo lote a más de un
+  destino WORM) puede omitir el parámetro y manejar la correlación por su cuenta.
+
+### Qué NO resuelve F2-18
+
+- **No decide la política de retención concreta** (días/años) que corresponde a cada proyecto/regulación
+  (SOX, PCI-DSS, normativa local de cada industria) -- `AuditWormExportOptions.RetentionPeriod` es un
+  default configurable (placeholder de 7 años), no una recomendación normativa; cada proyecto consumidor
+  fija el valor que corresponda a su propio marco regulatorio.
+- **No implementa un proveedor productivo real** -- ver "Proveedor productivo real" arriba, ADR 0017 sigue
+  `Proposed`.
+- **No expone una API de consulta/lectura administrativa** -- `IAuditWormExportPipeline.ReadAsync` lee UN
+  objeto por su clave exacta, no busca ni pagina; la API administrativa de búsqueda es F2-20.
+- **No agrupa lotes ni genera claves automáticamente** -- mismo criterio que `IAuditBatchSigner` (F2-17):
+  el llamador decide qué entra en un lote y qué clave usar para exportarlo.
+- **No resuelve el modo de retención `GOVERNANCE` vs. `COMPLIANCE`** de un backend S3 real (si se aprobara
+  ADR 0017) -- esa elección concreta queda para el trabajo de seguimiento que implemente el proveedor real.
+- **No autoriza quién puede purgar un objeto tras expirar su retención** -- `IWormStorage.DeleteAsync` solo
+  impone que el borrado sea rechazado MIENTRAS la retención esté vigente; una vez vencida, cualquier
+  llamador puede eliminar sin ningún control de RBAC/ABAC ni traza de auditoría del propio intento de
+  purga adicional a los que ya aplique la capa que invoca. Decidir quién puede invocar `DeleteAsync` y
+  auditar ese intento es responsabilidad de la capa que orquesta `IAuditWormExportPipeline` (o que llama
+  directamente a `IWormStorage`) -- mismo criterio que `ISecretProvider`/`IEncryptionProvider`, que tampoco
+  autorizan por sí solos.
+
 ## Uso desde un handler de aplicación
 
 ```csharp
@@ -365,6 +493,20 @@ la migración al overload auditado es responsabilidad del código de aplicación
   `AuditIntegrityVerificationResult`, `AuditIntegrityBreakReason`; y de F2-17: `IAuditBatchSigner`,
   `HmacAuditBatchSigner`, `AuditBatchSignature`, `AuditBatchSigningOptions`,
   `AuditBatchSigningServiceCollectionExtensions`).
+- `src/Shared.Infrastructure.Security/Audit/Worm/` — implementación de F2-18 (`IWormStorage`,
+  `WormWriteRequest`, `WormObjectMetadata`, `WormObject`, `InMemoryWormStorage`,
+  `IAuditWormExportPipeline`, `AuditWormExportPipeline`, `AuditWormExportRequest`,
+  `AuditWormExportedBatch`, `AuditWormBatchSerializer`, `AuditWormExportOptions`,
+  `AuditWormExportServiceCollectionExtensions.AddSharedAuditWormExport`).
+- `tests/Shared.Infrastructure.Security.Tests/Audit/Worm/` — suite de pruebas de F2-18
+  (`InMemoryWormStorageTests`: escritura/lectura íntegra, rechazo de sobrescritura, rechazo de eliminación
+  con retención vigente, eliminación válida tras expirar, rechazo de reescritura de clave ya eliminada;
+  `AuditWormExportPipelineTests`: exportación+lectura con contenido exactamente coincidente, integración
+  con la firma de F2-17, lote vacío, retención por defecto vs. explícita por lote, propagación de
+  conflictos de `IWormStorage`; `AuditWormExportServiceCollectionExtensionsTests`: registro por defecto,
+  singleton, reemplazo por un proyecto consumidor, lectura de configuración).
+- `docs/adr/0017-worm-proveedor-minio-object-lock-propuesto.md` — `IWormStorage` (`Accepted`) + MinIO/S3
+  Object Lock como proveedor concreto (`Proposed`, pendiente de aprobación humana, sección 13).
 - `tests/Shared.Infrastructure.Security.Tests/Audit/HmacAuditBatchSignerTests.cs` — suite de pruebas de
   F2-17 (firma/verificación válida con instancias distintas, lote vacío, alteración de cualquier campo,
   reconstrucción completa y consistente de la cadena alternativa -- el hueco explícito de F2-16 --,
