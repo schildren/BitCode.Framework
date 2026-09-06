@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- Mecanismo estándar de .NET/Polly v8 para resiliencia de HttpClient saliente (F1-26):
+         AddStandardResilienceHandler ya compone timeout por intento + total, retry, circuit
+         breaker y un rate limiter (bulkhead) en una sola pipeline validada por Microsoft. -->
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.10.0" />
+    <!-- Solo para la sobrecarga de AddResilientHttpClient que enlaza HttpResilienceOptions desde
+         IConfiguration/appsettings. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

@@ -22,6 +22,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
 - [guia-queries-eficientes.md](guia-queries-eficientes.md) — AsNoTracking por defecto en lecturas (F1-17), proyección a DTO sin materializar la entidad completa y paginación con `PagedResult<T>`.
 - [guia-hot-paths.md](guia-hot-paths.md) — contrato de extensión controlada para hot paths que `ISpecification<T>` no expresa bien (F1-18): `IHotPathQuery<TResult>`/`IHotPathQueryExecutor`, atributo `[HotPath]` obligatorio y benchmark real que justifica el bypass.
+- [guia-resiliencia-http.md](guia-resiliencia-http.md) — resiliencia de `HttpClient` saliente (F1-26): `AddResilientHttpClient<TClient>` (`Shared.Infrastructure.Http`), pipeline estándar de timeout/retry/circuit breaker/bulkhead, y por qué el retry automático solo aplica a operaciones seguras de reintentar.
 
 ## Plan Maestro vigente
 
@@ -54,3 +55,5 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0009](adr/0009-contratos-comando-transaccion-explicita.md) | Comandos: transacción explícita solo con `ITransactionalCommand` | Accepted |
 | [0010](adr/0010-tenancy-estrategia-t2-sharding-por-grupos-de-tenants.md) | Tenancy: contratos y prototipo de la estrategia T2 (sharding por grupos de tenants) | Proposed |
 | [0011](adr/0011-tenancy-estrategia-t3-base-dedicada-por-tenant.md) | Tenancy: contratos y operación de la estrategia T3 (base dedicada por tenant) | Proposed |
+| [0012](adr/0012-dbcontext-pooling-no-adoptado.md) | `DbContext` pooling: no adoptado para `MultiTenantDbContext` | Accepted |
+| [0013](adr/0013-resiliencia-http-saliente-microsoft-extensions-http-resilience.md) | Resiliencia HTTP saliente: `Microsoft.Extensions.Http.Resilience` con retry condicionado al método | Accepted |
