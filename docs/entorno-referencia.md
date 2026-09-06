@@ -35,10 +35,10 @@ Este documento **no es**:
 | Componente | Versión |
 |---|---|
 | .NET SDK | 10.0.302 (MSBuild 18.6.11) |
-| TFM de producción del framework | `net8.0` (fijado en `Directory.Build.props`; el SDK 10 compila/ejecuta ese TFM, no lo cambia — ver `docs/inventario-tecnico.md`) |
+| TFM de producción del framework | `net10.0` (fijado en `Directory.Build.props` desde la migración de F1-01 — ver `docs/matriz-soporte.md`) |
 | Docker | Docker Desktop 29.4.1 (build 055a478) |
 | SQL Server LocalDB (mediciones locales sin contenedor) | `MSSQLLocalDB`, motor 17.0.4025.3 |
-| SQL Server (suite de integración, vía Testcontainers) | Imágenes `mcr.microsoft.com/mssql/server:2022-latest` y `:2019-CU18-ubuntu-20.04`, según el test — ver `docs/inventario-tecnico.md` para el detalle por proyecto |
+| SQL Server (suite de integración, vía Testcontainers) | Imagen `mcr.microsoft.com/mssql/server:2019-CU18-ubuntu-20.04` (default de `Testcontainers.MsSql` 3.10.0, sin `WithImage` explícito en el repo) — ver `docs/matriz-soporte.md` para el detalle verificado contra el código de fixtures |
 | Redis (suite de integración, vía Testcontainers) | Imagen `redis:7.0` |
 | Herramienta de carga HTTP de referencia | k6 v0.54.0 (binario standalone, instalado fuera del repositorio en `C:\tools\k6\k6.exe`, agregado al `PATH` de usuario) |
 | Herramienta de diagnóstico de runtime | `dotnet-counters` (herramienta global `dotnet tool`, versión 10.0.731102 en esta máquina; no forma parte del repositorio) |
