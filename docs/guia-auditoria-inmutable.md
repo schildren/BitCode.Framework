@@ -1,14 +1,14 @@
-# Guía — Auditoría inmutable: `IAuditWriter` y cadena de integridad (F2-15/F2-16)
+# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad y firma de lotes (F2-15/F2-16/F2-17)
 
-**Tareas:** F2-15 y F2-16 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16).
-**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16).
+**Tareas:** F2-15, F2-16 y F2-17 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
+**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17).
+**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17).
 
-F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad, esta guía) es la primera
-tarea que se apoya en ese esquema sin haber requerido ningún cambio de contrato público breaking (`AuditEntry`
-ya reservaba `PreviousAuditHash` desde F2-15). Las tareas siguientes de la épica siguen pendientes:
+F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad) y F2-17 (firma de lotes,
+esta guía las cubre ambas) son piezas ADICIONALES que se apoyan en ese esquema sin haber requerido ningún
+cambio de contrato público breaking (`AuditEntry` ya reservaba `PreviousAuditHash` desde F2-15). Las tareas
+siguientes de la épica siguen pendientes:
 
-- **F2-17** (firma y timestamp): firma lotes/eventos de auditoría ya escritos por `IAuditWriter`.
 - **F2-18** (WORM): un destino de exportación inmutable, consumiendo las entradas ya escritas.
 - **F2-19** (PII y redacción): política de qué puede/no puede volcarse en
   `AuditEntryRequest.Metadata`/`Reason`.
@@ -155,17 +155,142 @@ if (!result.IsValid)
   conecte su propia implementación de `IAuditWriter` (tabla SQL, event store) es responsable de calcular y
   persistir `PreviousAuditHash` con el mismo criterio (por tenant) si quiere que `IAuditIntegrityVerifier`
   funcione sobre sus datos.
-- **No firma criptográficamente los registros** — la firma/timestamp de lotes o eventos ya escritos es
-  F2-17; la cadena de integridad de F2-16 detecta manipulación posterior al hecho, pero no prueba frente a
-  terceros que la cadena no fue reconstruida íntegramente desde cero por quien tiene acceso de escritura al
-  almacenamiento subyacente (eso requiere una firma con una clave que ese mismo actor no controle, o el
-  destino WORM de F2-18).
+- **No firma criptográficamente los registros por sí sola** — la firma/timestamp de lotes o eventos ya
+  escritos es F2-17 (sección siguiente); la cadena de integridad de F2-16 detecta manipulación posterior al
+  hecho, pero no prueba frente a terceros que la cadena no fue reconstruida íntegramente desde cero por
+  quien tiene acceso de escritura al almacenamiento subyacente (eso requiere una firma con una clave que ese
+  mismo actor no controle, o el destino WORM de F2-18).
 - **No exporta a almacenamiento inmutable/WORM** — es F2-18.
 - **No expone ninguna API de lectura/consulta administrativa** — sigue siendo F2-20;
   `InMemoryAuditWriter.Entries` no es esa API, solo inspección de desarrollo/pruebas.
 - **No agrupa por tenant automáticamente** — `IAuditIntegrityVerifier.Verify` espera que el llamador ya le
   entregue la secuencia de una sola cadena; agrupar `InMemoryAuditWriter.Entries` (o el resultado de F2-20)
   por `TenantId` antes de verificar es responsabilidad del llamador.
+
+## Firma de lotes: `IAuditBatchSigner` (F2-17)
+
+### Qué hueco cierra, exactamente
+
+`IAuditIntegrityVerifier` (F2-16) recalcula, con `AuditHashCalculator` — un algoritmo **público**, el mismo
+que usa cualquiera que escriba con `IAuditWriter` —, los mismos hashes que ya están almacenados. Esto detecta
+que un registro fue alterado sin recalcular su `AuditHash`, o que la secuencia fue recortada/reordenada. Pero,
+por diseño, **no** detecta que un atacante con acceso de **escritura** al almacenamiento subyacente reconstruya
+una cadena alternativa completa: cambiar un campo de un registro y volver a calcular, con el mismo
+`AuditHashCalculator`, tanto el `AuditHash` de ese registro como el `PreviousAuditHash` de todos los
+siguientes produce una cadena internamente consistente que `IAuditIntegrityVerifier.Verify` no distingue de
+la original.
+
+`IAuditBatchSigner` cierra ese hueco exigiendo una clave que esa reconstrucción no puede reproducir:
+
+```csharp
+public interface IAuditBatchSigner
+{
+    Task<Result<AuditBatchSignature>> SignAsync(
+        IReadOnlyList<AuditEntry> batch, CancellationToken cancellationToken = default);
+
+    Task<Result<bool>> VerifyAsync(
+        IReadOnlyList<AuditEntry> batch, AuditBatchSignature signature, CancellationToken cancellationToken = default);
+}
+```
+
+### Mecanismo elegido: HMAC-SHA256 sobre `ISecretProvider` (F2-12), reutilizando el patrón de F2-13
+
+`HmacAuditBatchSigner` (implementación por defecto) firma con **HMAC-SHA256**, resolviendo el material de
+clave vía `ISecretProvider` (F2-12) con clave lógica versionada — el mismo patrón exacto de
+`AesGcmEncryptionProvider` (F2-13, `docs/politica-criptografica.md`): `AuditBatchSigningOptions` expone
+`ActiveKeyVersionSecretKey` (versión activa para firmar lotes nuevos) y `KeyMaterialSecretKeyPrefix` (prefijo
+para resolver el material, mínimo 32 bytes, de cada versión). La versión usada va embebida en
+`AuditBatchSignature.KeyVersion`, así que rotar la clave activa no invalida firmas ya emitidas — la
+verificación resuelve la versión que corresponde a la firma, no la versión activa vigente.
+
+**Por qué HMAC (simétrico) y no una firma asimétrica**: el framework hoy no expone ninguna abstracción de
+par de claves asimétrico/PKI — solo `ISecretProvider` (material simétrico/secretos) y `IEncryptionProvider`
+(AES-256-GCM, también simétrico). Agregar una gestión de claves asimétricas nueva habría sido introducir una
+pieza de infraestructura criptográfica que el entregable de F2-17 ("Integrar firma de lotes o eventos",
+"Mecanismo aprobado") no pide explícitamente, y por lo tanto fuera del alcance mínimo de la tarea — F2-17
+reutiliza deliberadamente F2-12/F2-13 en lugar de crear un sistema de claves paralelo. HMAC-SHA256 es un
+algoritmo aprobado por `docs/politica-criptografica.md` (autenticado, sin modo de bloque inseguro) y es
+suficiente para cerrar el hueco documentado: un atacante con acceso de **escritura** al almacenamiento de
+auditoría, pero **sin** acceso al proveedor de secretos donde vive la clave de firma, no puede producir una
+firma válida sobre una cadena alternativa, por más consistente que la reconstruya.
+
+**"Verificación independiente" con un esquema simétrico**: el criterio de aceptación no exige que la
+verificación no requiera ningún secreto (eso sería exclusivo de una firma asimétrica con clave pública) —
+exige que sea independiente de quien firmó. Con HMAC esto se sostiene cuando firmante y verificador son
+procesos/servicios distintos que comparten el mismo perímetro de confianza (el proveedor de secretos), pero
+ninguno de los dos tiene, además, acceso de escritura directa al almacenamiento de auditoría — por ejemplo,
+un servicio que firma lotes al escribirlos y un proceso de verificación periódico/de cumplimiento que solo
+lee del almacenamiento y del proveedor de secretos. Si un proyecto consumidor necesitara verificación por un
+tercero SIN acceso al proveedor de secretos (ej. un auditor externo), necesita una firma asimétrica — fuera
+de alcance de esta tarea (ver "Qué NO resuelve F2-17").
+
+### Qué cubre la firma: recalculado, no el campo `AuditHash` almacenado
+
+`HmacAuditBatchSigner` firma, para cada registro del lote en el orden dado: `Id`, el hash de contenido
+**recalculado** con `AuditHashCalculator.Compute` sobre los campos actuales del registro (no el valor ya
+almacenado en `AuditEntry.AuditHash`) y `PreviousAuditHash` — más el instante de firma (`SignedAtUtc`, el
+"timestamp" del entregable) y la versión de clave, para que dos lotes idénticos firmados en instantes
+distintos produzcan firmas distintas. Recalcular en lugar de confiar en el campo ya almacenado es deliberado:
+`AuditEntry.AuditHash` es un campo más del registro, que un atacante con escritura directa al almacenamiento
+podría dejar sin actualizar al alterar otro campo — recalcular sobre el contenido efectivo es lo que
+garantiza que alterar **cualquier** campo de **cualquier** registro del lote invalida la firma, incluso en
+ese caso límite (que, de todos modos, `IAuditIntegrityVerifier` seguiría detectando por su cuenta como
+`HashMismatch`).
+
+```csharp
+var signResult = await auditBatchSigner.SignAsync(entriesDelLote, cancellationToken);
+// ... más tarde, desde el mismo proceso o desde otro distinto:
+var verifyResult = await auditBatchSigner.VerifyAsync(entriesDelLote, signResult.Value, cancellationToken);
+if (verifyResult.IsSuccess && !verifyResult.Value)
+{
+    logger.LogCritical("Firma de lote de auditoría inválida -- el lote fue alterado después de firmarse.");
+}
+```
+
+`VerifyAsync` devuelve `Result.Success(false)` (no una excepción ni un `Result.Failure`) cuando la firma es
+sintácticamente válida pero no corresponde al lote/clave — mismo criterio que el resto de los resultados de
+verificación del framework (`AuditIntegrityVerificationResult`). `Result.Failure` queda reservado para
+condiciones que impiden intentar la verificación: lote vacío, o la versión de clave embebida en la firma ya
+no existe en el proveedor de secretos.
+
+### Registro: `AddSharedAuditBatchSigning`
+
+```csharp
+services.AddSharedSecretProvider(configuration);   // F2-12, debe registrarse antes
+services.AddSharedAuditBatchSigning(configuration); // F2-17
+```
+
+Deliberadamente un método de registro **separado** de `AddSharedAuditing` — firmar lotes es opt-in (requiere
+`ISecretProvider` ya registrado y que el proyecto consumidor haya decidido su propia política de "cuándo
+firmar un lote") mientras que `AddSharedAuditing` no requiere ninguna configuración adicional para dejar
+auditoría básica funcionando.
+
+### `AuditBatchSignature.ToString()`/`TryParse` — serialización de conveniencia
+
+`AuditBatchSignature` expone `ToString()` (formato `"v{KeyVersion}|{SignedAtUtc:O}|{Value}"`) y el estático
+`TryParse` para que un proyecto consumidor persista la firma junto con una referencia al lote (por ejemplo,
+en el destino WORM de F2-18) sin tener que definir su propio formato de serialización — F2-17 no persiste
+nada por sí mismo (ver más abajo). `TryParse` devuelve `false` ante cualquier formato inválido, nunca lanza
+una excepción — una firma serializada corrupta o manipulada es un resultado de negocio esperado para quien
+la lea.
+
+### Qué NO resuelve F2-17
+
+- **No define CUÁNDO se firma un lote en producción** — cada N registros, cada X minutos, al cierre de un
+  período contable, etc. Esa política es responsabilidad del proyecto consumidor; `IAuditBatchSigner` solo
+  firma/verifica el lote que se le entregue.
+- **No persiste ninguna firma** — `SignAsync` devuelve un `AuditBatchSignature` en memoria; guardarlo junto
+  con una referencia al lote firmado es responsabilidad del `IAuditWriter` real que un proyecto conecte, o
+  del destino WORM de F2-18.
+- **No agrupa lotes automáticamente** — igual que `IAuditIntegrityVerifier.Verify`, `SignAsync`/`VerifyAsync`
+  esperan que el llamador les entregue ya el lote correcto, en el orden correcto.
+- **No ofrece una firma asimétrica** — ver "Por qué HMAC" arriba: si un caso de uso necesita que un tercero
+  sin acceso al proveedor de secretos (ej. un auditor externo) verifique una firma con una clave pública, eso
+  requiere una tarea nueva que introduzca gestión de claves asimétricas al framework.
+- **No reemplaza a F2-16** — `IAuditIntegrityVerifier` sigue siendo el mecanismo de detección de
+  manipulación de uso más frecuente y liviano (no requiere ninguna clave); `IAuditBatchSigner` es la capa
+  adicional para el caso en que además se necesite una prueba resistente a la reconstrucción completa de la
+  cadena por quien tiene acceso de escritura al almacenamiento.
 
 ## Uso desde un handler de aplicación
 
@@ -237,7 +362,13 @@ la migración al overload auditado es responsabilidad del código de aplicación
 - `src/Shared.Infrastructure.Security/Audit/` — implementación (`AuditEntry`, `AuditEntryRequest`,
   `AuditActor`, `AuditResource`, `AuditHashCalculator`, `IAuditWriter`, `InMemoryAuditWriter`,
   `AuditServiceCollectionExtensions`, y de F2-16: `IAuditIntegrityVerifier`, `AuditIntegrityVerifier`,
-  `AuditIntegrityVerificationResult`, `AuditIntegrityBreakReason`).
+  `AuditIntegrityVerificationResult`, `AuditIntegrityBreakReason`; y de F2-17: `IAuditBatchSigner`,
+  `HmacAuditBatchSigner`, `AuditBatchSignature`, `AuditBatchSigningOptions`,
+  `AuditBatchSigningServiceCollectionExtensions`).
+- `tests/Shared.Infrastructure.Security.Tests/Audit/HmacAuditBatchSignerTests.cs` — suite de pruebas de
+  F2-17 (firma/verificación válida con instancias distintas, lote vacío, alteración de cualquier campo,
+  reconstrucción completa y consistente de la cadena alternativa -- el hueco explícito de F2-16 --,
+  reordenamiento, firma/clave incorrecta, rotación de clave activa, serialización).
 - `src/Shared.Infrastructure.Security/PrivilegedOperations/AuditingAuthorizationPolicyEvaluator.cs` —
   cableado de auditoría sobre step-up/segregación de funciones (F2-10).
 - `src/Shared.Infrastructure.Security/Permissions/RoleManagerPermissionExtensions.cs` — cableado de

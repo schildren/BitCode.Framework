@@ -62,3 +62,6 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0011](adr/0011-tenancy-estrategia-t3-base-dedicada-por-tenant.md) | Tenancy: contratos y operación de la estrategia T3 (base dedicada por tenant) | Proposed |
 | [0012](adr/0012-dbcontext-pooling-no-adoptado.md) | `DbContext` pooling: no adoptado para `MultiTenantDbContext` | Accepted |
 | [0013](adr/0013-resiliencia-http-saliente-microsoft-extensions-http-resilience.md) | Resiliencia HTTP saliente: `Microsoft.Extensions.Http.Resilience` con retry condicionado al método | Accepted |
+| [0014](adr/0014-secretos-proveedor-vault-propuesto.md) | Secretos: `ISecretProvider` (Accepted) + HashiCorp Vault (Accepted, proveedor concreto) | Accepted |
+| [0015](adr/0015-mtls-contrato-operativo-servicio-a-servicio.md) | mTLS: contrato operativo servicio-a-servicio para extracción futura | Accepted |
+| [0016](adr/0016-firma-lotes-auditoria-hmac-simetrico.md) | Auditoría: firma de lotes con HMAC-SHA256 simétrico (F2-17) | Accepted |

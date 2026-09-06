@@ -157,7 +157,9 @@ proyecto consumidor, no un comportamiento automático de `IEncryptionProvider`.
   [`docs/contrato-mtls-servicios.md`](contrato-mtls-servicios.md) y
   [ADR 0015](adr/0015-mtls-contrato-operativo-servicio-a-servicio.md).
 - **Auditoría íntegra/resistente a manipulación** — Épica F2-D, mecanismo distinto (firma/hash encadenado,
-  no cifrado de confidencialidad).
+  no cifrado de confidencialidad). Cadena de hash encadenado: F2-16 (`IAuditIntegrityVerifier`). Firma de
+  lotes con HMAC-SHA256 sobre `ISecretProvider` (mismo patrón de clave versionada que F2-13, reutilizado):
+  F2-17 (`IAuditBatchSigner`) -- ver `docs/guia-auditoria-inmutable.md`.
 
 ## 6. Registro: `AddSharedEncryption`
 
