@@ -402,6 +402,19 @@ offset sigue sin confirmarse). Ninguno de los dos implementa DLQ real todavía (
 - Persistencia del conteo de intentos fallidos del lado consumidor (queda en memoria, no persistido —
   ver la tabla comparativa en `docs/politica-reintentos-eventos.md`).
 
+## Catálogo de eventos (F3-12)
+
+F3-12 agrega `docs/catalogo-eventos.md`: el registro de owner, `SchemaVersion`, PII y consumidores
+conocidos por cada `IIntegrationEvent` PRODUCTIVO. No es un mecanismo de código — es un documento y un
+proceso (regla dura 27, `docs/convenciones.md`): todo bounded context que declara un evento productivo
+nuevo agrega su fila en el mismo pull request, en la Definition of Done de esa tarea, no como
+seguimiento posterior. A la fecha de esta tarea el catálogo está vacío de eventos reales (solo la
+plantilla y un ejemplo ilustrativo tomado de `TestOrderCreatedIntegrationEvent`) porque el repositorio
+no tiene todavía ningún bounded context de negocio real — toda esta fase construyó el mecanismo, no
+eventos de negocio concretos. Ver `docs/catalogo-eventos.md` para el detalle completo, incluida la
+decisión explícita de no automatizar la verificación por reflexión todavía (no hay ningún caso real
+contra el que probar ese mecanismo).
+
 ## Referencias
 
 - `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`, `IHasPartitionKey.cs` (F3-05).
@@ -419,3 +432,4 @@ offset sigue sin confirmarse). Ninguno de los dos implementa DLQ real todavía (
 - `docs/politica-versionado.md`, sección 5 (reglas de compatibilidad forward/backward de eventos de integración, actualizada por F3-06).
 - `docs/gate-compatibilidad-api.md` (gate de superficie pública que también cubre `Shared.Testing`, incluido `EventSchemaCompatibilityChecker`).
 - ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).
+- `docs/catalogo-eventos.md` (F3-12): catálogo de eventos productivos, plantilla, proceso obligatorio (regla dura 27) y decisión de no automatizar la verificación todavía.

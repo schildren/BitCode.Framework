@@ -28,6 +28,12 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [guia-auditoria-inmutable.md](guia-auditoria-inmutable.md) — Auditoría inmutable (Épica F2-D, F2-15 a F2-20, COMPLETA): `IAuditWriter`/`InMemoryAuditWriter`, cadena de integridad (`IAuditIntegrityVerifier`), firma de lotes (`IAuditBatchSigner`), exportación WORM (`IWormStorage`/`IAuditWormExportPipeline`), redacción de PII (`IAuditRedactionPolicy`) y consulta administrativa (`IAuditReader`/`IAuditQueryService`).
 - [guia-eventing-contratos.md](guia-eventing-contratos.md) — Contratos de eventos de integración (F3-01), adapter Kafka (F3-02) y relay de Outbox (F3-03): `IIntegrationEvent`/`IntegrationEvent`, `IEventPublisher`, `IEventConsumer<TEvent>` (`Shared.Application.Eventing`), diferencia con `DomainEvent` (F1-23), `KafkaEventPublisher`/`KafkaEventConsumer<TEvent>` y el relay que las conecta.
 - [guia-outbox-publisher.md](guia-outbox-publisher.md) — Relay de Outbox (F3-03): `OutboxBatchProcessor`/`OutboxPublisherBackgroundService`, mapeo `OutboxMessage` → `IIntegrationEvent`, bloqueo entre réplicas y criterio de aceptación "reinicio no pierde eventos".
+- [guia-inbox-consumer.md](guia-inbox-consumer.md) — Inbox Consumer (F3-04): `KafkaEventConsumer<TEvent>` coordinado con `IInboxMessageProcessor` (F1-24) contra SQL Server + Kafka reales.
+- [politica-reintentos-eventos.md](politica-reintentos-eventos.md) — Reintentos (F3-07): clasificación transitorio/permanente, backoff exponencial con jitter y límite máximo, en el relay de Outbox y en el consumidor Kafka.
+- [runbook-dlq.md](runbook-dlq.md) — DLQ y poison messages (F3-08/F3-09): dead-letter topics, metadatos de reprocesamiento y aislamiento de mensajes inválidos sin bloquear la partición.
+- [guia-observabilidad-eventos.md](guia-observabilidad-eventos.md) — Observabilidad de eventos (F3-10): métricas de publish/consume/error/lag/DLQ y correlación end-to-end vía `traceparent`/`tracestate`.
+- [politica-seguridad-kafka.md](politica-seguridad-kafka.md) — Seguridad de transporte Kafka (F3-11): TLS/SASL, ACL, identidad y mínimo privilegio.
+- [catalogo-eventos.md](catalogo-eventos.md) — Catálogo de eventos de integración (F3-12): owner, `SchemaVersion`, PII, consumidores conocidos, tópico y `PartitionKey` por evento productivo; hoy vacío de eventos reales (solo mecanismo y proceso, ver regla dura 27 de `convenciones.md`) porque el repositorio todavía no tiene ningún bounded context de negocio real (Fase 6 en adelante).
 
 ## Plan Maestro vigente
 
