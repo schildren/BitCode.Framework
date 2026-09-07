@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using BitCode.Framework.Shared.Application.Eventing;
 using BitCode.Framework.Shared.Domain.Outbox;
@@ -70,6 +71,22 @@ namespace BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 /// </list>
 /// </para>
 /// <para>
+/// <b>DLQ (F3-08):</b> inmediatamente después de persistir <see cref="OutboxMessage.ExhaustedAtUtc"/>
+/// (nunca antes), se publica además una copia best-effort a un tópico dead-letter real vía
+/// <see cref="IDeadLetterPublisher"/> (ver <see cref="PublishDeadLetterIfJustExhaustedAsync"/>) — un
+/// operador que solo mira Kafka puede ver el mensaje agotado sin consultar la base de datos. Esto se
+/// implementó DENTRO de este relay (en vez de un componente separado que reaccione por polling a filas
+/// con <c>ExhaustedAtUtc</c>) porque el propio ciclo de <see cref="ProcessBatchAsync"/> ya identifica el
+/// momento exacto del agotamiento sin ningún sondeo adicional — agregar un segundo poller solo para
+/// republicar a DLQ hubiera duplicado el mecanismo de reclamo/lock de <see cref="ClaimBatchAsync"/> sin
+/// ganar nada, y el reprocesamiento (reset de <c>ExhaustedAtUtc</c> + auditoría) es una operación
+/// deliberadamente separada, disparada por un operador — no automática — que si vive en
+/// <c>Shared.Infrastructure.Security</c> (<c>IDeadLetterReprocessor</c>, ver
+/// <c>docs/runbook-dlq.md</c>) porque necesita <c>IAuditWriter</c> (Épica F2-D), al que este proyecto
+/// (<c>Shared.Infrastructure.Persistence</c>) no puede referenciar sin introducir una dependencia
+/// circular (<c>Shared.Infrastructure.Security</c> ya referencia este proyecto, no al revés).
+/// </para>
+/// <para>
 /// <b>Reinicio no pierde eventos (criterio de aceptación literal de F3-03):</b> el <c>SaveChangesAsync</c>
 /// que marca <see cref="OutboxMessage.ProcessedAtUtc"/> se ejecuta INMEDIATAMENTE después de que la
 /// publicación de ESA fila tuvo éxito (no al final de todo el lote) — minimiza, sin eliminarlo del
@@ -85,7 +102,8 @@ public sealed class OutboxBatchProcessor(
     IEventPublisher eventPublisher,
     OutboxPublisherOptions options,
     IEventPublishFailureClassifier failureClassifier,
-    ILogger<OutboxBatchProcessor> logger)
+    ILogger<OutboxBatchProcessor> logger,
+    IDeadLetterPublisher? deadLetterPublisher = null)
 {
     public async Task<OutboxBatchResult> ProcessBatchAsync(CancellationToken cancellationToken = default)
     {
@@ -142,6 +160,7 @@ public sealed class OutboxBatchProcessor(
                 }
 
                 await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                await PublishDeadLetterIfJustExhaustedAsync(message, message.EventType, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -190,6 +209,7 @@ public sealed class OutboxBatchProcessor(
             }
 
             await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            await PublishDeadLetterIfJustExhaustedAsync(message, integrationEvent.EventType, cancellationToken).ConfigureAwait(false);
         }
 
         return new OutboxBatchResult(claimed.Count, published, skippedInternal, failed, exhausted);
@@ -226,6 +246,52 @@ public sealed class OutboxBatchProcessor(
 
         var delay = EventRetryBackoff.CalculateDelay(message.RetryCount, options.Retry);
         message.LockedUntilUtc = now.Add(delay);
+    }
+
+    /// <summary>
+    /// F3-08 (DLQ): si <paramref name="message"/> quedó marcada agotada EN ESTA MISMA iteración (ver los
+    /// dos llamadores, ambos inmediatamente después del <c>SaveChangesAsync</c> que persistió
+    /// <see cref="OutboxMessage.ExhaustedAtUtc"/>), publica una copia a un tópico dead-letter real
+    /// (<see cref="IDeadLetterPublisher"/>, best-effort). Nunca se invoca ANTES de persistir el
+    /// agotamiento: <see cref="OutboxMessage"/> — no Kafka — sigue siendo la fuente de verdad de que un
+    /// mensaje se agotó (F3-03, "reinicio no pierde eventos"); si el proceso muere entre el
+    /// <c>SaveChangesAsync</c> y esta llamada, la fila queda igualmente agotada y consultable, solo sin
+    /// la copia de conveniencia en Kafka — un operador siempre puede consultar
+    /// <c>WHERE ExhaustedAtUtc IS NOT NULL</c> aunque la publicación a DLQ nunca haya llegado a ocurrir.
+    /// Si <see cref="IDeadLetterPublisher"/> no está registrado (ningún adapter de broker configurado) o
+    /// la publicación en sí falla, se registra un warning y el ciclo continúa sin abortar el resto del
+    /// lote — un fallo de "notificación de conveniencia" nunca debe impedir que seiga procesándose el
+    /// resto de las filas reclamadas.
+    /// </summary>
+    private async Task PublishDeadLetterIfJustExhaustedAsync(OutboxMessage message, string eventTypeForDlq, CancellationToken cancellationToken)
+    {
+        if (message.ExhaustedAtUtc is null || deadLetterPublisher is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await deadLetterPublisher.PublishAsync(
+                new DeadLetterEnvelope
+                {
+                    EventType = eventTypeForDlq,
+                    Payload = Encoding.UTF8.GetBytes(message.PayloadJson),
+                    Reason = message.Error ?? "Motivo no disponible.",
+                    Attempts = message.RetryCount,
+                    ExhaustedAtUtc = message.ExhaustedAtUtc.Value,
+                    SourceMessageId = message.Id.ToString(),
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(
+                ex,
+                "No se pudo publicar OutboxMessage {OutboxMessageId} al tópico dead-letter; la fila " +
+                "ya quedó agotada (ExhaustedAtUtc persistido) y sigue consultable/reprocesable manualmente.",
+                message.Id);
+        }
     }
 
     /// <summary>

@@ -26,6 +26,12 @@
     <!-- F3-03: OutboxPublisherIntegrationTests ejercita el flujo completo SQL Server -> relay ->
          Kafka real (KafkaContainerFixture, mismo criterio que F3-02). -->
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
+    <!-- F3-08: OutboxDeadLetterIntegrationTests ejercita el reprocesamiento auditado
+         (IDeadLetterReprocessor/IAuditWriter, Shared.Infrastructure.Security) sobre el mismo
+         OutboxMessage que ya vive en Shared.Infrastructure.Persistence: referencia de proyecto de
+         TEST únicamente, no crea un ciclo en src/ (Shared.Infrastructure.Security ya referencia
+         Shared.Infrastructure.Persistence, nunca al revés). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
     <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
   </ItemGroup>
 

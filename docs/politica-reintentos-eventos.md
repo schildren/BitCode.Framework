@@ -191,9 +191,9 @@ using var consumer = new KafkaEventConsumer<PedidoCreadoIntegrationEvent>(
 
 ## Qué NO resuelve F3-07
 
-- **DLQ real** (F3-08): ningún enrutamiento a un tópico de mensajes muertos, ninguna herramienta de
-  reprocesamiento/operador — solo el estado/señal (`ExhaustedAtUtc`,
-  `EventProcessingExhaustedException`) que F3-08 va a consumir.
+- **DLQ real** (F3-08, ya implementado — ver `docs/runbook-dlq.md`): F3-07 solo dejó el estado/señal
+  (`ExhaustedAtUtc`, `EventProcessingExhaustedException`) que F3-08 consume para el enrutamiento a un
+  tópico de mensajes muertos y el reprocesamiento auditado.
 - **Aislamiento de poison messages a nivel de tópico/partición** (F3-09).
 - **Persistencia del conteo de intentos fallidos del lado consumidor** (ver tabla de arriba) — solo
   el relay de Outbox tiene una garantía dura de "nunca más de N intentos totales".
@@ -219,6 +219,7 @@ using var consumer = new KafkaEventConsumer<PedidoCreadoIntegrationEvent>(
 
 ## Referencias
 
+- `docs/runbook-dlq.md` (F3-08, DLQ y reprocesamiento auditado — el consumidor directo de esta política).
 - `docs/guia-outbox-publisher.md` (F3-03/F3-07, relay de Outbox completo).
 - `docs/guia-inbox-consumer.md` (F3-04/F3-07, consumidor Kafka completo).
 - `docs/guia-resiliencia-http.md` (F1-26, patrón de referencia del lado HTTP saliente).

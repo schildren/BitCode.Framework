@@ -38,6 +38,11 @@ public static class KafkaServiceCollectionExtensions
 
         services.TryAddSingleton<IEventPublisher, KafkaEventPublisher>();
 
+        // F3-08 (DLQ): comparte el mismo IProducer<string, byte[]> singleton que KafkaEventPublisher —
+        // publicar a un tópico dead-letter es, del lado del cliente Kafka, una publicación más (a otro
+        // tópico), no una conexión/canal distinto.
+        services.TryAddSingleton<IDeadLetterPublisher, KafkaDeadLetterPublisher>();
+
         // F3-07: clasificador de errores específico de Kafka para quien reintente publicaciones (por
         // ejemplo, OutboxBatchProcessor, Shared.Infrastructure.Persistence) — TryAddSingleton para que,
         // si AddSharedOutboxPublisher ya registró su clasificador de reserva (DefaultEventPublishFailureClassifier)

@@ -4,6 +4,7 @@ using BitCode.Framework.Shared.Application.Eventing;
 using BitCode.Framework.Shared.Application.Inbox;
 using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 
@@ -90,6 +91,8 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly string _eventType;
     private readonly IEventPublishFailureClassifier _failureClassifier;
+    private readonly IDeadLetterPublisher? _deadLetterPublisher;
+    private readonly ILogger<KafkaEventConsumer<TEvent>>? _logger;
     private readonly ConcurrentDictionary<string, int> _attemptsByMessageId = new();
 
     /// <summary>
@@ -132,7 +135,9 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         string? consumerGroupIdOverride = null,
         IKafkaTopicNameResolver? topicNameResolver = null,
         EventRetryPolicyOptions? retryOptions = null,
-        IEventPublishFailureClassifier? failureClassifier = null)
+        IEventPublishFailureClassifier? failureClassifier = null,
+        IDeadLetterPublisher? deadLetterPublisher = null,
+        ILogger<KafkaEventConsumer<TEvent>>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
@@ -140,6 +145,8 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         _eventType = eventType;
         RetryOptions = retryOptions ?? new EventRetryPolicyOptions();
         _failureClassifier = failureClassifier ?? new DefaultEventPublishFailureClassifier();
+        _deadLetterPublisher = deadLetterPublisher;
+        _logger = logger;
 
         var resolver = topicNameResolver ?? DefaultKafkaTopicNameResolver.Instance;
         var topic = resolver.ResolveTopicName(eventType);
@@ -193,10 +200,26 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // HandleProcessingFailureAsync incrementa el conteo de intentos y, si ya no queda margen,
-            // lanza EventProcessingExhaustedException en su lugar (esa excepción sale de este catch sin
-            // llegar nunca al "throw;" de abajo). Si todavía queda margen, espera el backoff calculado
-            // y retorna sin lanzar, así que "throw;" relanza la excepción ORIGINAL tal cual.
-            await HandleProcessingFailureAsync(messageId, ex, cancellationToken).ConfigureAwait(false);
+            // lanza EventProcessingExhaustedException. Si todavía queda margen, espera el backoff
+            // calculado y retorna sin lanzar, así que el "throw;" final relanza la excepción ORIGINAL.
+            try
+            {
+                await HandleProcessingFailureAsync(messageId, ex, cancellationToken).ConfigureAwait(false);
+            }
+            catch (EventProcessingExhaustedException exhausted)
+            {
+                // F3-08 (DLQ): se agotó el margen — a diferencia de F3-07 (donde el offset nunca se
+                // confirmaba y Kafka reentregaba el mismo mensaje sin fin, bloqueando la partición), acá
+                // se publica una copia best-effort al tópico dead-letter y se confirma el offset: el
+                // mensaje queda "en cuarentena" en vez de seguir bloqueando la entrega de los mensajes
+                // siguientes de la misma partición (el caso puntual de aislamiento de poison messages que
+                // resuelve F3-08 con el mecanismo que ya tiene disponible; el aislamiento general —
+                // cualquier mensaje inválido, no solo el que agotó reintentos— es F3-09).
+                await PublishToDeadLetterAsync(exhausted, result.Message.Value, cancellationToken).ConfigureAwait(false);
+                _consumer.Commit(result);
+                throw;
+            }
+
             throw; // El mensaje todavía tiene margen: se relanza para que el offset no se confirme.
         }
 
@@ -228,6 +251,46 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         if (delay > TimeSpan.Zero)
         {
             await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// F3-08: publica una copia best-effort de <paramref name="payload"/> (los mismos bytes originales del
+    /// mensaje Kafka, sin transformar) a un tópico dead-letter, con los metadatos disponibles de
+    /// <paramref name="exhausted"/>. Si <see cref="_deadLetterPublisher"/> no está configurado (ningún
+    /// adapter de broker lo registró) o la publicación falla, solo se deja un warning en el log — nunca se
+    /// relanza desde acá: el llamador ya va a relanzar <paramref name="exhausted"/> de todos modos, y un
+    /// fallo de esta notificación de conveniencia no debe impedir seguir consumiendo mensajes siguientes.
+    /// </summary>
+    private async Task PublishToDeadLetterAsync(EventProcessingExhaustedException exhausted, byte[] payload, CancellationToken cancellationToken)
+    {
+        if (_deadLetterPublisher is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _deadLetterPublisher.PublishAsync(
+                new DeadLetterEnvelope
+                {
+                    EventType = exhausted.EventType,
+                    Payload = payload,
+                    Reason = exhausted.InnerException?.Message ?? exhausted.Message,
+                    Attempts = exhausted.Attempts,
+                    ExhaustedAtUtc = DateTime.UtcNow,
+                    SourceMessageId = exhausted.MessageId,
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.LogWarning(
+                ex,
+                "No se pudo publicar el mensaje {MessageId} (EventType {EventType}) al tópico dead-letter; " +
+                "el offset se confirma igual (el mensaje queda agotado del lado consumidor).",
+                exhausted.MessageId,
+                exhausted.EventType);
         }
     }
 

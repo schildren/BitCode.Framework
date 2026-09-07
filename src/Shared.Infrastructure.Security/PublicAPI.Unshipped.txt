@@ -763,3 +763,29 @@ const BitCode.Framework.Shared.Infrastructure.Security.Audit.Query.AuditQuerySer
 const BitCode.Framework.Shared.Infrastructure.Security.Audit.Query.AuditQueryService.RequiredPermission = "auditoria.consultar" -> string!
 static BitCode.Framework.Shared.Infrastructure.Security.Audit.Query.AuditQueryServiceCollectionExtensions.AddSharedAuditQuery(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static BitCode.Framework.Shared.Infrastructure.Security.Audit.Worm.AuditWormExportServiceCollectionExtensions.AddSharedAuditWormExport(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.Actor.get -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.CorrelationId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.CorrelationId.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.DeadLetterReprocessRequest(System.Guid outboxMessageId, BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor! actor, string! reason) -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.IpAddress.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.IpAddress.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.OutboxMessageId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.Reason.get -> string!
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.TraceId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest.TraceId.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.AuditEntryId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.AuditEntryId.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.DeadLetterReprocessResult() -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.NewRetryCount.get -> int
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.NewRetryCount.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.OutboxMessageId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult.OutboxMessageId.init -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessorServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.IDeadLetterReprocessor
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.IDeadLetterReprocessor.ReprocessAsync(BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult!>!>!
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor.OutboxDeadLetterReprocessor(Microsoft.EntityFrameworkCore.DbContext! context, BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter! auditWriter, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor!>! logger) -> void
+BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor.ReprocessAsync(BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult!>!>!
+static BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessorServiceCollectionExtensions.AddSharedDeadLetterReprocessing(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
