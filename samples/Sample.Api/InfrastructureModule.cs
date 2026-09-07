@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Application;
+using BitCode.Framework.Shared.Infrastructure.Observability;
 using BitCode.Framework.Shared.Infrastructure.Persistence;
 using BitCode.Framework.Shared.Infrastructure.Web;
 using BitCode.Framework.Shared.Infrastructure.Web.HealthChecks;
@@ -60,6 +61,15 @@ public class InfrastructureModule : IWebFrameworkModule
         // endpoints debe encadenar `.AddJwtBearerSecurityScheme()` al configurar cada documento.
         services.AddSharedOpenApiForApiVersion(1);
         services.AddSharedOpenApiForApiVersion(2);
+
+        // F4-10: Sample.Api no instrumentaba con OpenTelemetry hasta esta tarea -- sin esto, no había
+        // NADA que enviarle al OTel Collector introducido acá (k8s/otel-collector/), y "OtlpEndpoint"
+        // en el ConfigMap (sample-api-config) habría sido un valor sin efecto. Requiere la sección
+        // "OpenTelemetry:ServiceName" en configuración (ver appsettings.json) -- sin
+        // "OpenTelemetry:OtlpEndpoint" (dev local sin collector corriendo), las trazas/métricas se
+        // siguen generando pero no se exportan a ningún lado (ver
+        // ObservabilityServiceCollectionExtensions).
+        services.AddSharedObservability(configuration);
     }
 
     public void ConfigureApplication(WebApplication app)

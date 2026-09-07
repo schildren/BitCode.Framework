@@ -11,6 +11,13 @@
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <!-- F4-10: exporta logs vía OTLP hacia el mismo collector que ya recibe trazas/métricas (paquete
+         oficial de la organización "serilog", MIT, ver docs/politica-dependencias.md sección 5.3).
+         Opcional en tiempo de ejecución: solo se activa si "OpenTelemetry:OtlpEndpoint" está
+         configurado (mismo criterio que ya usan tracing.AddOtlpExporter/metrics.AddOtlpExporter en
+         ObservabilityServiceCollectionExtensions); sin esto, "Centralizar exportación de logs" (F4-10)
+         quedaba sin resolver: los logs solo iban a Console, nunca al Collector. -->
+    <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
   </ItemGroup>
 
 </Project>

@@ -130,6 +130,31 @@ BFF/Authorization Code compartan el mismo key ring:
 - **Compatibilidad:** TFM `net10.0`, compatible con el TFM único del repo; build de la solución completa (`dotnet build BitCode.Framework.slnx`) y de los 433 tests de `Shared.Infrastructure.Security.Tests` + 49 de `Shared.Infrastructure.Web.Tests` sin regresiones.
 - **Alcance de uso:** solo `src/Shared.Infrastructure.Security/Oidc/SharedDataProtectionServiceCollectionExtensions.cs` la referencia directamente (vía `PersistKeysToStackExchangeRedis`); condicionado a que `Caching:RedisConnectionString` esté configurado, igual patrón que `AddSharedCaching` (`Shared.Infrastructure.Caching`) — sin Redis configurado, no se abre ninguna conexión nueva y Data Protection cae al almacenamiento por defecto (documentado como válido solo para una instancia/desarrollo).
 
+## 5.3. Registro de evaluación — `Serilog.Sinks.OpenTelemetry` (F4-10)
+
+Dependencia agregada para cerrar la brecha real que dejaba `SerilogHostBuilderExtensions.UseSharedSerilog`
+(`Shared.Infrastructure.Observability`): los logs solo se escribían a `Console`, nunca se exportaban vía
+OTLP, aunque el nombre de la fila del backlog de F4-10 dice explícitamente "Centralizar exportación de
+LOGS, métricas y trazas" (métricas/trazas ya lo hacían desde F3-10):
+
+- **Paquete:** `Serilog.Sinks.OpenTelemetry` 4.2.0 (`src/Shared.Infrastructure.Observability`).
+- **Licencia:** MIT (repositorio `serilog/serilog-sinks-opentelemetry`, misma organización GitHub que
+  `Serilog`/`Serilog.AspNetCore`/`Serilog.Sinks.Console` ya referenciados por este mismo proyecto) —
+  categoría "permitida sin excepción" (sección 2), no requiere ADR.
+- **Mantenimiento:** mantenido activamente por la organización `serilog` (autores del propio Serilog),
+  versión estable 4.2.0 publicada en NuGet.org, sin señales de abandono.
+- **Seguridad:** `dotnet list package --vulnerable --include-transitive` sobre
+  `Shared.Infrastructure.Observability` no reportó ninguna vulnerabilidad conocida para este paquete ni
+  sus transitivas al momento de esta tarea.
+- **Compatibilidad:** TFM `net10.0` (y `net8.0`), compatible con el TFM único del repo; build de la
+  solución completa (`dotnet build BitCode.Framework.slnx`) sin regresiones, y los 6 tests de
+  `Shared.Infrastructure.Observability.Tests` (2 nuevos de esta tarea) en verde.
+- **Alcance de uso:** solo `SerilogHostBuilderExtensions.UseSharedSerilog` la referencia, y solo activa el
+  sink `WriteTo.OpenTelemetry(...)` cuando `OpenTelemetry:OtlpEndpoint` está configurado (mismo criterio
+  condicional que ya usan `tracing.AddOtlpExporter`/`metrics.AddOtlpExporter` en
+  `ObservabilityServiceCollectionExtensions`, F3-10) — un host sin collector configurado (desarrollo
+  local) no abre ninguna conexión OTLP nueva, sigue escribiendo únicamente a `Console`.
+
 ## 6. Explícitamente fuera de alcance de esta tarea (sección 9 del Plan Maestro)
 
 No se agregan en F0-06, por exceder el alcance de "aplicar una verificación básica en CI" y requerir su propio ADR/evaluación:

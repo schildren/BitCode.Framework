@@ -44,7 +44,35 @@ public static class ObservabilityServiceCollectionExtensions
 
         services
             .AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService(options.ServiceName))
+            .ConfigureResource(resource => resource
+                .AddService(options.ServiceName)
+                // F4-10: dos atributos de la "telemetría mínima" (Plan Maestro, Fase 4) que hoy no se
+                // seteaban en ningún lado -- sin esto, ninguna traza/métrica exportada permite
+                // distinguir DE QUÉ INSTANCIA/AMBIENTE vino cuando hay múltiples réplicas detrás de un
+                // collector centralizado (justamente el escenario que introduce esta tarea). Ambos son
+                // convenciones semánticas estándar de OTel (no un esquema propio), así que cualquier
+                // backend (Jaeger/Tempo/Prometheus/Datadog) ya sabe interpretarlos sin config adicional:
+                //   - "service.instance.id": HOSTNAME es el nombre del Pod en Kubernetes (variable de
+                //     entorno que el kubelet inyecta siempre, sin downward API explícita) -- identifica
+                //     la réplica exacta. Cae a Environment.MachineName fuera de un Pod (dev local).
+                //   - "deployment.environment": mismo valor que ASPNETCORE_ENVIRONMENT/DOTNET_ENVIRONMENT
+                //     ya usa el resto del host para logging/config -- no se introduce un nombre de
+                //     ambiente paralelo.
+                // "region"/"tenant_id"/"user_id"/"correlation_id" de la lista de telemetría mínima NO se
+                // resuelven acá -- no son atributos fijos del Resource (module/proceso), son atributos
+                // POR REQUEST/operación; quedan documentados como brecha explícita en
+                // docs/guia-otel-collector.md en vez de forzarlos con un placeholder sin sentido.
+                .AddAttributes(
+                [
+                    new(
+                        "service.instance.id",
+                        Environment.GetEnvironmentVariable("HOSTNAME") ?? Environment.MachineName),
+                    new(
+                        "deployment.environment",
+                        Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                            ?? "Production"),
+                ]))
             .WithTracing(tracing =>
             {
                 tracing

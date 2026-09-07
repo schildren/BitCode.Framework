@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using Microsoft.AspNetCore.Http;
 using Serilog.Context;
@@ -27,6 +28,15 @@ public sealed class TenantLogEnrichmentMiddleware(RequestDelegate next)
     {
         using (LogContext.PushProperty("TenantId", tenantContext.TenantId))
         {
+            // F4-10: además del log estructurado (arriba), etiqueta el Activity/traza OTel vigente del
+            // request con "tenant_id" -- uno de los atributos de "telemetría mínima" exigidos por la
+            // Fase 4 del Plan Maestro. Sin esto, un collector centralizado (F4-10) recibe trazas
+            // correlacionadas por trace_id/span_id pero sin forma de filtrar/agrupar por tenant en el
+            // backend de observabilidad. SetTag es un no-op seguro si no hay Activity actual (p. ej.
+            // AddSharedObservability no está configurado, o el sampler descartó este request) o si
+            // TenantId es null (multitenancy deshabilitada) -- no falla el request en ningún caso.
+            Activity.Current?.SetTag("tenant_id", tenantContext.TenantId);
+
             await next(context);
         }
     }

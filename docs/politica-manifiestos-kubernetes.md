@@ -1,7 +1,10 @@
 # Manifiestos de despliegue Kubernetes — BitCode.Framework
 
 **Tarea:** F4-02 (Fase 4 — Runtime de alta disponibilidad) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md);
-actualizado por F4-04 (probes), F4-05 (shutdown graceful), F4-06 (HPA) y F4-07 (PDB y spread).
+actualizado por F4-04 (probes), F4-05 (shutdown graceful), F4-06 (HPA), F4-07 (PDB y spread) y F4-10
+(OTel Collector — agrega el paquete `k8s/otel-collector/` y `OpenTelemetry__OtlpEndpoint` a los ConfigMap
+de `sample-api`/`gateway`; ver [`guia-otel-collector.md`](guia-otel-collector.md) para el detalle y la
+evidencia de validación específica de ese paquete, no repetida acá).
 **Fecha:** 2026-09-07
 **Estado:** Aplicado. El criterio de aceptación de la fila F4-02 es "Configuración validada": no hay un
 clúster Kubernetes real disponible en este entorno, así que la validación se hizo con herramientas

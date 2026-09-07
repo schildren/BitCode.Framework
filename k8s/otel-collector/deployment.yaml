@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # F4-10: paquete básico, sin overlays por ambiente (mismo alcance deliberado que k8s/gateway/, F4-08) --
+  # 2 réplicas fijas (no HPA, F4-06 fuera de alcance acá) para que la caída de un Pod del Collector no
+  # deje a las apps sin ningún destino OTLP mientras el otro Pod sigue recibiendo tráfico. IMPORTANTE:
+  # con 2+ réplicas SIN estado compartido entre ellas, cada una arma sus propios lotes (batch processor) e
+  # imprime lo que le tocó -- esto es intencional para un Collector "stateless" (rol de agente/gateway
+  # combinado, ver el comentario de cabecera de otel-collector-config.yaml), no reparte tráfico
+  # determinísticamente por trace_id (eso requeriría un tier de Collectors "gateway" separado con
+  # exporter loadbalancing/tail sampling -- explícitamente fuera de alcance de esta tarea, documentado en
+  # docs/guia-otel-collector.md).
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-collector
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-collector
+        app.kubernetes.io/part-of: bitcode-framework
+    spec:
+      # F4-03 (Stateless), mismo criterio que sample-api/gateway: sin volúmenes de estado local
+      # requeridos -- el único volumen es el ConfigMap de solo lectura con la configuración del
+      # Collector, no datos persistentes; cualquier pod es reemplazable.
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.111.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--config=/etc/otelcol-contrib/config.yaml"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: health
+              containerPort: 13133
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol-contrib
+              readOnly: true
+          # El extension "health_check" (habilitado en otel-collector-config.yaml, puerto 13133) expone
+          # GET / -- responde 200 apenas TODOS los componentes del pipeline (receivers/processors/
+          # exporters/extensions) terminaron de iniciar. Mismo patrón que sample-api/gateway (F4-04):
+          # startupProbe da margen al arranque inicial (el Collector es liviano, no necesita SQL Server
+          # ni ninguna dependencia externa para arrancar -- "debug" no abre ninguna conexión saliente),
+          # livenessProbe/readinessProbe comparten el mismo endpoint porque el Collector no tiene un
+          # concepto propio de "vivo pero no listo" en esta configuración (sin exporters que dependan de
+          # una conexión persistente externa que pueda quedar caída mientras el proceso sigue vivo).
+          startupProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            # Valores base conservadores -- memory_limiter (otel-collector-config.yaml) fuerza un techo
+            # de 300MiB antes de llegar al limit de 400Mi de este contenedor, dejando margen real para el
+            # resto del runtime Go (GC, buffers de red) sin llegar al OOMKill del Pod.
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 400Mi
+          securityContext:
+            # La imagen oficial de este Collector ya corre como el usuario no-root 10001 (ver el propio
+            # Containerfile del proyecto upstream) -- se refuerza acá explícitamente, mismo criterio que
+            # k8s/sample-api/base/deployment.yaml y k8s/gateway/deployment.yaml.
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          configMap:
+            # Nombre generado por kustomization.yaml (configMapGenerator, disableNameSuffixHash: true) a
+            # partir de otel-collector-config.yaml -- fuente única de verdad, sin duplicar el contenido
+            # del Collector en este Deployment.
+            name: otel-collector-config
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

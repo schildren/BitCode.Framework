@@ -1,0 +1,50 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# F4-10: paquete de manifiestos Kustomize básico -- deliberadamente sin overlays por ambiente (mismo
+# alcance que k8s/gateway/, F4-08). Un consumidor real que despliegue este Collector a producción
+# replica el patrón de overlays/dev/staging/prod que ya existe para sample-api (namespace + patches de
+# replicas/resources/imagen, y -- crítico para este caso -- el exporter real que reemplace/complemente a
+# "debug" en otel-collector-config.yaml, ver el TODO documentado ahí).
+#
+# Namespace propio ("bitcode-observability"), DISTINTO de los namespaces de sample-api
+# (bitcode-sample-api-{dev,staging,prod}) o del Gateway (default, sin namespace propio -- F4-08). Un
+# collector centralizado es infraestructura compartida ENTRE ambientes/aplicaciones, no pertenece al
+# namespace de una app puntual -- por eso las apps lo referencian por el FQDN completo
+# ("otel-collector.bitcode-observability.svc.cluster.local:4317"), no por el nombre corto (que solo
+# resuelve dentro del MISMO namespace) -- ver OpenTelemetry__OtlpEndpoint en
+# k8s/sample-api/base/configmap.yaml y k8s/gateway/configmap.yaml.
+
+namespace: bitcode-observability
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: otel-collector
+      app.kubernetes.io/part-of: bitcode-framework
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: true
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+
+configMapGenerator:
+  - name: otel-collector-config
+    # Fuente única de verdad: el mismo archivo que se valida directamente contra el binario real del
+    # Collector (docs/guia-otel-collector.md) -- nunca se duplica su contenido dentro de un manifiesto
+    # ConfigMap aparte.
+    files:
+      - otel-collector-config.yaml
+    options:
+      # Sin hash de sufijo: el nombre del ConfigMap generado queda exactamente "otel-collector-config",
+      # el mismo que referencia deployment.yaml (spec.template.spec.volumes[0].configMap.name) -- con el
+      # sufijo hash habilitado (comportamiento por defecto de Kustomize), un cambio en
+      # otel-collector-config.yaml generaría un nombre de ConfigMap distinto en cada build, y
+      # deployment.yaml tendría que actualizarse en el mismo commit para no quedar apuntando a un
+      # ConfigMap que ya no existe -- ver la discusión equivalente (sin resolver acá, deliberadamente
+      # fuera de alcance de F4-10) sobre rollout automático al cambiar config: sin el sufijo hash, un
+      # cambio en la config NO fuerza un nuevo rollout de los Pods existentes por sí solo (quedan con la
+      # config vieja montada hasta el próximo restart) -- ver el comentario ampliado en
+      # docs/guia-otel-collector.md.
+      disableNameSuffixHash: true

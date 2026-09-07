@@ -11,6 +11,13 @@ data:
   Logging__LogLevel__Default: "Information"
   Logging__LogLevel__Microsoft.AspNetCore: "Warning"
   OpenTelemetry__ServiceName: "BitCode.Gateway"
+  # F4-10: antes de esta tarea, el Gateway no exportaba a ningún collector (AddSharedObservability ya
+  # estaba cableado desde F4-08, pero "OpenTelemetry__OtlpEndpoint" nunca se seteó acá -- generaba
+  # trazas/métricas en memoria sin exportarlas a ningún lado). Apunta al Service ClusterIP del OTel
+  # Collector centralizado (k8s/otel-collector/, namespace propio "bitcode-observability") vía FQDN
+  # completo -- mismo criterio que k8s/sample-api/base/configmap.yaml, ver el comentario ahí para el
+  # detalle de por qué FQDN completo y no el nombre corto.
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector.bitcode-observability.svc.cluster.local:4317"
   Jwt__Issuer: "BitCode.Framework"
   Jwt__Audience: "BitCode.Framework.Clients"
   RateLimiting__PermitLimit: "100"

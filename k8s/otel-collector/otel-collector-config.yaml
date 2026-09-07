@@ -1,0 +1,125 @@
+# BitCode.Framework — configuración del OpenTelemetry Collector (F4-10, Fase 4 del Plan Maestro).
+#
+# Fuente única de verdad: este archivo se referencia por nombre desde kustomization.yaml
+# (configMapGenerator, files: [otel-collector-config.yaml]) — el ConfigMap final que Kubernetes aplica
+# se genera a partir de ESTE archivo, sin duplicar el contenido en un manifiesto YAML aparte. También es
+# el mismo archivo que se valida directamente contra el binario real del Collector fuera de Kubernetes
+# (ver docs/guia-otel-collector.md sección de validación, `otelcol-contrib validate --config=...` y
+# arranque real con Docker).
+#
+# Patrón: apps (Sample.Api, BitCode.Gateway) -> OTel Collector (este pipeline, rol "agente/gateway"
+# combinado en un único Deployment por ahora, sin separar agente-por-nodo de gateway-central todavía) ->
+# backend(s) de observabilidad. Sin un backend real de observabilidad aprobado/desplegado en este
+# entorno (Grafana Tempo/Loki/Prometheus, Jaeger, Datadog, etc.), el único exporter ACTIVO es "debug"
+# (nombre actual del exporter que en versiones más viejas del Collector se llamaba "logging" — mismo
+# propósito, imprime el payload recibido en stdout del propio Collector). Ver la sección "exporters" más
+# abajo para los ejemplos comentados y el TODO explícito de la decisión de backend pendiente.
+
+extensions:
+  # Expone GET /health en el puerto 13133 — usado por livenessProbe/readinessProbe del Deployment
+  # (k8s/otel-collector/deployment.yaml). Extensión oficial del propio Collector, sin dependencias
+  # externas.
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      # gRPC (4317): protocolo por defecto que ya usan tracing.AddOtlpExporter/metrics.AddOtlpExporter
+      # (Shared.Infrastructure.Observability, F3-10/F4-10) y el sink Serilog.Sinks.OpenTelemetry
+      # (F4-10) de Sample.Api/BitCode.Gateway -- ver OpenTelemetryOptions.OtlpEndpoint.
+      grpc:
+        endpoint: 0.0.0.0:4317
+      # HTTP (4318): mismo receiver OTLP, protocolo HTTP/protobuf -- no lo usa hoy ningún proyecto de
+      # este repositorio (todos exportan por gRPC), pero se deja habilitado por ser el segundo protocolo
+      # estándar de OTLP (útil para un cliente futuro que no pueda hablar gRPC, p. ej. detrás de un proxy
+      # que solo permite HTTP/1.1).
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # SIEMPRE primero en la lista de processors de cada pipeline (recomendación oficial del Collector):
+  # protege al propio proceso del Collector contra un pico de tráfico que agote su memoria antes de que
+  # el resto del pipeline (batch, exporters) llegue a procesarlo -- sin este processor, un Collector sin
+  # límite de memoria configurado puede terminar en OOMKill del Pod bajo carga, perdiendo TODO lo que
+  # tenía en el buffer, no solo el exceso.
+  memory_limiter:
+    check_interval: 1s
+    # Debe quedar por debajo de `resources.limits.memory` del contenedor (deployment.yaml, 400Mi) con
+    # margen real para el resto del runtime Go (GC, buffers de red) -- no es "el límite del Pod", es el
+    # límite que este processor fuerza ANTES de llegar a que Kubernetes mate el proceso.
+    limit_mib: 300
+    spike_limit_mib: 75
+  # Agrupa spans/métricas/logs individuales en lotes antes de exportar -- reduce drásticamente el número
+  # de requests salientes hacia el/los exporter(s) reales (ver el TODO de la sección "exporters"),
+  # comparado con exportar cada señal individual apenas llega.
+  batch:
+    timeout: 5s
+    send_batch_size: 8192
+  # Ejemplo de processor "resource" NO destructivo -- agrega un atributo de resource nuevo
+  # ("bitcode.collector.name") sin tocar los que ya trae cada señal desde el origen. Se incluye acá
+  # deliberadamente para dejar EXPLÍCITO (no implícito) que ninguno de los atributos de "telemetría
+  # mínima" que ya setea la app (service.instance.id/deployment.environment vía
+  # ObservabilityServiceCollectionExtensions, tenant_id como tag de Activity vía
+  # TenantLogEnrichmentMiddleware, ambos F4-10) se pierde al pasar por este pipeline -- ningún processor
+  # de esta lista (memory_limiter/batch/resource) filtra ni sobrescribe atributos existentes; "resource"
+  # con `action: upsert` sobre una clave nueva ("bitcode.collector.name") nunca pisa una clave que ya
+  # traiga la señal.
+  resource:
+    attributes:
+      - key: bitcode.collector.name
+        value: "otel-collector"
+        action: upsert
+
+exporters:
+  # Placeholder documentado -- NO es un backend de observabilidad real, solo imprime el payload recibido
+  # (verbosity: detailed) en la salida estándar del propio contenedor del Collector. Sirve para verificar
+  # que el pipeline recibe/correlaciona señales reales (ver evidencia de smoke test en
+  # docs/guia-otel-collector.md), pero no persiste nada -- reiniciar el Pod pierde toda la telemetría ya
+  # "exportada" acá.
+  debug:
+    verbosity: detailed
+
+  # -----------------------------------------------------------------------------------------------
+  # TODO (F4-10): la elección del backend de observabilidad REAL (a qué sistema apunta este Collector en
+  # un cluster productivo -- Grafana Tempo/Loki/Mimir, Jaeger, Prometheus, Datadog, New Relic, etc.) es
+  # una decisión de infraestructura que esta tarea deliberadamente NO toma. No es una de las categorías
+  # listadas explícitamente en la sección 13 del Plan Maestro ("Decisiones que requieren aprobación
+  # humana"), pero es del mismo tipo: compromete un costo operativo/contractual (retención de datos,
+  # licenciamiento SaaS vs. self-hosted, SLA del propio backend) que un ADR debe registrar ANTES de
+  # desplegarlo contra tráfico real -- ver el mismo criterio que ya aplicó ADR 0014 (proveedor de
+  # secretos) para una decisión de infraestructura equivalente. Dos ejemplos de exporters reales, EN
+  # COMENTARIO, listos para descomentar una vez que exista esa decisión (agregarían el exporter acá Y su
+  # nombre a `service.pipelines.*.exporters` más abajo, junto a o en reemplazo de `debug`):
+  #
+  # otlp/tempo:
+  #   endpoint: tempo.observability.svc.cluster.local:4317
+  #   tls:
+  #     insecure: true   # ajustar a TLS real (docs/politica-seguridad-kafka.md sección de TLS es la
+  #                       # referencia de patrón, aunque sea para Kafka -- mismo principio de no exponer
+  #                       # tráfico interno en texto plano en un cluster productivo real)
+  #
+  # prometheusremotewrite:
+  #   endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
+  #   tls:
+  #     insecure: true
+  # -----------------------------------------------------------------------------------------------
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug]
+  telemetry:
+    logs:
+      level: info

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy;
 using FluentAssertions;
@@ -161,5 +162,53 @@ public class TenantLogEnrichmentMiddlewareTests
         loggedTenantIds.Should().Contain(tenantB.ToString());
         loggedTenantIds.Should().OnlyHaveUniqueItems(
             "cada request concurrente debe loguear únicamente su propio TenantId, sin mezclarse con el del otro request en vuelo");
+    }
+
+    /// <summary>
+    /// F4-10: además del enriquecimiento de logs (arriba), el middleware etiqueta el Activity/traza
+    /// OTel vigente del request con "tenant_id" -- uno de los atributos de "telemetría mínima" exigidos
+    /// por la Fase 4 del Plan Maestro. Sin esto, un collector centralizado (F4-10) recibe trazas
+    /// correlacionadas por trace_id/span_id pero sin forma de filtrar/agrupar por tenant.
+    /// </summary>
+    [Fact]
+    public async Task TenantId_IsSetAsActivityTag_DuringRequestProcessing()
+    {
+        var tenantId = Guid.NewGuid();
+        using var activitySource = new ActivitySource(nameof(TenantId_IsSetAsActivityTag_DuringRequestProcessing));
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source == activitySource,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        object? capturedTag = null;
+
+        var host = await new HostBuilder()
+            .ConfigureWebHost(builder => builder
+                .UseTestServer()
+                .ConfigureServices(services => services.AddScoped<ITenantContext>(_ => new FixedTenantContext(tenantId)))
+                .Configure(app =>
+                {
+                    // Simula el Activity que en un host real abre AddAspNetCoreInstrumentation
+                    // (Shared.Infrastructure.Observability, F3-10) antes de que corra este middleware.
+                    app.Use(async (_, next) =>
+                    {
+                        using var activity = activitySource.StartActivity("test-request");
+                        await next();
+                    });
+                    app.UseTenantContextLogging();
+                    app.Run(ctx =>
+                    {
+                        capturedTag = Activity.Current?.GetTagItem("tenant_id");
+                        return ctx.Response.WriteAsync("ok");
+                    });
+                }))
+            .StartAsync();
+
+        using var client = host.GetTestServer().CreateClient();
+        await client.GetAsync("/");
+
+        capturedTag.Should().Be(tenantId);
     }
 }

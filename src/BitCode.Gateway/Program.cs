@@ -7,6 +7,13 @@ using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// F4-10: Serilog reemplaza el logger por defecto de ASP.NET Core -- WriteTo.Console() siempre activo
+// (comportamiento visible sin cambios frente a antes de esta tarea); agrega WriteTo.OpenTelemetry(...)
+// SOLO si "OpenTelemetry:OtlpEndpoint" está configurado (ver SerilogHostBuilderExtensions), cerrando la
+// brecha de "Centralizar exportación de logs" (F4-10) -- hasta esta tarea, el Gateway ya exportaba
+// trazas/métricas OTLP (línea siguiente, desde F3-10/F4-08) pero nunca logs.
+builder.Host.UseSharedSerilog();
+
 // Telemetría (F3-10/F4-08): instrumenta ASP.NET Core + HttpClient. YARP reenvía el request usando el
 // stack HTTP estándar de .NET (SocketsHttpHandler/DiagnosticsHandler): el Activity/traceparent (W3C
 // Trace Context) del request entrante se propaga automáticamente al request proxyado hacia el

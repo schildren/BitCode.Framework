@@ -18,3 +18,13 @@ data:
   # disponible. El token/credenciales del proveedor NUNCA van en este
   # ConfigMap -- viven en el Secret referenciado ("sample-api-secrets").
   Secrets__Provider: "Configuration"
+  # F4-10: nombre del servicio para AddSharedObservability (F4-10 -- Sample.Api no instrumentaba con
+  # OpenTelemetry hasta esta tarea, ver InfrastructureModule.ConfigureServices/Program.cs). OtlpEndpoint
+  # apunta al Service ClusterIP del OTel Collector centralizado (k8s/otel-collector/, namespace propio
+  # "bitcode-observability", DISTINTO del namespace de este Deployment) vía su FQDN completo -- el nombre
+  # corto "otel-collector" NO resuelve entre namespaces distintos, hace falta el FQDN de 3 partes
+  # (servicio.namespace.svc.cluster.local). Puerto 4317 = receiver OTLP/gRPC (protocolo que usan
+  # tracing.AddOtlpExporter/metrics.AddOtlpExporter y el sink Serilog.Sinks.OpenTelemetry, ver
+  # ObservabilityServiceCollectionExtensions/SerilogHostBuilderExtensions).
+  OpenTelemetry__ServiceName: "Sample.Api"
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector.bitcode-observability.svc.cluster.local:4317"

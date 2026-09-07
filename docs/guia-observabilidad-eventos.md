@@ -6,8 +6,10 @@ Instrumentación OpenTelemetry de la plataforma de eventos (Fase 3): `KafkaEvent
 
 ## Qué hace este repo por vos (instrumentación) y qué no (dashboard/alertas)
 
-BitCode.Framework es una librería, no una aplicación desplegada — no trae Grafana, Prometheus ni ningún
-collector. Lo que SÍ entrega esta tarea:
+BitCode.Framework es una librería, no una aplicación desplegada — no trae Grafana ni Prometheus. Desde
+F4-10 sí incluye, como **infraestructura de referencia** (`k8s/otel-collector/`, no parte de ningún
+paquete NuGet), un OpenTelemetry Collector centralizado — ver `docs/guia-otel-collector.md`. Lo que SÍ
+entrega esta tarea (F3-10):
 
 - **Métricas** (`System.Diagnostics.Metrics.Meter`/`Counter`/`Histogram`/`ObservableGauge`) de publish,
   consume, error y DLQ, verificadas con tests (`MeterListener`).
