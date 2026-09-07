@@ -1,16 +1,19 @@
 # Política perimetral: WAF y límites (F4-09)
 
 **Tarea:** F4-09 (Fase 4 — Runtime de alta disponibilidad) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07
-**Estado:** Política declarada y validada sintácticamente. El criterio de aceptación de la fila F4-09 es
-"Casos abusivos bloqueados" — se cumple **parcialmente con evidencia real** (ver sección 5): los casos
-cubiertos por código de este repositorio (rate limiting de aplicación del Gateway, F4-08; tamaño de
-request body, F4-09) están probados con pruebas de integración reales contra el Gateway real. Los casos
-que dependen de un WAF/Ingress Controller perimetral real (firmas de ataque, rate limit por IP a nivel
-de red, tamaño/timeout antes de llegar al proceso .NET) **no se pudieron ejercitar en tráfico real** en
-este entorno — no hay clúster Kubernetes ni Ingress Controller/WAF real disponible (misma limitación que
-`docs/politica-manifiestos-kubernetes.md` ya documentó para F4-02/F4-04/F4-05/F4-06/F4-07). Esta
-distinción se mantiene explícita en todo el documento, no se declara el criterio cumplido al 100%.
+**Fecha:** 2026-09-07 (revisión: cierre de pendiente, misma fecha — decisión de WAF de firmas tomada).
+**Estado:** Política declarada y validada sintácticamente, con la decisión de WAF de firmas ya TOMADA
+(sección 4 — ModSecurity + OWASP CRS vía `ingress-nginx`, ya no queda como opciones abiertas). El
+criterio de aceptación de la fila F4-09 es "Casos abusivos bloqueados" — se cumple **parcialmente con
+evidencia real** (ver sección 5): los casos cubiertos por código de este repositorio (rate limiting de
+aplicación del Gateway, F4-08, incluido el rate limiting DISTRIBUIDO entre réplicas vía Redis, cierre de
+pendiente de F4-08; tamaño de request body, F4-09) están probados con pruebas de integración reales
+contra el Gateway real. Los casos que dependen de un WAF/Ingress Controller perimetral real (firmas de
+ataque vía ModSecurity+CRS, rate limit por IP a nivel de red, tamaño/timeout antes de llegar al proceso
+.NET) **no se pudieron ejercitar en tráfico real** en este entorno — no hay clúster Kubernetes ni Ingress
+Controller/WAF real disponible (misma limitación que `docs/politica-manifiestos-kubernetes.md` ya
+documentó para F4-02/F4-04/F4-05/F4-06/F4-07). Esta distinción se mantiene explícita en todo el
+documento, no se declara el criterio cumplido al 100%.
 
 ---
 
@@ -21,11 +24,12 @@ Internet
    │
    ▼
 ┌─────────────────────────────────────┐
-│ Capa perimetral (F4-09, esta tarea)  │  Ingress Controller (NGINX Ingress, de referencia)
-│ - Tamaño máx. de payload             │  o WAF cloud-managed equivalente (ver sección 4)
-│ - Timeouts (conexión/lectura/envío)  │
+│ Capa perimetral (F4-09, esta tarea)  │  Ingress Controller (NGINX Ingress + ModSecurity/OWASP CRS,
+│ - Tamaño máx. de payload             │  decisión tomada -- sección 4; requiere imagen con el módulo
+│ - Timeouts (conexión/lectura/envío)  │  ModSecurity compilado, ver sección 4.1)
 │ - Rate limit por IP                  │
-│ - (Opcional/no cubierto) firmas CRS  │
+│ - Firmas SQLi/XSS (ModSecurity+CRS,  │
+│   modo DetectionOnly al arrancar)    │
 └─────────────────────────────────────┘
    │  (tráfico ya filtrado)
    ▼
@@ -50,7 +54,8 @@ Ninguna de las dos capas reemplaza a la otra — es defensa en profundidad delib
 - La capa de aplicación (Gateway) protege lo que solo el proceso puede evaluar con contexto real
   (identidad del token, política de negocio, contenido del payload ya parseado) y sigue siendo necesaria
   incluso si el WAF perimetral real todavía no está desplegado (entornos de desarrollo, pruebas de
-  integración, o mientras la decisión de vendor de la sección 4 no se resuelve).
+  integración, o mientras no exista un clúster real con el Ingress Controller/módulo ModSecurity
+  desplegado, ver sección 4.1).
 
 ---
 
@@ -71,7 +76,9 @@ tooling propietario sin necesidad).
 | `nginx.ingress.kubernetes.io/proxy-body-size` | `10m` | Tamaño máximo de payload — rechaza antes de que el Gateway lo reciba. Mismo valor que el límite de aplicación (sección 2.2) — dos capas, mismo número, para que un cliente vea el mismo comportamiento efectivo en ambas. |
 | `nginx.ingress.kubernetes.io/proxy-connect-timeout` | `5` (s) | Protección contra un backend/Gateway lento en aceptar la conexión. |
 | `nginx.ingress.kubernetes.io/proxy-read-timeout` / `proxy-send-timeout` | `30` (s) | Protección contra conexiones lentas tipo Slowloris y contra un backend colgado reteniendo un worker de NGINX indefinidamente. |
-| `nginx.ingress.kubernetes.io/limit-rps` + `limit-burst-multiplier` | `20` req/s por IP, ráfaga x3 | Rate limiting **por IP de origen**, a nivel de red — defensa adicional al rate limiting de aplicación del Gateway (F4-08, ventana fija global, no por IP). |
+| `nginx.ingress.kubernetes.io/limit-rps` + `limit-burst-multiplier` | `20` req/s por IP, ráfaga x3 | Rate limiting **por IP de origen**, a nivel de red — defensa adicional al rate limiting de aplicación del Gateway (F4-08, ventana fija global, no por IP; distribuida entre réplicas vía Redis si está configurado, ver sección 2.3). |
+| `nginx.ingress.kubernetes.io/enable-modsecurity` + `enable-owasp-core-rules` | `"true"` / `"true"` | WAF de firmas (F4-09, decisión tomada — sección 4): habilita ModSecurity + el ruleset OWASP CRS dentro de `ingress-nginx`. Requiere una imagen del controller con el módulo ModSecurity compilado (ver sección 4.1) — sin ese requisito, NGINX ignora estas anotaciones en silencio. |
+| `nginx.ingress.kubernetes.io/modsecurity-snippet` | `SecRuleEngine DetectionOnly` | Arranque en modo detección/auditoría, NO bloqueo (sección 4.2) — evita cortar tráfico legítimo por falsos positivos del CRS genérico antes de haber observado tráfico real. |
 
 **Validación realizada en este entorno** (sin clúster ni Ingress Controller real disponible, mismo
 tratamiento que el resto de `k8s/`):
@@ -108,7 +115,7 @@ cuando exista uno disponible — mismo criterio que F4-06 dejó pendiente "escal
 
 Defensa en profundidad de **aplicación**, complementaria al `proxy-body-size` del Ingress (sección 2.1)
 — protege al Gateway aunque no haya un Ingress/WAF real delante todavía (desarrollo, tests, o mientras
-la decisión de vendor de la sección 4 no se resuelve):
+no exista un clúster real con el Ingress Controller desplegado, ver sección 4.1):
 
 - `GatewayRequestLimitsOptions` (sección de configuración `"RequestLimits"`, clave
   `MaxRequestBodySizeBytes`, default 10 MiB — mismo valor que `proxy-body-size` del Ingress).
@@ -134,17 +141,50 @@ clase, F4-08):
 Este es el único caso abusivo de esta tarea con evidencia real contra código ejecutable — el resto
 (sección 2.1) queda como política declarada, sin poder ejercitarse en tráfico real en este entorno.
 
+### 2.3. Rate limiting distribuido entre réplicas (código, `src/BitCode.Gateway/RateLimiting/`)
+
+Cierre de pendiente de F4-08, no de F4-09, documentado acá porque comparte topología con esta política:
+antes de este cierre, el rate limiting de aplicación del Gateway (fila de la tabla de la sección 2.1)
+usaba el rate limiter nativo de ASP.NET Core, **en memoria por proceso** — con `replicas: 2` (o más) del
+Gateway, el límite efectivo era `N * PermitLimit`, no `PermitLimit`. Cerrado con
+`RedisFixedWindowRateLimiter` (`src/BitCode.Gateway/RateLimiting/RedisFixedWindowRateLimiter.cs`): mismo
+algoritmo de ventana fija, pero el contador vive en Redis (compartido entre TODAS las réplicas),
+incrementado y expirado dentro de un único `EVAL` de Lua atómico (sin condición de carrera de
+"leer-luego-escribir" entre réplicas concurrentes). Con `Caching:RedisConnectionString` configurado
+(misma clave que ya usa el resto del framework, F4-03), el límite configurado (`RateLimiting:PermitLimit`)
+es el límite AGREGADO real. Sin Redis configurado, cae al rate limiter en memoria previo (fallback
+documentado, no rompe el caso sin Redis).
+
+**Validación realizada — evidencia real, contra DOS instancias reales del Gateway y Redis real (no
+simulada):** `tests/BitCode.Gateway.Tests/Integration/GatewayDistributedRateLimitingIntegrationTests.cs`
+(dos `WebApplicationFactory<Program>` independientes — dos hosts/DI distintos, simulando dos réplicas
+reales de un mismo Deployment — contra un contenedor Redis real vía Testcontainers):
+
+- `DosInstanciasDelGateway_ConRedisConfigurado_RespetanElLimiteDeFormaAgregadaEntreAmbas`: con
+  `PermitLimit = 4`, se reparten 4 requests entre las dos instancias (2 y 2) — el quinto request, contra
+  CUALQUIERA de las dos instancias, se rechaza con `429` aunque esa instancia individualmente solo
+  llevaba 2 requests propios. Esta es la evidencia central: el límite se respeta de forma AGREGADA, no
+  por instancia.
+- `DosInstanciasDelGateway_SinRedisConfigurado_CadaUnaAplicaSuPropioLimiteEnMemoria`: control/contraste —
+  sin Redis configurado, cada instancia agota su propia cuota completa de forma independiente (el doble
+  de requests exitosos en total que `PermitLimit`), confirmando que el fallback documentado sigue
+  funcionando y dejando en evidencia, por contraste directo, la limitación que este cierre resuelve.
+
+A diferencia de las anotaciones del Ingress (sección 2.1), este caso SÍ tiene evidencia real de dos
+réplicas concurrentes contra un backend compartido real — no depende de un clúster Kubernetes ni de un
+Ingress Controller real, corre completamente en proceso .NET + Redis real.
+
 ---
 
 ## 3. Qué NO cubre esta tarea — brechas explícitas
 
-- **Reglas de firmas de ataques comunes (SQLi/XSS, OWASP ModSecurity Core Rule Set o equivalente).**
-  Requieren el módulo ModSecurity (u otro motor de firmas) compilado/habilitado dentro de la imagen del
-  Ingress Controller — no es una anotación simple de `ingress-nginx` estándar (la imagen oficial de
-  `ingress-nginx` no trae ModSecurity habilitado por defecto; requiere una imagen alternativa o un
-  segundo controller dedicado, p. ej. `ingress-nginx` compilado con `--with-http_modsecurity_module`, o
-  el operador OWASP ModSecurity CRS). No se declara como si estuviera activo — sería una anotación
-  vacía sin efecto real, peor que documentarlo como pendiente.
+- **Reglas de firmas de ataques comunes (SQLi/XSS, OWASP ModSecurity Core Rule Set).** Ya NO es una
+  brecha sin decisión — ver sección 4 (decisión tomada: ModSecurity + OWASP CRS vía `ingress-nginx`,
+  `k8s/gateway/ingress.yaml`). Sigue siendo una brecha de **verificación** (no de decisión): requiere una
+  imagen del Ingress Controller con el módulo ModSecurity compilado (sección 4.1), y no hay un clúster
+  real en este entorno para confirmar que las reglas efectivamente bloquean/auditan tráfico con firmas
+  de ataque reales — la anotación queda declarada y validada solo sintácticamente (sección 4.3), no
+  ejercitada contra tráfico real.
 - **TLS/HTTPS en el `Ingress`.** `k8s/gateway/ingress.yaml` deja `spec.tls` fuera deliberadamente:
   requiere un certificado real (`cert-manager` + `Issuer`, o un certificado provisto externamente) y un
   dominio real, ninguno disponible en este entorno — mismo criterio que
@@ -157,25 +197,78 @@ Este es el único caso abusivo de esta tarea con evidencia real contra código e
 
 ---
 
-## 4. Decisión de vendor de WAF real — NO tomada, solo opciones documentadas
+## 4. Decisión de WAF de firmas — TOMADA (self-hosted, ModSecurity + OWASP CRS)
 
-Elegir un WAF concreto de un proveedor cloud específico (Azure Front Door WAF / AWS WAF / Cloudflare WAF
-/ Google Cloud Armor, etc.) es una **decisión de infraestructura/vendor no trivial** — implica costo
-recurrente, dependencia de un proveedor cloud específico (el resto del stack de BitCode se mantiene
-deliberadamente cloud-agnóstico, ver ADR 0001/0008), y potencialmente una licencia o SLA contractual.
-Cae dentro de las categorías del Plan Maestro (sección 13) que requieren **aprobación humana explícita**
-antes de tomarse como decisión operativa — no se toma en esta tarea, se documentan las opciones:
+**Decisión tomada para este entorno self-hosted:** `ingress-nginx` compilado/configurado con el módulo
+**ModSecurity + OWASP Core Rule Set (CRS)**, aplicado en `k8s/gateway/ingress.yaml`
+(`nginx.ingress.kubernetes.io/enable-modsecurity`, `enable-owasp-core-rules`, `modsecurity-snippet`). No
+queda como "opciones sin decidir" — este documento anteriormente dejaba la elección abierta; se cierra
+acá porque **no involucra elegir un vendor/proveedor cloud** (la categoría de decisión que sí requiere
+aprobación humana explícita según la sección 13 del Plan Maestro): ModSecurity+CRS es software open
+source (licencia Apache 2.0/BSD según el componente) que corre **dentro del mismo Ingress Controller ya
+elegido** (`ingress-nginx`, sección 2.1) — no suma una pieza de infraestructura nueva, ni un contrato, ni
+un costo recurrente, ni un lock-in de proveedor.
 
-| Opción | Cuándo tendría sentido | Trade-off principal |
+**Por qué esta opción y no un WAF cloud-managed:**
+
+| Opción | Decisión | Razón |
 |---|---|---|
-| `ingress-nginx` + anotaciones (esta tarea) sin firmas de ataque | Cluster propio, sin presupuesto/decisión de WAF cloud-managed todavía | Sin protección de firmas SQLi/XSS; solo tamaño/timeout/rate-limit por IP |
-| `ingress-nginx` compilado con ModSecurity + OWASP CRS | Cluster propio, se necesita protección de firmas sin depender de un cloud vendor | Mantenimiento propio del ruleset, más CPU por request, requiere imagen custom del controller |
-| WAF cloud-managed (Azure Front Door / AWS WAF / Cloudflare / Cloud Armor) | Se decide operar en un cloud provider específico y aceptar esa dependencia | Costo recurrente, atado a un proveedor, requiere decisión y aprobación humana explícita (Plan Maestro sección 13) |
+| `ingress-nginx` + ModSecurity + OWASP CRS | **Tomada, aplicada en esta tarea** | Open source, sin costo de licencia, corre en el mismo Ingress Controller ya elegido (sin infraestructura nueva), estándar de facto para WAF perimetral basado en firmas cuando no hay un proveedor cloud-managed ya decidido. Trade-off aceptado: mantenimiento propio del ruleset (ajuste de falsos positivos, ver sección 4.2) y algo más de CPU por request. |
+| WAF cloud-managed (Azure Front Door WAF / AWS WAF / Cloudflare / Google Cloud Armor) | **Puerta abierta, NO tomada** | Requiere decidir operar en un cloud provider específico — el resto del stack de BitCode se mantiene deliberadamente cloud-agnóstico (ADR 0001/0008). Costo recurrente, dependencia de vendor, y cae dentro de las categorías del Plan Maestro (sección 13) que requieren **aprobación humana explícita** antes de tomarse como decisión operativa. Queda como alternativa futura SI el proyecto consumidor decide migrar a un cloud provider concreto (Fase 9, extracción de microservicios / habilitación de tráfico productivo, ambas también sujetas a aprobación humana). |
 
-**No se activa ninguna de estas opciones como si ya estuviera desplegada.** Queda como recomendación
-para cuando el proyecto consumidor real defina su plataforma de despliegue (Fase 9, extracción de
-microservicios / habilitación de tráfico productivo, ambas también sujetas a aprobación humana según la
-sección 13 del Plan Maestro).
+### 4.1. Requisito de infraestructura explícito — no asumible sin verificación
+
+La imagen **oficial** `registry.k8s.io/ingress-nginx/controller` **no trae ModSecurity compilado por
+defecto**. Un despliegue real de esta política necesita una de estas dos opciones (no evaluadas ni
+elegidas entre sí en esta tarea, es responsabilidad del ambiente real):
+
+1. `registry.k8s.io/ingress-nginx/controller-chroot` (incluye ModSecurity desde `ingress-nginx` >= 1.9),
+   o
+2. una imagen custom del controller compilada con `--with-http_modsecurity_module`.
+
+Aplicar `k8s/gateway/ingress.yaml` contra un controller **sin** ese módulo no falla — las anotaciones
+`enable-modsecurity`/`enable-owasp-core-rules`/`modsecurity-snippet` quedan simplemente sin efecto real
+(NGINX las ignora en silencio). Este requisito queda documentado explícitamente en el propio manifiesto
+(comentario junto a las anotaciones) para que no se asuma protección activa sin haberlo confirmado contra
+un Ingress Controller real.
+
+### 4.2. Modo de arranque: `DetectionOnly`, no bloqueo agresivo — plan de transición
+
+El manifiesto arranca con `SecRuleEngine DetectionOnly` (audita/loguea matches del CRS sin bloquear el
+request) — **deliberadamente, no un descuido**: el OWASP CRS genérico tiene una tasa de falsos positivos
+no despreciable contra tráfico legítimo real (payloads JSON/form con caracteres o patrones que matchean
+firmas SQLi/XSS de forma espuria, p. ej. un campo de texto libre con comillas o guiones). Activar bloqueo
+real (`SecRuleEngine On`) en el primer despliegue, sin haber observado tráfico real primero, arriesga
+cortar clientes legítimos sin que nadie lo haya decidido conscientemente.
+
+**Plan de transición explícito** (a ejecutar por el proyecto consumidor real, con un clúster real
+disponible — no ejecutable en este entorno):
+
+1. Desplegar con `SecRuleEngine DetectionOnly` (estado de este manifiesto).
+2. Observar los logs de auditoría de ModSecurity (`SecAuditLog`, vía el propio `ingress-nginx`) durante
+   un período representativo de tráfico real (recomendado: al menos una semana completa, cubriendo el
+   patrón de uso real de los endpoints expuestos) para identificar reglas del CRS que generan falsos
+   positivos contra tráfico legítimo del proyecto.
+3. Afinar el ruleset: deshabilitar/ajustar puntualmente las reglas identificadas como falsos positivos
+   vía `SecRuleRemoveById`/`SecRuleUpdateTargetById` en un `modsecurity-snippet` ampliado (o un
+   `ConfigMap` de reglas dedicado si el volumen de ajustes lo justifica) — nunca deshabilitar el CRS
+   completo para "solucionar" un falso positivo puntual.
+4. Recién con el ruleset afinado y validado contra tráfico real, pasar a `SecRuleEngine On` (bloqueo
+   real) — decisión operativa del proyecto consumidor, no de este repositorio (no hay tráfico productivo
+   real en este entorno para tomarla con evidencia).
+
+### 4.3. Validación realizada en este entorno (sin clúster real disponible)
+
+Mismo tratamiento que el resto de `k8s/gateway/` (sección 2.1): `kubectl kustomize k8s/gateway` fusiona
+el `Ingress` con las anotaciones de ModSecurity sin error, y `kubeconform -strict -kubernetes-version
+1.30.0` valida los 4 recursos (`ConfigMap`, `Service`, `Deployment`, `Ingress`) sin errores —
+`Valid: 4, Invalid: 0, Errors: 0, Skipped: 0`, mismo resultado que antes de agregar las anotaciones
+(`metadata.annotations` es un mapa `string → string` genérico, ver nota de la sección 2.1). **Lo que NO
+se comprobó:** no hay Ingress Controller real (con o sin ModSecurity compilado) desplegado en este
+entorno, así que no se pudo enviar un payload con una firma de ataque real (p. ej. `' OR '1'='1`) contra
+un Ingress real esperando ver la entrada correspondiente en el log de auditoría de ModSecurity. Queda
+pendiente de verificación contra un clúster real con el Ingress Controller correcto desplegado — mismo
+criterio que el resto de `k8s/` (`docs/politica-manifiestos-kubernetes.md` sección 5).
 
 ---
 
@@ -186,16 +279,19 @@ sección 13 del Plan Maestro).
 | Payload sobredimensionado (con `Content-Length`) | Gateway (aplicación) | **Real** — test de integración, `413` confirmado |
 | Payload sobredimensionado (sin `Content-Length` declarado, streaming) | Gateway (aplicación) | Declarado vía `IHttpMaxRequestBodySizeFeature`, no probado con un stream chunked real en esta tarea |
 | Payload sobredimensionado, antes de llegar al Gateway | Ingress/WAF perimetral | Política declarada (`proxy-body-size`), **no ejercitada contra tráfico real** |
-| Ráfaga de requests que supera el límite de aplicación | Gateway (aplicación) | **Real** — ya probado en F4-08 (`Proxy_ConTokenValido_SuperarLimiteDeRateLimiting_Rechaza429`), sin cambios en esta tarea |
+| Ráfaga de requests que supera el límite de aplicación (una sola réplica) | Gateway (aplicación) | **Real** — F4-08 (`Proxy_ConTokenValido_SuperarLimiteDeRateLimiting_Rechaza429`) |
+| Ráfaga de requests que supera el límite AGREGADO entre réplicas (rate limiting distribuido) | Gateway (aplicación) | **Real** — cierre de pendiente F4-08, sección 2.3 (`DosInstanciasDelGateway_ConRedisConfigurado_RespetanElLimiteDeFormaAgregadaEntreAmbas`, dos instancias reales + Redis real) |
 | Ráfaga de requests por IP, antes de llegar al Gateway | Ingress/WAF perimetral | Política declarada (`limit-rps`), **no ejercitada contra tráfico real** |
 | Conexión lenta / colgada (Slowloris) | Ingress/WAF perimetral | Política declarada (timeouts), **no ejercitada contra tráfico real** |
-| Payload con firma de ataque conocida (SQLi/XSS) | WAF de firmas (CRS o equivalente) | **Fuera de alcance** — ver sección 3, no declarado como cubierto |
+| Payload con firma de ataque conocida (SQLi/XSS) | WAF de firmas (ModSecurity + OWASP CRS) | **Decisión tomada y aplicada** (sección 4) — anotaciones declaradas en `k8s/gateway/ingress.yaml`, validadas sintácticamente (sección 4.3); **no ejercitada contra tráfico real** (requiere clúster real con imagen ModSecurity, sección 4.1), y arranca en modo auditoría (`DetectionOnly`, sección 4.2), no bloqueo |
 
 **Conclusión:** el criterio de aceptación se cumple parcialmente con evidencia real (casos de código,
-Gateway) y queda declarado — no demostrado en ejecución — para los casos que dependen de un
-Ingress Controller/WAF perimetral real. Esta distinción se deja explícita en la tabla de arriba, mismo
-criterio que el Plan Maestro (sección 3.6) exige para no marcar "Completada" una validación que no se
-pudo ejecutar.
+Gateway, incluido el rate limiting distribuido entre réplicas) y queda declarado — no demostrado en
+ejecución — para los casos que dependen de un Ingress Controller/WAF perimetral real. La decisión de WAF
+de firmas que antes quedaba abierta (sección 4) ya está tomada y aplicada; lo que sigue sin evidencia
+real es exclusivamente la ejecución contra un clúster real, no la decisión en sí. Esta distinción se deja
+explícita en la tabla de arriba, mismo criterio que el Plan Maestro (sección 3.6) exige para no marcar
+"Completada" una validación que no se pudo ejecutar.
 
 ---
 
@@ -204,10 +300,15 @@ pudo ejecutar.
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — fila F4-09 del backlog (Fase 4).
 - [`politica-manifiestos-kubernetes.md`](politica-manifiestos-kubernetes.md) — mismo tratamiento de
   "validado sintácticamente, sin clúster real disponible" para el resto de `k8s/`.
-- `k8s/gateway/ingress.yaml` — implementación de la política perimetral declarativa.
+- `k8s/gateway/ingress.yaml` — implementación de la política perimetral declarativa, incluida la
+  decisión de WAF de firmas (ModSecurity + OWASP CRS, sección 4).
 - `src/BitCode.Gateway/RequestLimits/` — implementación del límite de tamaño de body de aplicación.
+- `src/BitCode.Gateway/RateLimiting/RedisFixedWindowRateLimiter.cs` — rate limiting distribuido entre
+  réplicas (cierre de pendiente F4-08, sección 2.3).
 - `tests/BitCode.Gateway.Tests/Integration/GatewayIntegrationTests.cs` — evidencia real (413, y el
-  rate limiting de aplicación ya probado en F4-08).
+  rate limiting de aplicación de una sola réplica ya probado en F4-08).
+- `tests/BitCode.Gateway.Tests/Integration/GatewayDistributedRateLimitingIntegrationTests.cs` —
+  evidencia real de dos instancias del Gateway compartiendo el límite agregado vía Redis real.
 - [`adr/0007-gateway-yarp.md`](adr/0007-gateway-yarp.md) — decisión de YARP como Gateway, y por qué su
   habilitación productiva (y la de cualquier WAF real delante) requiere aprobación humana separada
   (Plan Maestro sección 13).

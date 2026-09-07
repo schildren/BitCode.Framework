@@ -30,8 +30,13 @@ spec:
         app.kubernetes.io/part-of: bitcode-framework
     spec:
       # F4-03 (Stateless), mismo criterio que sample-api: sin volúmenes de estado local requeridos,
-      # cualquier pod es reemplazable -- el Gateway no tiene ningún estado propio (ni siquiera cache),
-      # solo proxya y valida tokens.
+      # cualquier pod es reemplazable -- el Gateway no tiene ningún estado LOCAL propio (ni siquiera
+      # cache en disco). El contador de rate limiting (F4-08, cierre de pendiente) SÍ puede vivir en un
+      # Redis compartido si el proyecto consumidor configura "Caching__RedisConnectionString" (ver
+      # secret.example.yaml/configmap.yaml) -- ese estado vive en Redis, no en el pod, así que no rompe
+      # "pod reemplazable": cualquier réplica puede caerse/recrearse sin perder el contador agregado. Sin
+      # esa configuración, el Gateway sigue funcionando sin ningún estado propio, con el rate limiting en
+      # memoria por réplica (fallback documentado en RateLimiting/GatewayRateLimitingServiceCollectionExtensions.cs).
       terminationGracePeriodSeconds: 40
       containers:
         - name: gateway

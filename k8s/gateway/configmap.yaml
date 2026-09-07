@@ -23,6 +23,15 @@ data:
   RateLimiting__PermitLimit: "100"
   RateLimiting__WindowSeconds: "10"
   RateLimiting__QueueLimit: "0"
+  # Rate limiting distribuido (F4-08, cierre de pendiente): sin "Caching__RedisConnectionString"
+  # configurado (NO se declara acá -- no hay Redis desplegado como manifiesto en este repositorio,
+  # ver k8s/, mismo criterio que el resto de k8s/ nunca asume un backend externo no provisto), el
+  # Gateway cae al rate limiting en memoria por réplica (limitación conocida: con "replicas: 2" de
+  # este Deployment, el límite efectivo es 2 * RateLimiting__PermitLimit). Un despliegue real con más
+  # de una réplica que necesite el límite AGREGADO real agrega acá (o en un overlay/Secret, según el
+  # ambiente) la clave "Caching__RedisConnectionString" apuntando a un Redis/Valkey real -- mismo
+  # patrón de configuración que "Caching:RedisConnectionString" ya usa el resto del framework
+  # (Shared.Infrastructure.Caching, F4-03).
   # Límite de tamaño de request body (F4-09), defensa en profundidad de aplicación -- ver también
   # ingress.yaml (nginx.ingress.kubernetes.io/proxy-body-size), la primera línea de defensa perimetral
   # con el mismo valor (10 MiB). docs/politica-perimetral-waf.md documenta la relación entre ambos.

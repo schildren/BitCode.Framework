@@ -9,6 +9,11 @@
          (traza/métricas), correlacionando automáticamente el trace_id del request entrante con el
          request proxyado hacia el backend vía W3C Trace Context (ver Program.cs). -->
     <ProjectReference Include="..\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
+    <!-- Rate limiting distribuido (F4-08, cierre de pendiente): reutiliza CachingOptions
+         ("Caching:RedisConnectionString"), la misma clave de configuración que ya usa
+         AddSharedCaching/SharedDataProtectionServiceCollectionExtensions (F4-03), en vez de introducir
+         una clave de configuración propia del Gateway para lo mismo. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Caching\Shared.Infrastructure.Caching.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -19,6 +24,12 @@
          Misma versión que Shared.Infrastructure.Web para evitar dos versiones distintas del paquete en
          el grafo de dependencias del repositorio. -->
     <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+    <!-- Rate limiting distribuido (F4-08, cierre de pendiente): EVAL de Lua atómico contra Redis
+         (RedisFixedWindowRateLimiter) para que el contador de la ventana sea compartido entre TODAS las
+         réplicas del Gateway, no por-proceso. Versión igual a la ya resuelta transitivamente por
+         Microsoft.AspNetCore.DataProtection.StackExchangeRedis (Shared.Infrastructure.Security, F4-03)
+         para no introducir una segunda versión del paquete en el grafo de dependencias. -->
+    <PackageReference Include="StackExchange.Redis" Version="2.7.27" />
   </ItemGroup>
 
 </Project>

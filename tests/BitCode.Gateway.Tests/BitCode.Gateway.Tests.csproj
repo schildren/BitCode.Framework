@@ -31,6 +31,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\BitCode.Gateway\BitCode.Gateway.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <!-- Rate limiting distribuido (F4-08, cierre de pendiente): RedisContainerFixture (Redis real vía
+         Testcontainers), usado por la prueba de dos instancias reales del Gateway compartiendo Redis. -->
+    <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
   </ItemGroup>
 
 </Project>
