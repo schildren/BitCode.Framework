@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-api
+spec:
+  # F4-06 (HPA) todavía no aplica -- prod arranca con un piso de 3 réplicas
+  # (tolerante a la pérdida de un nodo/zona incluso antes de que F4-07
+  # agregue PodDisruptionBudget/spread) y el HPA de esa tarea futura tomará
+  # este valor como mínimo, no lo reemplaza por 1.
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: sample-api
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi

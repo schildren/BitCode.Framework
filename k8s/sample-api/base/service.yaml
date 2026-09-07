@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sample-api
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # ClusterIP: el tráfico externo entra por el Gateway YARP (ADR 0007,
+  # fila F4-08 del backlog, fuera de alcance de F4-02), no directo al Service.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: sample-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

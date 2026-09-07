@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-api
+spec:
+  # F4-06 (HPA) todavía no aplica -- staging corre con réplica fija >=2 para
+  # validar comportamiento multi-pod sin depender de la política de escalado
+  # que agregará esa tarea futura.
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: sample-api
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

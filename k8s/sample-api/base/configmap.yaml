@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-api-config
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+data:
+  # Puerto ya fijado por la imagen base (ASPNETCORE_HTTP_PORTS=8080, ver
+  # docs/politica-contenedores.md sección 3.5); se repite acá explícitamente
+  # para que el manifiesto sea autocontenido si la imagen base cambia.
+  ASPNETCORE_HTTP_PORTS: "8080"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  # Proveedor de secretos por defecto (docs/guia-secret-provider.md); cada
+  # overlay puede sobreescribir a "Vault" cuando el ambiente tenga uno
+  # disponible. El token/credenciales del proveedor NUNCA van en este
+  # ConfigMap -- viven en el Secret referenciado ("sample-api-secrets").
+  Secrets__Provider: "Configuration"
