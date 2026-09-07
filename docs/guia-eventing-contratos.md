@@ -141,12 +141,12 @@ concreta de los contratos de F3-01:
   (compartido, thread-safe) y publica cada evento al tópico resuelto por `EventType`, con `Key` =
   `EventId` (placeholder razonable hasta que F3-05 defina la clave de partición definitiva).
 - **`KafkaEventConsumer<TEvent> : IDisposable`**: se suscribe al tópico de un `EventType` concreto y,
-  por cada mensaje, deserializa a `TEvent`, invoca `IEventConsumer<TEvent>.ConsumeAsync` y **solo si
-  termina sin excepción** confirma el offset (`Commit`) — la aproximación más cercana disponible en
-  esta tarea, sin Inbox real todavía, a la semántica exigida de Fase 3 ("confirmación únicamente
-  después de persistir el efecto o Inbox"). Si `ConsumeAsync` lanza, el offset no se confirma: Kafka
-  reentrega el mismo mensaje (at-least-once). No coordina con `IInboxMessageProcessor` — esa
-  integración es F3-04.
+  por cada mensaje, deserializa a `TEvent` y lo procesa de forma deduplicada vía
+  `IInboxMessageProcessor.ProcessAsync` (F1-24/F3-04) — **solo si termina sin excepción** (procesado o
+  descartado por duplicado) confirma el offset (`Commit`). Si `ConsumeAsync`/`ProcessAsync` lanza, el
+  offset no se confirma: Kafka reentrega el mismo mensaje (at-least-once), y esa reentrega vuelve a pasar
+  por Inbox, que la descarta sin re-ejecutar el efecto si ya quedó marcada como procesada. Ver
+  `docs/guia-inbox-consumer.md` (F3-04) para el detalle completo de esta coordinación.
 - **`AddSharedMessagingKafka(configuration)`**: registra `IEventPublisher` → `KafkaEventPublisher` y el
   `IProducer<string, byte[]>` compartido. No registra ningún `KafkaEventConsumer<TEvent>` (cada
   bounded context lo instancia explícitamente, atado a su propio `IEventConsumer<TEvent>`).
@@ -160,8 +160,8 @@ la clasificación de error transitorio/permanente y el backoff con reintentos es
 
 ## Qué NO resuelve F3-02
 
-- Integración con `OutboxMessage`/`InboxMessage` (relay real de Outbox, agregado después por F3-03 —
-  ver sección más abajo; consumer de Inbox sigue pendiente, F3-04).
+- Integración con `OutboxMessage` (relay real de Outbox, agregado después por F3-03 — ver sección más
+  abajo). La integración con `InboxMessage`/deduplicación real quedó cerrada por F3-04 (ver más abajo).
 - Particionamiento definitivo (F3-05), compatibilidad de esquema (F3-06), retries con backoff (F3-07),
   DLQ (F3-08), poison messages (F3-09), observabilidad/métricas (F3-10), seguridad de transporte real
   con SASL/SSL (F3-11) ni catálogo de eventos (F3-12).
@@ -192,6 +192,19 @@ verifica, contra SQL Server real y Kafka real, el criterio de aceptación "reini
 nunca una fila huérfana sin publicar) y que dos instancias concurrentes del worker nunca publican la
 misma fila dos veces.
 
+## Inbox Consumer (F3-04)
+
+F3-04 cierra la limitación que F3-02 dejó pendiente: `KafkaEventConsumer<TEvent>.ConsumeAndHandleOnceAsync`
+ahora coordina con `IInboxMessageProcessor` (F1-24) — cada mensaje entregado por Kafka pasa por
+`ProcessAsync(EventId, ...)` ANTES de confirmar el offset, así que una reentrega (rebalance, reinicio del
+consumidor, o el duplicado aceptable que puede introducir el relay de Outbox, F3-03) nunca vuelve a
+ejecutar el efecto de negocio. Cambio de contrato asociado: el constructor de `KafkaEventConsumer<TEvent>`
+ya no recibe un `IEventConsumer<TEvent>` construido de antemano, sino un `IServiceScopeFactory` — crea un
+scope de DI nuevo por mensaje, del que resuelve tanto `IInboxMessageProcessor` como
+`IEventConsumer<TEvent>` (ambos necesitan compartir el mismo `DbContext`/`IUnitOfWork` de scope para que
+la fila de Inbox y el efecto de negocio se persistan atómicamente). Detalle completo, incluida la guía de
+registro en DI y las pruebas contra SQL Server + Kafka reales: `docs/guia-inbox-consumer.md`.
+
 ## Referencias
 
 - `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`.
@@ -200,6 +213,7 @@ misma fila dos veces.
 - `src/Shared.Infrastructure.Persistence/Outbox/` (F3-03): `OutboxBatchProcessor.cs`, `OutboxBatchResult.cs`, `OutboxPublisherOptions.cs`, `OutboxPublisherBackgroundService.cs`, `OutboxPublisherServiceCollectionExtensions.cs`. Ver `docs/guia-outbox-publisher.md` para el detalle completo.
 - `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`.
 - `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs` (F3-03).
+- `docs/guia-inbox-consumer.md` (F3-04, coordinación Kafka + Inbox), `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxConsumerIntegrationTests.cs`.
 - `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox, F1-23/F1-24/F3-02/F3-03).
 - `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Inbox).
 - `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).

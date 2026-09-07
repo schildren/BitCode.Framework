@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using BitCode.Framework.Shared.Application.Eventing;
+using BitCode.Framework.Shared.Application.Inbox;
 using BitCode.Framework.Shared.Domain.Outbox;
 using BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
@@ -228,8 +229,16 @@ public class OutboxPublisherIntegrationTests(SqlServerContainerFixture sqlFixtur
 
         // Verifica contra el broker real que el evento efectivamente llegó dos veces (duplicado
         // aceptable, semántica at-least-once) — ninguna de las dos entregas se perdió.
+        // F3-04: KafkaEventConsumer<TEvent> ahora resuelve IInboxMessageProcessor/IEventConsumer<TEvent>
+        // de un scope de DI por mensaje; para esta verificación puramente de round-trip contra el
+        // broker (el punto de este test es contar cuántas veces llegó el evento, no ejercitar Inbox)
+        // alcanza con un InboxMessageProcessor "passthrough" que nunca deduplica.
         var handler = new RecordingEventConsumer<OutboxPublisherTestEvent>();
-        using var consumer = new KafkaEventConsumer<OutboxPublisherTestEvent>(kafkaOptions, integrationEvent.EventType, handler);
+        var services = new ServiceCollection();
+        services.AddSingleton<IInboxMessageProcessor>(new PassthroughInboxMessageProcessor());
+        services.AddSingleton<IEventConsumer<OutboxPublisherTestEvent>>(handler);
+        var scopeFactory = services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+        using var consumer = new KafkaEventConsumer<OutboxPublisherTestEvent>(kafkaOptions, integrationEvent.EventType, scopeFactory);
         var deadline = DateTime.UtcNow.AddSeconds(30);
         while (handler.ReceivedEvents.Count < 2 && DateTime.UtcNow < deadline)
         {
@@ -350,5 +359,25 @@ public sealed class RecordingEventConsumer<TEvent> : IEventConsumer<TEvent>
     {
         _receivedEvents.Add(integrationEvent);
         return Task.CompletedTask;
+    }
+}
+
+/// <summary>
+/// Test double de <see cref="IInboxMessageProcessor"/> que nunca deduplica (siempre ejecuta
+/// <c>handler</c>): usado únicamente por <see cref="OutboxPublisherIntegrationTests"/>, cuyo interés es
+/// contar cuántas veces el broker entrega un evento (duplicado aceptable del relay de Outbox, F3-03),
+/// no ejercitar la deduplicación real de Inbox (F3-04, ver <c>InboxConsumerIntegrationTests</c>).
+/// </summary>
+public sealed class PassthroughInboxMessageProcessor : IInboxMessageProcessor
+{
+    public async Task<InboxProcessOutcome> ProcessAsync(
+        string messageId,
+        string messageType,
+        string payload,
+        Func<CancellationToken, Task> handler,
+        CancellationToken cancellationToken = default)
+    {
+        await handler(cancellationToken).ConfigureAwait(false);
+        return InboxProcessOutcome.Processed;
     }
 }

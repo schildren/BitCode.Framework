@@ -1,6 +1,9 @@
+using BitCode.Framework.Shared.Application.Eventing;
+using BitCode.Framework.Shared.Application.Inbox;
 using BitCode.Framework.Shared.Testing;
 using Confluent.Kafka;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.Tests.Integration;
 
@@ -19,6 +22,22 @@ public class KafkaEventPublisherConsumerIntegrationTests(KafkaContainerFixture f
         ClientId = "bitcode-tests",
         ConsumerGroupId = consumerGroupId,
     };
+
+    /// <summary>
+    /// F3-04: <see cref="KafkaEventConsumer{TEvent}"/> resuelve <c>IInboxMessageProcessor</c> y
+    /// <c>IEventConsumer{TEvent}</c> de un scope de DI por mensaje — este proyecto verifica el adapter
+    /// Kafka en aislamiento (round-trip productor→consumidor), así que usa
+    /// <see cref="InMemoryInboxMessageProcessor"/> (sin SQL Server real) en vez de la implementación
+    /// real de Inbox; la coordinación real contra SQL Server vive en
+    /// <c>InboxConsumerIntegrationTests</c> (Shared.Infrastructure.Persistence.Tests).
+    /// </summary>
+    private static IServiceScopeFactory BuildScopeFactory(RecordingEventConsumer<TestOrderCreatedIntegrationEvent> handler)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IInboxMessageProcessor, InMemoryInboxMessageProcessor>();
+        services.AddSingleton<IEventConsumer<TestOrderCreatedIntegrationEvent>>(handler);
+        return services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>();
+    }
 
     [Fact]
     public async Task PublishAsync_ThenConsume_RoundTripsTheSameEvent()
@@ -39,7 +58,7 @@ public class KafkaEventPublisherConsumerIntegrationTests(KafkaContainerFixture f
         using var consumer = new KafkaEventConsumer<TestOrderCreatedIntegrationEvent>(
             options,
             integrationEvent.EventType,
-            handler);
+            BuildScopeFactory(handler));
 
         var consumed = await PollUntilConsumedAsync(consumer, TimeSpan.FromSeconds(30));
 
@@ -65,7 +84,7 @@ public class KafkaEventPublisherConsumerIntegrationTests(KafkaContainerFixture f
         await publisher.PublishAsync(events);
 
         var handler = new RecordingEventConsumer<TestOrderCreatedIntegrationEvent>();
-        using var consumer = new KafkaEventConsumer<TestOrderCreatedIntegrationEvent>(options, eventType, handler);
+        using var consumer = new KafkaEventConsumer<TestOrderCreatedIntegrationEvent>(options, eventType, BuildScopeFactory(handler));
 
         var deadline = DateTime.UtcNow.AddSeconds(30);
         while (handler.ReceivedEvents.Count < events.Count && DateTime.UtcNow < deadline)
