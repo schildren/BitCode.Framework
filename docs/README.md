@@ -34,6 +34,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [guia-observabilidad-eventos.md](guia-observabilidad-eventos.md) — Observabilidad de eventos (F3-10): métricas de publish/consume/error/lag/DLQ y correlación end-to-end vía `traceparent`/`tracestate`.
 - [politica-seguridad-kafka.md](politica-seguridad-kafka.md) — Seguridad de transporte Kafka (F3-11): TLS/SASL, ACL, identidad y mínimo privilegio.
 - [catalogo-eventos.md](catalogo-eventos.md) — Catálogo de eventos de integración (F3-12): owner, `SchemaVersion`, PII, consumidores conocidos, tópico y `PartitionKey` por evento productivo; hoy vacío de eventos reales (solo mecanismo y proceso, ver regla dura 27 de `convenciones.md`) porque el repositorio todavía no tiene ningún bounded context de negocio real (Fase 6 en adelante).
+- [fase-3-plataforma-eventos.md](fase-3-plataforma-eventos.md) — Cierre de la Fase 3 del Plan Maestro (F3-01 a F3-13, COMPLETA): resumen de las 13 tareas, matriz del Gate de salida con evidencia y detalle de la prueba de referencia end-to-end (F3-13, `samples/Sample.Eventing`/`samples/Sample.Eventing.Tests`) que integra Outbox, Kafka e Inbox reales entre dos módulos de ejemplo.
 
 ## Plan Maestro vigente
 

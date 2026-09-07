@@ -26,6 +26,14 @@ repositorio son de EJEMPLO/test:
   `TestOrderCreatedV2IntegrationEvent`, y variantes usadas por `EventSchemaCompatibilityChecker`, F3-06).
 - `tests/Shared.Infrastructure.Messaging.Kafka.Tests/TestPartitionedIntegrationEvent.cs` y otros tipos
   de test del adapter Kafka (F3-02/F3-05).
+- `samples/Sample.Eventing/Pedidos/PedidoConfirmadoIntegrationEvent.cs`
+  (`Pedidos.PedidoConfirmado`) — la prueba de referencia de F3-13 (Fase 3, cierre): un ejemplo
+  EJECUTABLE de dos módulos (Pedidos, Módulo A / Facturación, Módulo B) comunicándose por este evento
+  de punta a punta (`samples/Sample.Eventing.Tests/EndToEndEventingReferenceTests.cs`), pero
+  `samples/` sigue siendo, igual que `Sample.Api`, un proyecto piloto/demo del propio repositorio de
+  framework, no un bounded context de negocio consumidor real — mismo motivo por el que
+  `Sample.Api.Productos.Producto` tampoco figura en ningún catálogo productivo equivalente de la Fase
+  2/Auditoría. Ver `docs/fase-3-plataforma-eventos.md` para el detalle de la prueba de referencia.
 
 Ninguno de ellos se publica nunca contra un broker productivo; existen solo para probar el mecanismo.
 Por eso el criterio de aceptación literal de F3-12 ("Todo evento productivo registrado") se cumple hoy

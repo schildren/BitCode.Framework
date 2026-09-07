@@ -2,6 +2,8 @@
   <Folder Name="/samples/">
     <Project Path="samples/Sample.Api.Tests/Sample.Api.Tests.csproj" />
     <Project Path="samples/Sample.Api/Sample.Api.csproj" />
+    <Project Path="samples/Sample.Eventing.Tests/Sample.Eventing.Tests.csproj" />
+    <Project Path="samples/Sample.Eventing/Sample.Eventing.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Shared.Application/Shared.Application.csproj" />
