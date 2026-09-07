@@ -87,6 +87,18 @@ spec:
             # claves esperadas (plantilla, sin valores reales, no se aplica).
             - secretRef:
                 name: sample-api-secrets
+          # F4-12 (cierre del gap de hot-reload, docs/politica-configuracion-y-feature-flags.md sección
+          # 2.4): "sample-api-featureflags" (featureflags-configmap.yaml) montado como VOLUMEN de archivo
+          # -- a diferencia de "envFrom" arriba, Kubernetes SÍ actualiza el contenido de un volumen de
+          # ConfigMap dentro de un pod ya corriendo cuando el ConfigMap cambia (con el delay de
+          # propagación del kubelet, ver el comentario del ConfigMap). Program.cs monta esto con
+          # "builder.Configuration.AddJsonFile(\"/app/config/featureflags.json\", optional: true,
+          # reloadOnChange: true)" -- reloadOnChange dispara el change token que
+          # IOptionsMonitor<FeatureFlagsOptions> necesita para notificar sin reiniciar el proceso.
+          volumeMounts:
+            - name: featureflags-config
+              mountPath: /app/config
+              readOnly: true
           # -----------------------------------------------------------------
           # F4-04: startupProbe / livenessProbe / readinessProbe contra los
           # endpoints de F1-25 (Shared.Infrastructure.Web, ver
@@ -218,6 +230,20 @@ spec:
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: sample-api
+      # F4-12 (cierre del gap de hot-reload): volumen de archivo respaldado por el ConfigMap
+      # "sample-api-featureflags" -- "items" acota el volumen a UNA sola clave del ConfigMap
+      # ("featureflags.json") materializada como archivo del mismo nombre en el directorio de
+      # "volumeMounts" de arriba. Deliberadamente SIN "subPath" en el volumeMount: un ConfigMap montado
+      # con subPath no se actualiza cuando el ConfigMap cambia (limitación de Kubernetes, el symlink
+      # atómico que el kubelet usa para propagar la actualización no aplica a subPath) -- montar el
+      # directorio completo es lo que permite el hot-reload real.
+      volumes:
+        - name: featureflags-config
+          configMap:
+            name: sample-api-featureflags
+            items:
+              - key: featureflags.json
+                path: featureflags.json
       securityContext:
         seccompProfile:
           type: RuntimeDefault

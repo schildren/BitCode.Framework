@@ -12,5 +12,6 @@ resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
+  - featureflags-configmap.yaml
   - hpa.yaml
   - pdb.yaml

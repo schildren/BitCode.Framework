@@ -98,31 +98,64 @@ un endpoint administrativo propio que reciba el cambio ya autenticado — eso es
 "Feature Management" de Fase 6 (targeting/gestión con UI), fuera de alcance de F4-12 a propósito (mismo
 principio que la sección 2.2).
 
-### 2.4 Límite real del hot-reload con el ConfigMap actual
+### 2.4 Hot-reload real en Kubernetes — ConfigMap montado como volumen (gap cerrado)
 
 `IOptionsMonitor<T>.OnChange`/`ConfigurationFeatureFlagProvider.IsEnabled` reaccionan correctamente a
 CUALQUIER proveedor de `IConfiguration` que dispare su change token — esto incluye el caso de referencia
 que motivó el diseño (un archivo de configuración montado desde un `ConfigMap` con `reloadOnChange: true`,
-comportamiento nativo de `Microsoft.Extensions.Configuration` sin código adicional) y quedó verificado con
-un proveedor de configuración de prueba que dispara el change token explícitamente (`ReloadableConfigurationSource`
-en `tests/Shared.Infrastructure.Security.Tests/FeatureFlags/`, ya que `AddInMemoryCollection` no dispara
-change tokens al modificar un valor — limitación de esa fuente de prueba, no del mecanismo).
+comportamiento nativo de `Microsoft.Extensions.Configuration.Json` sin código adicional) y queda verificado
+con dos pruebas complementarias, ambas en `tests/Shared.Infrastructure.Security.Tests/FeatureFlags/`:
 
-**Sin embargo**, el `ConfigMap` real de `Sample.Api`/`BitCode.Gateway` (`k8s/*/base/configmap.yaml`,
-patrón fijado desde F4-02) se monta como **variables de entorno** (`envFrom: configMapRef`, ver
-`deployment.yaml` de cada uno) — Kubernetes no actualiza el entorno de un contenedor ya corriendo cuando el
-`ConfigMap` cambia. Con este patrón de despliegue concreto, un cambio de `FeatureFlags__NombreDelFlag`
-requiere `kubectl rollout restart` (o un pipeline que lo dispare) igual que cualquier otra clave existente
-de ese `ConfigMap` — **no hay recarga en caliente hoy**, y por lo tanto `FeatureFlagChangeAuditingService`
-tampoco llega a observar la transición (el proceso arranca de cero con el valor nuevo, sin un "valor
-anterior" en memoria contra el cual comparar).
+- `FeatureFlagChangeAuditingServiceTests` — simula la recarga con un `IConfigurationProvider` de prueba
+  que dispara `OnReload` a mano (`ReloadableConfigurationSource`, ya que `AddInMemoryCollection` no dispara
+  change tokens al modificar un valor — limitación de esa fuente de prueba, no del mecanismo).
+- `FeatureFlagsFileHotReloadIntegrationTests` — usa el mecanismo REAL de producción: escribe un archivo
+  JSON físico en disco, lo carga con `AddJsonFile(path, optional: true, reloadOnChange: true)` (el mismo
+  método que `Program.cs` usa contra el volumen) y lo REESCRIBE mientras el host ya está corriendo,
+  confirmando que (a) `IFeatureFlagProvider.IsEnabled` refleja el valor nuevo sin reiniciar el proceso y
+  (b) `FeatureFlagChangeAuditingService` audita la transición `old -> new`. Esto reproduce exactamente lo
+  que el kubelet hace al resincronizar un volumen de `ConfigMap` — el proceso .NET nunca sabe que corre
+  dentro de un pod, solo ve un archivo que cambió en disco.
 
-Esto es una limitación real y documentada del despliegue actual, no del mecanismo: un proyecto que necesite
-recarga en caliente verdadera (y, con ella, auditoría de la transición dentro del mismo proceso) debe montar
-la sección `FeatureFlags` como un archivo (`ConfigMap` como volumen, `appsettings.featureflags.json` con
-`reloadOnChange: true` en `Program.cs`) en vez de variables de entorno — cambio de infraestructura de
-despliegue que queda fuera de alcance de F4-12 (afectaría `deployment.yaml`/`Program.cs` más allá del
-"cambio mínimo" de esta tarea) y debe evaluarse como una tarea siguiente si un consumidor real lo necesita.
+**Antes de este cierre de gap**, el `ConfigMap` de `Sample.Api` se montaba únicamente como **variables de
+entorno** (`envFrom: configMapRef`), que Kubernetes no actualiza en un contenedor ya corriendo — un cambio
+de flag requería `kubectl rollout restart` igual que cualquier otra clave de ese ConfigMap, y
+`FeatureFlagChangeAuditingService` nunca llegaba a observar la transición (el proceso arrancaba de cero con
+el valor nuevo, sin un "valor anterior" en memoria contra el cual comparar).
+
+**Mecanismo actual (gap cerrado) para `Sample.Api`**:
+
+- La sección `FeatureFlags` vive en un `ConfigMap` SEPARADO, `sample-api-featureflags`
+  (`k8s/sample-api/base/featureflags-configmap.yaml`), con una única clave `featureflags.json` que
+  contiene el documento JSON completo (no el formato plano `Clave__Subclave` de `envFrom`).
+- Ese `ConfigMap` se monta como **volumen de archivo** en `deployment.yaml`
+  (`volumes: - configMap: { name: sample-api-featureflags, items: [{ key: featureflags.json, path:
+  featureflags.json }] }` + `volumeMounts: - { name: featureflags-config, mountPath: /app/config,
+  readOnly: true }`) — **sin `subPath`**: un volumen de `ConfigMap` montado con `subPath` NO se actualiza
+  cuando el `ConfigMap` cambia (limitación de Kubernetes — el symlink atómico que el kubelet usa para
+  propagar la actualización del volumen no aplica a `subPath`), así que montar el directorio completo (con
+  `items` acotando qué clave se materializa) es lo que efectivamente habilita el hot-reload.
+- `samples/Sample.Api/Program.cs` agrega, ANTES de `AddModules`:
+  `builder.Configuration.AddJsonFile(featureFlagsConfigPath, optional: true, reloadOnChange: true)`, con
+  `featureFlagsConfigPath` resuelto desde `FeatureFlags:ConfigFilePath` (configurable) o, por defecto,
+  `/app/config/featureflags.json` — coincide con el `mountPath` del volumen. `optional: true` es
+  obligatorio: en desarrollo local (sin el volumen montado) el archivo no existe y el proyecto debe seguir
+  arrancando con los flags en su valor por defecto.
+- El resto de la configuración de `Sample.Api` (`ASPNETCORE_ENVIRONMENT`, `Logging`, `OpenTelemetry`, etc.)
+  sigue viviendo en `sample-api-config` vía `envFrom` — ese patrón sigue siendo correcto para valores que
+  no necesitan cambiar sin reiniciar el proceso; migrar solo `FeatureFlags` a un volumen es el "cambio
+  mínimo" necesario para cerrar este gap concreto.
+
+**Latencia de propagación real**: el kubelet resincroniza el contenido de un volumen de `ConfigMap` en un
+ciclo periódico (el "sync period" del kubelet, valor por defecto de referencia: hasta ~1 minuto), no de
+forma instantánea al hacer `kubectl apply` — un consumidor que necesite una recarga más rápida que ese
+piso debe evaluar herramientas externas de reload inmediato (por ejemplo un sidecar que dispare `SIGHUP` o
+un webhook), fuera de alcance de este mecanismo.
+
+**`BitCode.Gateway` no registra `AddSharedFeatureFlags` a la fecha de este documento** (no evalúa ningún
+flag on/off) — por eso este cierre de gap solo tocó `Sample.Api`/`k8s/sample-api/`. Si un consumidor real
+agrega feature flags al Gateway, debe seguir el mismo patrón (`ConfigMap` propio montado como volumen sin
+`subPath`, `AddJsonFile(reloadOnChange: true)` en `src/BitCode.Gateway/Program.cs`) descrito arriba.
 
 ## 3. Resumen de la frontera Fase 4 vs. Fase 6
 
