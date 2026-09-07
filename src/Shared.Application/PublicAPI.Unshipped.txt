@@ -42,3 +42,31 @@ static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensio
 static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions!>! configureIdempotency, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyRequired -> BitCode.Framework.Shared.Kernel.Error!
 static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyReused -> BitCode.Framework.Shared.Kernel.Error!
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.OccurredOnUtc.get -> System.DateTime
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.IntegrationEvent() -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.IntegrationEvent(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent! original) -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventId.init -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.OccurredOnUtc.get -> System.DateTime
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.OccurredOnUtc.init -> void
+abstract BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventType.get -> string!
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.SchemaVersion.get -> int
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EqualityContract.get -> System.Type!
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.Equals(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? other) -> bool
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.ToString() -> string!
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.Equals(object? obj) -> bool
+abstract BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.<Clone>$() -> BitCode.Framework.Shared.Application.Eventing.IntegrationEvent!
+static BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.operator !=(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? left, BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? right) -> bool
+static BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.operator ==(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? left, BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? right) -> bool
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent! integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(System.Collections.Generic.IEnumerable<BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent!>! integrationEvents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>
+BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>.ConsumeAsync(TEvent integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

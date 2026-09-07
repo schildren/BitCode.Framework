@@ -26,6 +26,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [guia-rbac-2.md](guia-rbac-2.md) — RBAC 2.0 (F2-07): `IPermissionEvaluator`, normalización de roles/permisos/scopes/tenancy.
 - [guia-abac.md](guia-abac.md) — ABAC (F2-08): `IAuthorizationPolicyEvaluator`, autorización combinada RBAC + reglas por monto/empresa/sucursal.
 - [guia-auditoria-inmutable.md](guia-auditoria-inmutable.md) — Auditoría inmutable (Épica F2-D, F2-15 a F2-20, COMPLETA): `IAuditWriter`/`InMemoryAuditWriter`, cadena de integridad (`IAuditIntegrityVerifier`), firma de lotes (`IAuditBatchSigner`), exportación WORM (`IWormStorage`/`IAuditWormExportPipeline`), redacción de PII (`IAuditRedactionPolicy`) y consulta administrativa (`IAuditReader`/`IAuditQueryService`).
+- [guia-eventing-contratos.md](guia-eventing-contratos.md) — Contratos de eventos de integración (F3-01): `IIntegrationEvent`/`IntegrationEvent`, `IEventPublisher`, `IEventConsumer<TEvent>` (`Shared.Application.Eventing`), diferencia con `DomainEvent` (F1-23) y qué queda para F3-02 en adelante (sin dependencia a ningún proveedor/broker).
 
 ## Plan Maestro vigente
 
