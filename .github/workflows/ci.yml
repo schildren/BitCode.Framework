@@ -155,3 +155,53 @@ jobs:
         with:
           name: container-vulnerability-report
           path: container-vulnerability-report.txt
+
+  deploy-dev-dry-run:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # F4-13 (docs/politica-despliegue-gradual.md sección 5): gate de manifiestos, no un despliegue
+      # real -- no hay credenciales ni kubeconfig de ningún clúster real configuradas en este
+      # repositorio (ver la sección 5 del documento para por qué eso queda deliberadamente fuera de
+      # alcance). `kubectl` en ubuntu-latest ya trae Kustomize embebido (`kubectl kustomize`, mismo
+      # binario y versión documentados en docs/politica-manifiestos-kubernetes.md sección 5).
+      - name: Instalar kubeconform (v0.8.0, yannh/kubeconform, Apache-2.0)
+        run: |
+          curl -sSL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          chmod +x kubeconform
+          ./kubeconform -v
+
+      # Los 5 paquetes de manifiestos del repositorio (F4-02 sample-api con 3 overlays, F4-08 gateway,
+      # F4-10 otel-collector, sin overlays por ambiente los últimos dos -- ver
+      # docs/politica-manifiestos-kubernetes.md sección 2 y docs/guia-otel-collector.md). Cada uno se
+      # renderiza con `kubectl kustomize` (build real, valida que base+patches fusionen sin conflicto)
+      # y se valida con `kubeconform -strict` contra el esquema oficial de Kubernetes 1.30 (mismo
+      # comando y versión que la evidencia manual de F4-02/F4-04/F4-05/F4-06/F4-07/F4-13, ahora
+      # automatizado en el pipeline en vez de solo documentado).
+      - name: Validar manifiestos Kustomize (kubectl kustomize + kubeconform -strict)
+        run: |
+          set -e
+          packages=(
+            "k8s/sample-api/overlays/dev"
+            "k8s/sample-api/overlays/staging"
+            "k8s/sample-api/overlays/prod"
+            "k8s/gateway"
+            "k8s/otel-collector"
+          )
+          for pkg in "${packages[@]}"; do
+            name=$(echo "$pkg" | tr '/' '-')
+            echo "::group::$pkg"
+            kubectl kustomize "$pkg" > "rendered-${name}.yaml"
+            ./kubeconform -strict -summary -kubernetes-version 1.30.0 "rendered-${name}.yaml"
+            echo "::endgroup::"
+          done
+
+      - name: Publicar manifiestos renderizados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-k8s-manifests
+          path: rendered-*.yaml

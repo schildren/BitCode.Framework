@@ -11,6 +11,15 @@ spec:
   # tarea para el Gateway). Un consumidor real agrega HPA/PDB/spread siguiendo el mismo patrón que ya
   # existe para sample-api antes de ir a producción.
   replicas: 2
+  # F4-13 (Despliegue gradual): mismo criterio y mismos valores que k8s/sample-api/base/deployment.yaml
+  # -- ver el comentario ahí para el detalle completo (zero downtime real vía readiness gate +
+  # maxUnavailable: 0). Con `replicas: 2` (piso fijo, sin HPA -- F4-08 no cubre F4-06 para el Gateway),
+  # `maxUnavailable: 0` garantiza que el rollout nunca baja de las 2 réplicas sirviendo tráfico.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: gateway

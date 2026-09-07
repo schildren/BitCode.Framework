@@ -16,6 +16,16 @@ spec:
   # exporter loadbalancing/tail sampling -- explícitamente fuera de alcance de esta tarea, documentado en
   # docs/guia-otel-collector.md).
   replicas: 2
+  # F4-13 (Despliegue gradual): mismo criterio que k8s/sample-api/base/deployment.yaml y
+  # k8s/gateway/deployment.yaml -- ver el comentario en el primero para el detalle completo. Con
+  # `replicas: 2` fijas (sin HPA, F4-10 no cubre F4-06 acá), `maxUnavailable: 0` evita que un rollout deje
+  # temporalmente un solo Collector recibiendo el OTLP de TODAS las apps (el otro Pod en `Terminating`
+  # deja de aceptar tráfico nuevo cuando su `readinessProbe` -- F4-04 -- falla).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: otel-collector

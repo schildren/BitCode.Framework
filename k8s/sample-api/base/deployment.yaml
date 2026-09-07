@@ -13,6 +13,25 @@ spec:
   # entre `minReplicas` y `maxReplicas` según CPU; este valor sigue siendo el que se aplica en el
   # primer despliegue o si el HPA no está disponible.
   replicas: 1
+  # F4-13 (Despliegue gradual), criterio "Zero downtime comprobado": `RollingUpdate` explícito, no el
+  # comportamiento por defecto implícito de `apps/v1 Deployment` (que ya es `RollingUpdate` con
+  # `maxSurge: 25%`/`maxUnavailable: 25%` si `strategy` no se declara) -- se fija acá para que el
+  # criterio de aceptación no dependa de un default que puede cambiar entre versiones de Kubernetes ni
+  # de la lectura implícita del manifiesto. `maxUnavailable: 0` reemplaza cada réplica creando el pod
+  # NUEVO primero y esperando a que su `readinessProbe` (F4-04, `/health/ready`) pase antes de terminar
+  # el pod VIEJO -- sin esto, un rollout normal (`maxUnavailable: 25%` por defecto) tolera sacar réplicas
+  # de servicio ANTES de que la reemplazante esté lista, lo que sí puede degradar disponibilidad bajo
+  # carga con pocas réplicas (p. ej. `minReplicas: 1` en dev). `maxSurge: 1` permite UN pod extra
+  # temporal por vez durante el rollout (no más, para no disparar de golpe el uso de `resources.requests`
+  # del namespace) -- combinado con `maxUnavailable: 0`, el rollout siempre mantiene al menos la cantidad
+  # de réplicas deseada SIRVIENDO tráfico durante toda la transición, sin exceder el piso ni crear más de
+  # un pod de más a la vez. Ver `docs/politica-despliegue-gradual.md` para el análisis completo (rolling
+  # vs. canary/blue-green) y la evidencia de validación de este campo (sección "F4-13").
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: sample-api
