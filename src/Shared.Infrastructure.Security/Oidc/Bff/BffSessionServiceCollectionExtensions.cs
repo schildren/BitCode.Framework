@@ -1,3 +1,4 @@
+using BitCode.Framework.Shared.Infrastructure.Security.Oidc;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +38,11 @@ public static class BffSessionServiceCollectionExtensions
         // nunca reemplaza a un backend distribuido ya configurado, sin importar el orden de llamada.
         services.AddDistributedMemoryCache();
 
-        services.AddDataProtection();
+        // El key ring se persiste en Redis cuando Caching:RedisConnectionString está configurado
+        // (R-TEC-08, F4-03) -- ver SharedDataProtectionServiceCollectionExtensions para que todas las
+        // réplicas del BFF compartan el mismo key ring y no queden dependientes de a qué pod caiga cada
+        // request (lo que producía el efecto práctico de una sticky session no declarada).
+        services.AddSharedDataProtectionWithSharedKeyRing(configuration);
         services.AddSingleton<IBffSessionStore, DistributedCacheBffSessionStore>();
 
         return services;

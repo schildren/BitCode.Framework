@@ -116,6 +116,20 @@ licencia, mantenimiento, seguridad y compatibilidad"):
 
 También se agregó `Testcontainers.Kafka` 3.10.0 (MIT, misma familia y versión que `Testcontainers`/`Testcontainers.MsSql`/`Testcontainers.Redis` ya usados en `Shared.Testing`) — mismo criterio de licencia/mantenimiento/compatibilidad ya aplicado a esas dependencias, sin evaluación adicional necesaria más allá de fijar la misma versión mayor.
 
+## 5.2. Registro de evaluación — `Microsoft.AspNetCore.DataProtection.StackExchangeRedis` (F4-03)
+
+Dependencia agregada para cerrar R-TEC-08 (`docs/risk-register.md`): persistir el key ring de Data
+Protection de `Shared.Infrastructure.Security` en Redis, mismo backend que `AddSharedCaching` ya usa
+como L2 (`Caching:RedisConnectionString`), para que todas las réplicas de un consumidor que despliegue
+BFF/Authorization Code compartan el mismo key ring:
+
+- **Paquete:** `Microsoft.AspNetCore.DataProtection.StackExchangeRedis` 10.0.11 (`src/Shared.Infrastructure.Security`).
+- **Licencia:** MIT — categoría "permitida sin excepción" (sección 2); no requiere ADR. Es un paquete first-party del repositorio `dotnet/aspnetcore`, publicado por Microsoft con el mismo ciclo de versionado (`10.0.11`) que el resto de los paquetes `Microsoft.AspNetCore.*` ya referenciados por este mismo proyecto (`Microsoft.AspNetCore.DataProtection`, `Microsoft.AspNetCore.Authentication.JwtBearer`, etc.) — no es una dependencia de terceros nueva a efectos de la sección 3.2 del Plan Maestro, ya que el equipo del framework ya evaluó y adoptó ese mismo proveedor/ciclo de mantenimiento para las dependencias hermanas.
+- **Mantenimiento:** mantenido por el equipo de ASP.NET Core dentro del propio repositorio `dotnet/aspnetcore`; mismo nivel de soporte que `Microsoft.AspNetCore.DataProtection` (ya en uso desde F2-02).
+- **Seguridad:** `dotnet list package --vulnerable --include-transitive` sobre `Shared.Infrastructure.Security` no reportó ninguna vulnerabilidad conocida para este paquete ni sus transitivas (`StackExchange.Redis` incluido) al momento de esta tarea.
+- **Compatibilidad:** TFM `net10.0`, compatible con el TFM único del repo; build de la solución completa (`dotnet build BitCode.Framework.slnx`) y de los 433 tests de `Shared.Infrastructure.Security.Tests` + 49 de `Shared.Infrastructure.Web.Tests` sin regresiones.
+- **Alcance de uso:** solo `src/Shared.Infrastructure.Security/Oidc/SharedDataProtectionServiceCollectionExtensions.cs` la referencia directamente (vía `PersistKeysToStackExchangeRedis`); condicionado a que `Caching:RedisConnectionString` esté configurado, igual patrón que `AddSharedCaching` (`Shared.Infrastructure.Caching`) — sin Redis configurado, no se abre ninguna conexión nueva y Data Protection cae al almacenamiento por defecto (documentado como válido solo para una instancia/desarrollo).
+
 ## 6. Explícitamente fuera de alcance de esta tarea (sección 9 del Plan Maestro)
 
 No se agregan en F0-06, por exceder el alcance de "aplicar una verificación básica en CI" y requerir su propio ADR/evaluación:

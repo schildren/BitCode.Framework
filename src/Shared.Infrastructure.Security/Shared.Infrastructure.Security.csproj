@@ -20,6 +20,11 @@
     <!-- F2-02: cifra/firma la cookie de correlación (state/code_verifier/nonce) de Authorization Code +
          PKCE. Paquete NuGet standalone (no requiere FrameworkReference a Microsoft.AspNetCore.App). -->
     <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.11" />
+    <!-- F4-03/R-TEC-08: persiste el key ring de Data Protection en Redis (SharedDataProtectionServiceCollectionExtensions)
+         cuando Caching:RedisConnectionString está configurado, para que todas las réplicas de un
+         consumidor con BFF/Authorization Code compartan el mismo key ring. Paquete first-party de
+         ASP.NET Core (MIT), evaluado en docs/politica-dependencias.md sección 5.2. -->
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="10.0.11" />
     <!-- F2-03: IBffSessionStore persiste la sesión server-side del BFF sobre IDistributedCache, la
          misma abstracción que ya usa Shared.Infrastructure.Caching (F1-16/F1-25), reutilizada en vez de
          introducir un mecanismo de sesión nuevo. AddDistributedMemoryCache (fallback de desarrollo sin

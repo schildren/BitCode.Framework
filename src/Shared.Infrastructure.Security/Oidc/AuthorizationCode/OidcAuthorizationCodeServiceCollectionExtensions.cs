@@ -1,4 +1,5 @@
 using BitCode.Framework.Shared.Infrastructure.Http;
+using BitCode.Framework.Shared.Infrastructure.Security.Oidc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -60,8 +61,10 @@ public static class OidcAuthorizationCodeServiceCollectionExtensions
 
         // Data Protection: cifra/firma la cookie de correlación (state/code_verifier/nonce/returnUrl).
         // AddDataProtection() usa TryAdd internamente -- segura de llamar aunque el proyecto consumidor
-        // ya la haya registrado por otro motivo.
-        services.AddDataProtection();
+        // ya la haya registrado por otro motivo. El key ring se persiste en Redis cuando
+        // Caching:RedisConnectionString está configurado (R-TEC-08, F4-03) -- ver
+        // SharedDataProtectionServiceCollectionExtensions para que todas las réplicas lo compartan.
+        services.AddSharedDataProtectionWithSharedKeyRing(configuration);
         services.AddSingleton<IOidcAuthorizationCodeStateProtector, OidcAuthorizationCodeStateProtector>();
         services.AddSingleton<OidcDiscoveryDocumentCache>();
 

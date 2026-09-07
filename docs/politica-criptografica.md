@@ -50,9 +50,16 @@ migrar.
   completitud de la política. El JWT propio (`AddSharedSecurity`, "camino simple" sin IdP externo) sigue
   usando una clave simétrica (`SymmetricSecurityKey`) porque es explícitamente el camino de desarrollo/
   proyectos sin OIDC, no el mecanismo empresarial.
-- **Protección de estado de correlación (cookies, verificadores PKCE):** `IDataProtectionProvider` nativo
-  de ASP.NET Core — no se reemplaza por `IEncryptionProvider`: ya resuelve rotación de clave y expiración
-  con su propio key ring, y es el mismo mecanismo que usa el middleware OpenIdConnect internamente.
+- **Protección de estado de correlación (cookies, verificadores PKCE) y sesión BFF:** `IDataProtectionProvider`
+  nativo de ASP.NET Core — no se reemplaza por `IEncryptionProvider`: ya resuelve rotación de clave y
+  expiración con su propio key ring, y es el mismo mecanismo que usa el middleware OpenIdConnect
+  internamente. El key ring se persiste en Redis (`PersistKeysToStackExchangeRedis`,
+  `SharedDataProtectionServiceCollectionExtensions`, F4-03) cuando `Caching:RedisConnectionString` está
+  configurado, para que todas las réplicas de un consumidor con BFF/Authorization Code compartan el
+  mismo key ring (R-TEC-08, `docs/risk-register.md`) — sin esto, un pod distinto al que originó la
+  cookie/sesión no podía descifrarla, rompiendo el criterio "pod reemplazable" de F4-03. Sin Redis
+  configurado, sigue el almacenamiento por defecto (perfil de usuario del proceso), válido únicamente
+  para desarrollo/una sola instancia.
 - **Hashing de contraseñas:** delegado a ASP.NET Core Identity (`PasswordHasher<TUser>`, PBKDF2) — no
   forma parte de esta tarea, no se toca.
 
