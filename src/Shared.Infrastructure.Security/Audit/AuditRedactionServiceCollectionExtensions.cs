@@ -24,6 +24,29 @@ namespace BitCode.Framework.Shared.Infrastructure.Security.Audit;
 internal sealed class AuditRedactionAppliedMarker;
 
 /// <summary>
+/// Marcador interno (fix post-revisión de arquitectura de F2-20, Hallazgo 1, CRÍTICO): registra qué tipo
+/// concreto de <see cref="IAuditWriter"/> quedó realmente conectado la última vez que se llamó a
+/// <see cref="AuditRedactionServiceCollectionExtensions.AddAuditWriter{TWriter}"/> -- <c>TryAddSingleton</c>
+/// (un único registro, "primero gana" para efectos de esta detección; el ORDEN de llamadas de
+/// <c>AddAuditWriter&lt;TWriter&gt;</c> no importa para lo que este marcador necesita saber: si el proyecto
+/// alguna vez conectó un writer real distinto de <see cref="InMemoryAuditWriter"/>).
+/// <para>
+/// <see cref="Query.AuditQueryServiceCollectionExtensions.AddSharedAuditQuery"/> (F2-20) lo usa para
+/// detectar el hueco de raíz exacto que <c>AddSharedAuditRedaction</c> ya resolvía para la redacción
+/// (Hallazgo 1 de F2-19) pero que seguía abierto para <c>IAuditReader</c>: si <see cref="IAuditWriter"/> fue
+/// reemplazado por un writer productivo real (tabla SQL, event store) y NINGÚN proyecto registró su propia
+/// implementación de <see cref="Query.IAuditReader"/>, <c>AddSharedAuditQuery</c> NO debe resolver
+/// silenciamente <see cref="Query.IAuditReader"/> sobre <see cref="InMemoryAuditWriter"/> -- ese
+/// almacenamiento nunca recibiría las escrituras reales, y toda búsqueda/exportación de auditoría
+/// devolvería siempre resultados vacíos sin ninguna excepción visible.
+/// </para>
+/// </summary>
+internal sealed class AuditWriterRegistrationMarker(Type writerType)
+{
+    public Type WriterType { get; } = writerType;
+}
+
+/// <summary>
 /// Registra la redacción de PII de F2-19 (Épica F2-D): decora el <see cref="IAuditWriter"/> ya registrado
 /// (por <see cref="AuditServiceCollectionExtensions.AddSharedAuditing"/>, o por el propio proyecto
 /// consumidor) con <see cref="RedactingAuditWriter"/> -- mismo principio que
@@ -114,12 +137,41 @@ public static class AuditRedactionServiceCollectionExtensions
     /// simplemente registra <typeparamref name="TWriter"/> como <see cref="IAuditWriter"/> sin decorar,
     /// igual que un <c>AddScoped</c>/<c>Replace</c> manual habría hecho.
     /// </remarks>
+    /// <remarks>
+    /// Fix post-revisión de arquitectura de F2-20 (Hallazgo 1, CRÍTICO): además registra un
+    /// <see cref="AuditWriterRegistrationMarker"/> (para que
+    /// <see cref="Query.AuditQueryServiceCollectionExtensions.AddSharedAuditQuery"/> pueda detectar, si se
+    /// llama DESPUÉS, que <see cref="IAuditWriter"/> ya no es <see cref="InMemoryAuditWriter"/>) y lanza
+    /// <see cref="InvalidOperationException"/> si <c>AddSharedAuditQuery</c> ya se llamó ANTES sin que el
+    /// proyecto registrara su propio <see cref="Query.IAuditReader"/> -- ver
+    /// <c>docs/guia-auditoria-inmutable.md</c>, sección F2-20, para el detalle completo del hueco cerrado.
+    /// </remarks>
     public static IServiceCollection AddAuditWriter<TWriter>(
         this IServiceCollection services,
         ServiceLifetime lifetime = ServiceLifetime.Scoped)
         where TWriter : class, IAuditWriter
     {
         services.Add(ServiceDescriptor.Describe(typeof(TWriter), typeof(TWriter), lifetime));
+        services.TryAddSingleton(new AuditWriterRegistrationMarker(typeof(TWriter)));
+
+        // Fix post-revisión de arquitectura de F2-20 (Hallazgo 1, CRÍTICO): si AddSharedAuditQuery ya se
+        // llamó ANTES que este método (orden AddSharedAuditing -> AddSharedAuditQuery -> AddAuditWriter<T>)
+        // y en ese momento no había ningún IAuditReader propio registrado, AddSharedAuditQuery ya resolvió
+        // (TryAddSingleton, no se puede deshacer) IAuditReader sobre InMemoryAuditWriter -- conectar ahora
+        // un writer real distinto dejaría ese IAuditReader apuntando a un almacenamiento que ya no recibe
+        // escrituras, sin ningún error visible. Ver Query.AuditQueryDefaultReaderAppliedMarker.
+        if (typeof(TWriter) != typeof(InMemoryAuditWriter) &&
+            services.Any(d => d.ServiceType == typeof(Query.AuditQueryDefaultReaderAppliedMarker)))
+        {
+            throw new InvalidOperationException(
+                $"AddAuditWriter<{typeof(TWriter).Name}> detectó que AddSharedAuditQuery (F2-20) ya se llamó " +
+                "ANTES y ya resolvió IAuditReader por defecto sobre InMemoryAuditWriter (porque en ese " +
+                $"momento no había ningún IAuditReader propio registrado). Conectar ahora {typeof(TWriter).Name} " +
+                "como IAuditWriter real dejaría ese IAuditReader por defecto apuntando a un almacenamiento que " +
+                "ya no recibe escrituras -- toda búsqueda/exportación de auditoría devolvería siempre " +
+                "resultados vacíos. Llame a AddSharedAuditQuery DESPUÉS de AddAuditWriter<TWriter>, o registre " +
+                "su propia implementación de IAuditReader antes de AddSharedAuditQuery.");
+        }
 
         if (services.IsAuditRedactionApplied())
         {

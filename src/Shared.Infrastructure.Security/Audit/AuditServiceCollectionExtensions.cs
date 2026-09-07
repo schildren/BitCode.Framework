@@ -27,10 +27,24 @@ public static class AuditServiceCollectionExtensions
     /// registra igual con <c>TryAddSingleton</c> para permitir el mismo patrón de reemplazo si alguna vez
     /// hiciera falta.
     /// </para>
+    /// <para>
+    /// F2-20 (fix menor de registro, sin cambio de comportamiento observable): registra el propio tipo
+    /// concreto <see cref="InMemoryAuditWriter"/> como singleton y mapea <see cref="IAuditWriter"/> a esa
+    /// misma instancia vía factory, en lugar del <c>TryAddSingleton&lt;IAuditWriter,
+    /// InMemoryAuditWriter&gt;()</c> anterior. Esto permite que
+    /// <see cref="Query.AuditQueryServiceCollectionExtensions.AddSharedAuditQuery"/> (F2-20) resuelva
+    /// <see cref="Query.IAuditReader"/> sobre el almacenamiento REAL (<see cref="InMemoryAuditWriter"/>)
+    /// incluso si <see cref="IAuditWriter"/> terminó decorado por <c>RedactingAuditWriter</c> (F2-19) --
+    /// leer siempre la fuente de verdad subyacente es correcto y seguro porque la redacción ya se aplicó
+    /// ANTES de escribir (F2-19). No es un cambio observable para ningún consumidor existente: "último
+    /// registro gana" para <see cref="IAuditWriter"/> sigue funcionando igual (ver
+    /// <c>AuditServiceCollectionExtensionsTests.AddSharedAuditing_UnaImplementacionPropiaRegistradaDespues_GanaLaResolucion</c>).
+    /// </para>
     /// </summary>
     public static IServiceCollection AddSharedAuditing(this IServiceCollection services)
     {
-        services.TryAddSingleton<IAuditWriter, InMemoryAuditWriter>();
+        services.TryAddSingleton<InMemoryAuditWriter>();
+        services.TryAddSingleton<IAuditWriter>(sp => sp.GetRequiredService<InMemoryAuditWriter>());
         services.TryAddSingleton<IAuditIntegrityVerifier, AuditIntegrityVerifier>();
         return services;
     }

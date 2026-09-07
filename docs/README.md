@@ -25,6 +25,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 - [guia-resiliencia-http.md](guia-resiliencia-http.md) — resiliencia de `HttpClient` saliente (F1-26): `AddResilientHttpClient<TClient>` (`Shared.Infrastructure.Http`), pipeline estándar de timeout/retry/circuit breaker/bulkhead, y por qué el retry automático solo aplica a operaciones seguras de reintentar.
 - [guia-rbac-2.md](guia-rbac-2.md) — RBAC 2.0 (F2-07): `IPermissionEvaluator`, normalización de roles/permisos/scopes/tenancy.
 - [guia-abac.md](guia-abac.md) — ABAC (F2-08): `IAuthorizationPolicyEvaluator`, autorización combinada RBAC + reglas por monto/empresa/sucursal.
+- [guia-auditoria-inmutable.md](guia-auditoria-inmutable.md) — Auditoría inmutable (Épica F2-D, F2-15 a F2-20, COMPLETA): `IAuditWriter`/`InMemoryAuditWriter`, cadena de integridad (`IAuditIntegrityVerifier`), firma de lotes (`IAuditBatchSigner`), exportación WORM (`IWormStorage`/`IAuditWormExportPipeline`), redacción de PII (`IAuditRedactionPolicy`) y consulta administrativa (`IAuditReader`/`IAuditQueryService`).
 
 ## Plan Maestro vigente
 

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using BitCode.Framework.Shared.Infrastructure.Security.Audit.Query;
 using BitCode.Framework.Shared.Kernel;
 
 namespace BitCode.Framework.Shared.Infrastructure.Security.Audit;
@@ -40,7 +41,14 @@ namespace BitCode.Framework.Shared.Infrastructure.Security.Audit;
 /// cadenas de tenants distintos usan objetos de lock distintos y no se bloquean entre sí.
 /// </para>
 /// </remarks>
-public sealed class InMemoryAuditWriter : IAuditWriter
+/// <remarks>
+/// F2-20 (consulta de auditoría): además implementa <see cref="IAuditReader"/> -- la lectura filtrada y
+/// paginada opera sobre la MISMA <see cref="_entries"/> que <see cref="WriteAsync"/> encola, así que un
+/// registro es buscable inmediatamente después de escribirse, sin ninguna latencia de propagación
+/// adicional (una propiedad del placeholder en memoria que un backend productivo real no necesariamente
+/// replica).
+/// </remarks>
+public sealed class InMemoryAuditWriter : IAuditWriter, IAuditReader
 {
     private readonly ConcurrentQueue<AuditEntry> _entries = new();
 
@@ -111,4 +119,36 @@ public sealed class InMemoryAuditWriter : IAuditWriter
     /// estado de este writer, y no hay ninguna otra forma de alterar una entrada ya agregada.
     /// </summary>
     public IReadOnlyList<AuditEntry> Entries => _entries.ToArray();
+
+    /// <summary>
+    /// Implementación de <see cref="IAuditReader"/> (F2-20): filtra <see cref="Entries"/> por los criterios
+    /// de <paramref name="filter"/> (todos combinables con AND), ordena por <see
+    /// cref="AuditEntry.OccurredAtUtc"/> descendente (más reciente primero, el orden esperado de una
+    /// búsqueda administrativa) y pagina el resultado con <see cref="AuditSearchFilter.Page"/> -- nunca
+    /// devuelve el conjunto completo sin paginar, sea cual sea el filtro.
+    /// </summary>
+    public Task<Result<PagedResult<AuditEntry>>> SearchAsync(AuditSearchFilter filter, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var matches = _entries
+            .Where(e => filter.FromUtc is null || e.OccurredAtUtc >= filter.FromUtc)
+            .Where(e => filter.ToUtc is null || e.OccurredAtUtc <= filter.ToUtc)
+            .Where(e => filter.TenantId is null || e.TenantId == filter.TenantId)
+            .Where(e => filter.ActorId is null || string.Equals(e.Actor.Id, filter.ActorId, StringComparison.Ordinal))
+            .Where(e => filter.Action is null || string.Equals(e.Action, filter.Action, StringComparison.Ordinal))
+            .Where(e => filter.Outcome is null || e.Outcome == filter.Outcome)
+            .Where(e => filter.ResourceType is null || string.Equals(e.Resource.Type, filter.ResourceType, StringComparison.Ordinal))
+            .OrderByDescending(e => e.OccurredAtUtc)
+            .ToArray();
+
+        var totalCount = matches.Length;
+        var items = matches
+            .Skip((filter.Page.Page - 1) * filter.Page.PageSize)
+            .Take(filter.Page.PageSize)
+            .ToArray();
+
+        return Task.FromResult(Result.Success(new PagedResult<AuditEntry>(items, filter.Page.Page, filter.Page.PageSize, totalCount)));
+    }
 }

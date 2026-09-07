@@ -1,18 +1,14 @@
-# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad, firma de lotes, exportación WORM y redacción de PII (F2-15/F2-16/F2-17/F2-18/F2-19)
+# Guía — Auditoría inmutable: `IAuditWriter`, cadena de integridad, firma de lotes, exportación WORM, redacción de PII y consulta administrativa (F2-15/F2-16/F2-17/F2-18/F2-19/F2-20)
 
-**Tareas:** F2-15, F2-16, F2-17, F2-18 y F2-19 (Fase 2, Épica F2-D — Auditoría inmutable) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17); pipeline de retención WORM (F2-18); política y filtros de redacción de PII (F2-19).
-**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17); "Escritura y lectura probadas" (F2-18); "Logs sin PII no autorizada" (F2-19).
+**Tareas:** F2-15, F2-16, F2-17, F2-18, F2-19 y F2-20 (Fase 2, Épica F2-D — Auditoría inmutable, COMPLETA) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
+**Entregables:** esquema append-only (F2-15); servicio de integridad (F2-16); mecanismo aprobado de firma y timestamp (F2-17); pipeline de retención WORM (F2-18); política y filtros de redacción de PII (F2-19); API administrativa de búsqueda y exportación (F2-20).
+**Criterios de aceptación:** "Campos críticos completos" (F2-15); "Manipulación detectable" (F2-16); "Verificación independiente" (F2-17); "Escritura y lectura probadas" (F2-18); "Logs sin PII no autorizada" (F2-19); "Acceso auditado y paginado" (F2-20).
 
 F2-15 es la base de datos/modelo de la Épica F2-D. F2-16 (cadena de integridad), F2-17 (firma de lotes),
-F2-18 (exportación WORM) y F2-19 (redacción de PII, esta guía las cubre las cuatro últimas) son piezas
-ADICIONALES que se apoyan en ese esquema sin haber requerido ningún cambio de contrato público breaking
-(`AuditEntry` ya reservaba `PreviousAuditHash` desde F2-15). La tarea siguiente de la épica sigue pendiente:
-
-- **F2-20** (consulta de auditoría): una API de lectura sobre el almacenamiento real detrás de
-  `IAuditWriter` (ni F2-15 ni F2-16 incluyen ningún mecanismo de lectura más allá de
-  `InMemoryAuditWriter.Entries`, pensado solo para inspección en pruebas/desarrollo local -- F2-18 sí agrega
-  lectura, pero acotada a lo que el propio proyecto exportó a WORM, no una API administrativa general).
+F2-18 (exportación WORM), F2-19 (redacción de PII) y F2-20 (consulta administrativa, ver sección dedicada
+más abajo) son piezas ADICIONALES que se apoyan en ese esquema sin haber requerido ningún cambio de
+contrato público breaking (`AuditEntry` ya reservaba `PreviousAuditHash` desde F2-15). Con F2-20 la Épica
+F2-D queda COMPLETA -- ver "Cierre de la Épica F2-D" al final de esta guía.
 
 ## Qué resuelve esta tarea
 
@@ -648,6 +644,277 @@ política de redacción formal es F2-19").
 - **No redacta `Actor.Id`/`Resource.Id`/`CorrelationId`/`TraceId`/`IpAddress`**: ver "Alcance" arriba --
   decisión deliberada, no un descuido.
 
+## Consulta de auditoría: `IAuditReader` e `IAuditQueryService` (F2-20)
+
+### Qué hueco cierra, exactamente
+
+Hasta F2-19, la única forma de "leer" auditoría era `InMemoryAuditWriter.Entries` (F2-15) -- sin filtros, sin
+paginación, sin ningún control de acceso, y explícitamente documentado como "solo para inspección de
+desarrollo/pruebas". F2-18 agrega lectura (`IAuditWormExportPipeline.ReadAsync`), pero acotada a un objeto
+WORM puntual por su clave exacta, no una búsqueda. F2-20 cierra ese hueco con dos piezas:
+
+```csharp
+public interface IAuditReader
+{
+    Task<Result<PagedResult<AuditEntry>>> SearchAsync(AuditSearchFilter filter, CancellationToken cancellationToken = default);
+}
+```
+
+`IAuditReader` es la lectura CRUDA, filtrada y paginada -- sin ningún control de acceso ni auditoría propia
+del acceso. `AuditSearchFilter` (`Page` obligatorio, reutilizando `PageRequest` de F1-21, más `FromUtc`/
+`ToUtc`/`TenantId`/`ActorId`/`Action`/`Outcome`/`ResourceType`, todos opcionales y combinables con AND) es
+deliberadamente el único punto de entrada -- no existe ningún camino para "traer todo sin filtro/paginación"
+(coherente con la prohibición de `IQueryable` expuesto de `docs/convenciones.md`): `Page` no es opcional, y
+la implementación por defecto SIEMPRE pagina, sin importar cuántas coincidencias produzca el filtro.
+
+```csharp
+public interface IAuditQueryService
+{
+    Task<Result<PagedResult<AuditEntry>>> SearchAsync(
+        ClaimsPrincipal principal, AuditSearchFilter filter, CancellationToken cancellationToken = default);
+
+    Task<Result<WormObjectMetadata>> ExportAsync(
+        ClaimsPrincipal principal, AuditSearchFilter filter, string wormExportKey, CancellationToken cancellationToken = default);
+}
+```
+
+`IAuditQueryService` (`AuditQueryService`, implementación por defecto) es la "API administrativa" que pide
+el entregable de F2-20: envuelve `IAuditReader` con las tres piezas que "Acceso auditado y paginado" exige y
+que una lectura cruda no puede garantizar por sí sola -- control de acceso RBAC, aislamiento de tenant, y
+auditoría del propio acceso. Es una capa de servicio de aplicación/dominio, no de presentación: no expone
+ningún endpoint HTTP concreto, mismo criterio que el resto de `Shared.Infrastructure.Security` (que no
+incluye controladores/minimal APIs propios) -- un proyecto consumidor la invoca desde su propio endpoint
+administrativo ya protegido/autenticado.
+
+### `InMemoryAuditWriter` también implementa `IAuditReader`
+
+La implementación por defecto de `IAuditReader` es el propio `InMemoryAuditWriter` (F2-15): ya mantiene
+todas las entradas en `_entries`, así que agregar `SearchAsync` (filtrado con `Where` encadenados, orden
+descendente por `OccurredAtUtc`, `Skip`/`Take` sobre `AuditSearchFilter.Page`) no duplica ningún
+almacenamiento -- un registro es buscable inmediatamente después de escribirse, sin ninguna latencia de
+propagación (una propiedad del placeholder en memoria que un backend productivo real no necesariamente
+replica). `InMemoryAuditWriter.Entries` sigue existiendo sin cambios (inspección de desarrollo/pruebas);
+`SearchAsync` es la API estructurada que la reemplaza para cualquier caso de uso real.
+
+Un proyecto que conectó su propio `IAuditWriter` productivo (tabla SQL append-only, event store, sin
+relación con `InMemoryAuditWriter`) debe registrar TAMBIÉN su propia implementación de `IAuditReader` --
+`AddSharedAuditQuery` (ver "Registro" abajo) no puede inferir cómo leer un almacenamiento que no conoce, ni
+inspeccionar la decoración de `IAuditWriter` (que puede estar envuelto por `RedactingAuditWriter`, F2-19)
+para "adivinar" el escritor real.
+
+### Por qué `IAuditReader` resuelve sobre `InMemoryAuditWriter` (el tipo concreto), no sobre `IAuditWriter` (la interfaz)
+
+Fix de diseño incorporado directamente en esta entrega, no un hallazgo posterior: si `AddSharedAuditQuery`
+resolviera `IAuditReader` casteando `sp.GetRequiredService<IAuditWriter>() as IAuditReader`, el resultado
+dependería de qué decore `IAuditWriter` en ese momento -- con `AddSharedAuditRedaction` (F2-19) ya aplicado,
+`IAuditWriter` resuelve a un `RedactingAuditWriter` (que NO implementa `IAuditReader`), no al
+`InMemoryAuditWriter` interno, y el cast fallaría en tiempo de ejecución de forma frágil y dependiente del
+ORDEN de llamada entre `AddSharedAuditRedaction` y `AddSharedAuditQuery` -- exactamente el tipo de acoplamiento
+por orden que el Hallazgo 1 de la revisión de arquitectura de F2-19 ya identificó como un riesgo real en este
+mismo módulo.
+
+`AddSharedAuditing` (ajuste de registro de F2-20, sin cambio de comportamiento observable) ahora registra
+`InMemoryAuditWriter` como su propio singleton concreto y mapea `IAuditWriter` a esa misma instancia vía
+factory. `AddSharedAuditQuery` resuelve `IAuditReader` sobre ESE tipo concreto, no sobre `IAuditWriter` --
+así que sigue apuntando al almacenamiento real sin importar qué decoradores se hayan apilado sobre
+`IAuditWriter` para la escritura. Leer la fuente de verdad subyacente en lugar de la vista decorada es
+correcto y seguro: la redacción de F2-19 ya se aplicó ANTES de escribir, así que lo que hay en
+`InMemoryAuditWriter._entries` YA está redactado -- F2-20 no necesita (ni debe) redactar de nuevo al leer, y
+tampoco hay ningún riesgo de que una búsqueda devuelva PII sin redactar por saltarse el decorador.
+
+### Control de acceso: permiso RBAC dedicado, `IPermissionEvaluator` (no el evaluador combinado de F2-08/F2-10)
+
+```csharp
+public const string RequiredPermission = "auditoria.consultar";
+```
+
+`AuditQueryService.SearchAsync`/`ExportAsync` exigen este permiso (misma convención `"{entidad}.{accion}"`
+que el resto del framework) vía `IPermissionEvaluator.EvaluateAsync` (F2-07, RBAC puro) -- fail-closed: sin
+el permiso, la operación se deniega SIEMPRE, sin excepción de "administrador implícito". Se usa UN único
+permiso para ambas operaciones (no `"auditoria.consultar"` + `"auditoria.exportar"` separados): exportar es,
+en esencia, buscar más persistir el resultado ya autorizado, y separar el permiso habría sido una
+granularidad que el entregable mínimo de F2-20 no pide -- un proyecto que sí necesite diferenciarlos puede
+envolver `IAuditQueryService` con su propio decorador que aplique una política más fina antes de delegar.
+
+**Por qué RBAC puro y no el evaluador combinado `IAuthorizationPolicyEvaluator` (RBAC+ABAC+step-up, F2-08/
+F2-10)**: usar el evaluador combinado exigiría que TODO proyecto que quiera consultar auditoría registre
+también el módulo ABAC completo (`AddSharedAbacAuthorization`) aunque no lo necesite para nada más -- una
+dependencia innecesaria para "búsquedas controladas y exportación" (el entregable literal de F2-20, que no
+menciona step-up). **Decisión explícita sobre step-up**: F2-20 NO exige step-up (F2-10) por defecto para
+`"auditoria.consultar"`/`"auditoria.exportar"`. Un proyecto que sí quiera exigirlo (por ejemplo, para
+exportación masiva con fines de cumplimiento) puede envolver `IAuditQueryService` con su propio decorador
+que invoque primero `IAuthorizationPolicyEvaluator.EvaluateAsync` sobre un `AbacResource("auditoria")` antes
+de delegar -- reutilizando F2-10 tal cual, sin que este módulo lo imponga a todos los consumidores.
+
+### Aislamiento de tenant: coincidencia EXACTA, no un filtro "convertido en automático"
+
+Con `ITenantContext.IsMultiTenancyEnabled == true`, `AuditSearchFilter.TenantId` debe coincidir EXACTAMENTE
+con `ITenantContext.TenantId` del llamador -- si no coincide (incluido el caso de pedir `null` cuando el
+llamador SÍ tiene un tenant resuelto, o pedir el tenant de otro), la operación se deniega
+(`ErrorType.Forbidden`, razón `"auditoria:tenant-scope-mismatch"`) ANTES de llegar a `IAuditReader`. Se
+descartó deliberadamente la alternativa de "sobrescribir" `TenantId` en el filtro con el tenant del llamador
+(en lugar de rechazar un valor distinto): `TenantId` en `AuditSearchFilter` es `Guid?`, y `null` ya tiene un
+significado propio para `IAuditReader` ("sin restricción de tenant", uso interno/de plataforma) -- reutilizar
+el mismo valor para "todavía no se aplicó el scope automático" habría sido ambiguo. Exigir coincidencia
+exacta es la opción fail-closed más simple y sin ambigüedad: un proyecto de un único tenant
+(`IsMultiTenancyEnabled == false`) no se ve afectado por esta restricción en absoluto.
+
+#### Caso especial: llamador SIN tenant resuelto (`ITenantContext.TenantId == null` con multi-tenancy habilitada) y permiso `CrossTenantPermission`
+
+Fix post-revisión de arquitectura (Hallazgo 2, Alto): `ITenantContext.TenantId` es `Guid?` y puede resolver a
+`null` incluso con `IsMultiTenancyEnabled == true` -- por ejemplo, un job en background sin `HttpContext`, o
+una cuenta de servicio/client-credentials sin claim de tenant (ver `HttpContextTenantProvider`, que devuelve
+`null` explícitamente en ambos casos, nunca un tenant por defecto). En ese escenario, la comparación
+"`filter.TenantId != tenantContext.TenantId`" con AMBOS lados `null` evalúa `false` (sin mismatch) -- sin un
+chequeo adicional, un llamador sin tenant resuelto podría pedir `filter.TenantId = null` (que para
+`IAuditReader` significa "sin restricción de tenant") y obtener una búsqueda/exportación CROSS-TENANT con
+solo el permiso base `RequiredPermission`, sin que el diseño lo detectara como anómalo.
+
+`AuditQueryService.CheckAccessAsync` cierra este caso explícitamente: cuando `IsMultiTenancyEnabled == true`,
+`tenantContext.TenantId is null` Y `filter.TenantId is null` simultáneamente, se exige un permiso RBAC
+ADICIONAL y más restrictivo:
+
+```csharp
+public const string CrossTenantPermission = "auditoria.consultar.todostenants";
+```
+
+Sin `CrossTenantPermission`, esa combinación se deniega fail-closed (`ErrorType.Forbidden`,
+`"Auditoria.TenantNoResuelto"`, razón de auditoría `"auditoria:tenant-no-resuelto-sin-restriccion"`) aunque el
+llamador ya tenga `RequiredPermission` ("auditoria.consultar"). Con `CrossTenantPermission` concedido
+explícitamente, la búsqueda/exportación sin restricción de tenant se permite -- el caso de uso legítimo de
+una cuenta de servicio de plataforma (p. ej. un job de exportación programada de cumplimiento) que necesita
+ver auditoría de todos los tenants deliberadamente, pero solo si un administrador lo concedió explícitamente
+como un permiso RBAC separado, nunca implícito en el permiso base de consulta.
+<br>
+Cualquier otra combinación (`tenantContext.TenantId` resuelto y distinto de `filter.TenantId`, sea cual sea
+su valor, incluido `null`) sigue denegándose por la coincidencia exacta descripta arriba -- este caso especial
+solo aplica cuando AMBOS lados de la comparación son `null`.
+
+### Acceso auditado: cómo se evita la recursión de "auditar la propia consulta de auditoría"
+
+Cada llamada a `SearchAsync`/`ExportAsync` -- concedida, denegada por RBAC, denegada por tenant, o fallida
+técnicamente -- genera su propia `AuditEntry` (`Resource("auditoria")`, `Action` = `"auditoria.consultar"` o
+`"auditoria.exportar"`, `Metadata` con los filtros usados: página, tamaño, rango de fechas, actor, acción,
+outcome, tipo de recurso). Esto responde el "quién consultó/exportó auditoría, con qué filtros, cuándo" que
+pide el criterio de aceptación.
+
+La recursión ("auditar la consulta de auditoría dispara una nueva consulta") NUNCA puede ocurrir porque esa
+entrada de acceso se escribe SIEMPRE a través de `IAuditWriter.WriteAsync` directamente
+(`AuditQueryService.WriteAccessAuditAsync`), nunca a través de `SearchAsync`/`ExportAsync` de la propia
+clase -- ningún camino de código en `AuditQueryService` invoca sus propios métodos públicos desde dentro de
+sí misma. El mismo criterio ya usado por `AuditingAuthorizationPolicyEvaluator` (F2-10): un fallo transitorio
+de `IAuditWriter.WriteAsync` (un `Result` fallido) no bloquea ni altera el resultado ya calculado de
+`SearchAsync`/`ExportAsync` -- su valor se descarta deliberadamente.
+
+Una consecuencia esperable y correcta de este diseño: si un filtro NO restringe `ResourceType` (por ejemplo,
+`resourceType: null`), una búsqueda de auditoría también puede devolver, entre sus resultados, entradas de
+acceso PREVIAS a la propia auditoría (`Resource.Type == "auditoria"`) -- son auditoría legítima como
+cualquier otra, no un error. Un caso de uso que quiera excluirlas explícitamente puede filtrar por
+`resourceType` distinto de `"auditoria"`.
+
+### Exportación: reutiliza el pipeline WORM de F2-18 tal cual, exporta la página YA filtrada/paginada
+
+`ExportAsync` NO reinventa ningún mecanismo de exportación: aplica el mismo control de acceso y de tenant que
+`SearchAsync`, llama a `IAuditReader.SearchAsync(filter)` y exporta EXACTAMENTE `PagedResult<AuditEntry>.Items`
+(la página ya filtrada/paginada, no todo el histórico que matchea el filtro) a través de
+`IAuditWormExportPipeline.ExportAsync` (F2-18) bajo la clave (`wormExportKey`) que decide el llamador --
+misma responsabilidad de construir una clave única y determinística que ya tenía `AuditWormExportRequest`.
+Exportar "todo lo que matchea", en lugar de una página concreta, habría requerido que este módulo decidiera
+un límite propio (o iterara páginas automáticamente) -- una política de "exportación masiva" que el
+entregable literal de F2-20 no pide y que cada proyecto puede construir sobre `IAuditQueryService.SearchAsync`
++ `ExportAsync` llamados en un bucle si lo necesita.
+
+`IAuditWormExportPipeline` es una dependencia OPCIONAL de `AuditQueryService` (`null` si el proyecto no llamó
+a `AddSharedAuditWormExport`): `SearchAsync` sigue funcionando igual sin ella, y `ExportAsync` devuelve un
+`Result` fallido explícito (`"Auditoria.ExportacionNoConfigurada"`, `ErrorType.Failure`) en vez de lanzar
+cualquier excepción de arranque o de request -- mismo criterio de "opt-in sin acoplar módulos que no todo
+proyecto necesita" que el resto de la Épica F2-D.
+
+### Registro: `AddSharedAuditQuery`
+
+```csharp
+services.AddSharedAuditing();                    // F2-15, debe registrarse antes
+services.AddSharedPermissionEvaluation();        // F2-07 (o AddSharedSecurity/AddSharedOidcAuthentication, que ya lo llaman)
+services.AddSharedAuditQuery();                  // F2-20
+services.AddSharedAuditWormExport(configuration); // F2-18, opcional -- solo si el proyecto usa ExportAsync
+```
+
+Deliberadamente un método SEPARADO de `AddSharedAuditing` -- mismo principio que
+`AddSharedAuditRedaction`/`AddSharedAuditWormExport`/`AddSharedAuditBatchSigning`: la auditoría básica (F2-15)
+no requiere ninguna capacidad de consulta administrativa para funcionar. Lanza `InvalidOperationException`
+en el arranque si `InMemoryAuditWriter` no fue registrado por `AddSharedAuditing`. Registra
+`IAuditReader` con `TryAddSingleton` (un proyecto con su propio `IAuditReader` productivo lo registra ANTES
+de llamar a este método para que gane la resolución) e `IAuditQueryService` con `TryAddScoped`
+(`AuditQueryService` depende de `ITenantContext`/`IPermissionEvaluator`, ambos `Scoped`).
+
+#### Fix post-revisión de arquitectura (Hallazgo 1, CRÍTICO): guard robusto frente a `AddAuditWriter<TWriter>` (F2-19)
+
+El guard original de `AddSharedAuditQuery` solo comprobaba que `InMemoryAuditWriter` siguiera registrado como
+TIPO CONCRETO -- pero `AddSharedAuditing` lo registra INCONDICIONALMENTE, y ni `AddAuditWriter<TWriter>`
+(F2-19) ni `AddSharedAuditRedaction` lo remueven al reemplazar `IAuditWriter` por un writer productivo real
+(tabla SQL, event store). Escenario de falla real que ese guard NUNCA detectaba:
+
+```csharp
+services.AddSharedAuditing();               // registra InMemoryAuditWriter (concreto) + IAuditWriter -> el mismo
+services.AddAuditWriter<SqlAuditWriter>();  // reemplaza IAuditWriter -> SqlAuditWriter; InMemoryAuditWriter sigue
+                                             // registrado como tipo concreto, pero YA NO recibe escrituras
+services.AddSharedAuditQuery();             // el guard viejo NO lanzaba (InMemoryAuditWriter seguía en el contenedor)
+```
+
+Si el proyecto no registraba su propio `IAuditReader` antes de esta última línea, `TryAddSingleton<IAuditReader>`
+resolvía en silencio sobre `InMemoryAuditWriter`, que en este escenario nunca recibe escrituras reales --
+`IAuditQueryService.SearchAsync`/`ExportAsync` devolvían SIEMPRE resultados vacíos, sin ninguna excepción de
+arranque ni de request: exactamente "búsqueda de auditoría en blanco durante una investigación de incidente".
+
+`AddSharedAuditQuery` ahora detecta este caso: si NINGÚN `IAuditReader` propio fue registrado todavía Y
+`AddAuditWriter<TWriter>` ya conectó un writer real distinto de `InMemoryAuditWriter` (vía el marcador interno
+`AuditWriterRegistrationMarker`), lanza `InvalidOperationException` en el arranque en lugar de resolver en
+silencio. `AddAuditWriter<TWriter>` hace la comprobación simétrica para el ORDEN INVERSO (marcador interno
+`AuditQueryDefaultReaderAppliedMarker`): si `AddSharedAuditQuery` ya se llamó ANTES y ya resolvió el
+`IAuditReader` por defecto sobre `InMemoryAuditWriter` (porque en ese momento no había ningún `IAuditReader`
+propio), conectar ahora un writer real distinto también lanza -- ese `IAuditReader` por defecto ya no se
+puede corregir retroactivamente (`TryAddSingleton` no se deshace).
+
+**Cobertura del fix**: cierra los DOS órdenes de llamada más relevantes entre `AddSharedAuditing`,
+`AddAuditWriter<TWriter>` y `AddSharedAuditQuery`. Sigue habiendo una vía de escape deliberada, EQUIVALENTE a
+la de `AddSharedAuditRedaction`/F2-19: un `services.AddScoped<IAuditWriter, TWriter>()` MANUAL (sin pasar por
+`AddAuditWriter<TWriter>`) no deja ningún rastro (`AuditWriterRegistrationMarker`) que este guard pueda
+detectar -- **NO HACER ESTO** si el proyecto también usa `AddSharedAuditQuery`:
+
+```csharp
+services.AddSharedAuditing();
+services.AddSharedAuditQuery();
+// NO hacer esto -- un registro manual no pasa por AddAuditWriter<T>, así que ningún guard de este módulo
+// detecta que IAuditReader (ya resuelto por defecto sobre InMemoryAuditWriter) quedó huérfano:
+services.AddScoped<IAuditWriter, SqlAuditWriter>();
+```
+
+Usar siempre `AddAuditWriter<TWriter>` (nunca un registro manual de `IAuditWriter`) cuando el proyecto también
+usa `AddSharedAuditQuery` y/o `AddSharedAuditRedaction` evita este hueco de raíz en cualquiera de los dos
+módulos.
+
+### Qué NO resuelve F2-20
+
+- **No expone ningún endpoint HTTP concreto**: es una capa de servicio de aplicación/dominio
+  (`IAuditQueryService`), no de presentación -- consistente con que `Shared.Infrastructure.Security` no
+  incluye controladores/minimal APIs propios en ningún otro módulo (JWT, OIDC, RBAC/ABAC). Un proyecto
+  consumidor la invoca desde su propio endpoint administrativo ya protegido/autenticado.
+- **No implementa full-text search sobre `Metadata`**: `AuditSearchFilter` filtra por campos estructurados
+  (fecha, tenant, actor, acción, outcome, tipo de recurso) -- ninguno de ellos es `Metadata`, que sigue
+  siendo texto libre sin índice ni búsqueda por contenido.
+- **No pagina de forma eficiente sobre un `IAuditReader` productivo con millones de registros por sí solo**:
+  `InMemoryAuditWriter.SearchAsync` filtra/ordena/pagina en memoria sobre TODAS las entradas del proceso --
+  correcto para desarrollo/pruebas, pero una implementación real (tabla SQL, event store) es responsable de
+  traducir `AuditSearchFilter` a una consulta indexada eficiente por sus propios medios; `IAuditReader` no
+  impone ninguna estrategia de índice.
+- **No agrega step-up por defecto**: ver "Control de acceso" arriba -- decisión explícita, no un descuido;
+  un proyecto lo agrega envolviendo `IAuditQueryService` si lo necesita.
+- **No exporta "todo lo que matchea un filtro" de una sola vez**: exporta exactamente la página ya
+  filtrada/paginada -- ver "Exportación" arriba.
+- **No diferencia el permiso de consultar del de exportar**: un único `"auditoria.consultar"` cubre ambas
+  operaciones -- ver "Control de acceso" arriba para la justificación y cómo separarlos si un proyecto lo
+  necesita.
+
 ## Uso desde un handler de aplicación
 
 ```csharp
@@ -707,12 +974,36 @@ la migración al overload auditado es responsabilidad del código de aplicación
 
 - **Almacenamiento persistente real**: la elección definitiva (tabla SQL append-only vs. event store vs.
   otro destino) es una decisión arquitectónica pendiente de un ADR propio — ver sección "Decisiones" del
-  reporte de cierre de F2-15.
-- **Lectura/consulta administrativa**: es F2-20; `InMemoryAuditWriter.Entries` no es esa API.
+  reporte de cierre de F2-15. Un backend real también necesita traer su propia implementación de
+  `IAuditReader` (F2-20) si quiere usar `IAuditQueryService` -- ver "Consulta de auditoría" arriba.
 
 F2-19 (redacción de PII) ya no es un pendiente — ver la sección "Redacción de PII" arriba. La metadata que
 el cierre de F2-15 agregó (`abacDecisionReason`, `permission`, `roleName`) son identificadores/códigos de
 negocio, no PII, así que no requieren clasificación adicional en `AuditRedactionOptions` por defecto.
+F2-20 (consulta de auditoría) tampoco es ya un pendiente — ver "Consulta de auditoría" arriba.
+
+## Cierre de la Épica F2-D — Auditoría inmutable (F2-15 a F2-20, COMPLETA)
+
+Con F2-20 la Épica F2-D del Plan Maestro queda completa, sin ningún pendiente propio abierto en el backlog
+de la fase. Resumen de cada pieza y dónde encontrarla en esta guía/repositorio:
+
+| Tarea | Entregable | Criterio de aceptación | Sección de esta guía |
+|---|---|---|---|
+| F2-15 | Esquema append-only (`AuditEntry`, `IAuditWriter`, `InMemoryAuditWriter`) | Campos críticos completos | "Qué resuelve esta tarea", "Por qué 'append-only'..." |
+| F2-16 | Cadena de integridad (`IAuditIntegrityVerifier`) | Manipulación detectable | "Cadena de integridad (F2-16)" |
+| F2-17 | Firma de lotes HMAC-SHA256 (`IAuditBatchSigner`) | Verificación independiente | "Firma de lotes: `IAuditBatchSigner` (F2-17)" |
+| F2-18 | Pipeline de retención WORM (`IWormStorage`, `IAuditWormExportPipeline`) | Escritura y lectura probadas | "Exportación a almacenamiento WORM... (F2-18)" |
+| F2-19 | Política y filtros de redacción de PII (`IAuditRedactionPolicy`, `RedactingAuditWriter`) | Logs sin PII no autorizada | "Redacción de PII... (F2-19)" |
+| F2-20 | API administrativa de búsqueda y exportación (`IAuditReader`, `IAuditQueryService`) | Acceso auditado y paginado | "Consulta de auditoría: `IAuditReader` e `IAuditQueryService` (F2-20)" |
+
+Todas las piezas se apoyan en el mismo `AuditEntry`/`IAuditWriter` de F2-15 sin haber requerido ningún cambio
+de contrato público breaking a lo largo de las seis tareas -- cada tarea agregó una capa nueva (verificación,
+firma, exportación, redacción, consulta) por composición (decoradores sobre `IAuditWriter`, o servicios
+adicionales que operan sobre `AuditEntry`), nunca modificando lo que las tareas anteriores ya habían
+entregado y probado. Lo que sigue abierto (almacenamiento persistente real productivo, proveedor WORM real
+-- ADR 0017 `Proposed`, y las integraciones de auditoría todavía no cableadas listadas en "Qué NO quedó
+cableado todavía") son decisiones de infraestructura/alcance explícitamente fuera del backlog de F2-D, no
+huecos de esta épica.
 
 ## Referencias
 
@@ -769,6 +1060,33 @@ negocio, no PII, así que no requieren clasificación adicional en `AuditRedacti
   sensibles adicionales, reemplazo de `IAuditRedactionPolicy` por un proyecto consumidor, y el escenario de
   regresión del fix post-revisión de arquitectura: `AddAuditWriter<TWriter>` registrado DESPUÉS de
   `AddSharedAuditRedaction` sigue redactando).
+- `src/Shared.Infrastructure.Security/Audit/Query/` — implementación de F2-20 (`AuditSearchFilter`,
+  `IAuditReader`, `IAuditQueryService`, `AuditQueryService`,
+  `AuditQueryServiceCollectionExtensions.AddSharedAuditQuery`); `IAuditReader.SearchAsync` está implementado
+  directamente por `InMemoryAuditWriter` (`src/Shared.Infrastructure.Security/Audit/InMemoryAuditWriter.cs`).
+- `tests/Shared.Infrastructure.Security.Tests/Audit/Query/InMemoryAuditWriterSearchTests.cs` — suite de
+  pruebas de F2-20 sobre `IAuditReader.SearchAsync` en crudo (sin RBAC/auditoría de acceso): filtros
+  combinados (tenant+actor+outcome, acción+recurso, rango de fechas), paginación (página 1/2, sin solape,
+  nunca devuelve más de una página sin importar el total de coincidencias), orden descendente por fecha.
+- `tests/Shared.Infrastructure.Security.Tests/Audit/Query/AuditQueryServiceTests.cs` — prueba de componente
+  de F2-20 con DI real (`PermissionEvaluator`/F2-07, `InMemoryAuditWriter`/F2-15,
+  `AuditWormExportPipeline`/F2-18 reales; solo `IPermissionService`/`ITenantContext` sustituidos, mismo
+  criterio que `PrivilegedOperationsEndToEndTests`): búsqueda con filtros combinados, paginación sin solape,
+  denegación fail-closed sin el permiso RBAC, denegación por tenant distinto del llamador, cada acceso
+  (concedido o denegado, búsqueda o exportación) genera su propia entrada de auditoría sin disparar una
+  nueva consulta, exportación exitosa reutilizando el pipeline WORM existente, `ExportAsync` sin
+  `AddSharedAuditWormExport` devolviendo un `Result` fallido explícito sin excepción, y el escenario de
+  regresión del fix post-revisión de arquitectura (Hallazgo 2): llamador sin tenant resuelto + filtro sin
+  tenant se deniega fail-closed sin `CrossTenantPermission`, y se permite con ese permiso adicional concedido.
+- `tests/Shared.Infrastructure.Security.Tests/Audit/Query/AuditQueryServiceCollectionExtensionsTests.cs` —
+  suite de pruebas de registro de F2-20 (excepción sin `AddSharedAuditing` previo, `IAuditReader` resuelve a
+  la MISMA instancia singleton que `IAuditWriter`, `IAuditQueryService` registrado, reemplazo de
+  `IAuditReader` por un proyecto consumidor registrado antes de `AddSharedAuditQuery`), y los escenarios de
+  regresión del fix post-revisión de arquitectura (Hallazgo 1): `AddSharedAuditing` → `AddAuditWriter<TWriter>`
+  con un writer real → `AddSharedAuditQuery` sin `IAuditReader` propio lanza; con `IAuditReader` propio
+  registrado, resuelve y ve las escrituras reales del writer real (nunca las de `InMemoryAuditWriter`, vacío
+  en ese escenario); y el orden inverso (`AddSharedAuditQuery` antes que `AddAuditWriter<TWriter>` con un
+  writer real, sin `IAuditReader` propio) también lanza.
 - `tests/Shared.Infrastructure.Security.Tests/Audit/Worm/AuditRedactionWormExportTests.cs` — prueba de
   extremo a extremo de F2-19+F2-18: un lote escrito a través de `RedactingAuditWriter` y exportado a WORM
   contiene, al leerlo de vuelta, los datos redactados.
