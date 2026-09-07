@@ -23,6 +23,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <!-- F3-03: OutboxPublisherIntegrationTests ejercita el flujo completo SQL Server -> relay ->
+         Kafka real (KafkaContainerFixture, mismo criterio que F3-02). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
   </ItemGroup>
 

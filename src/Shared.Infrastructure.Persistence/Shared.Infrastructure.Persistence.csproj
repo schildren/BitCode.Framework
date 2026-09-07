@@ -2,6 +2,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared.Domain\Shared.Domain.csproj" />
+    <!-- F3-03 (Outbox Publisher): IEventPublisher/IIntegrationEvent (Shared.Application.Eventing,
+         F3-01) es el único tipo de Shared.Application que este proyecto necesita — no crea un ciclo
+         (Shared.Application solo referencia Shared.Kernel/Shared.Domain, nunca este proyecto). -->
+    <ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -11,6 +15,9 @@
     <!-- F1-25: AddHealthChecks()/IHealthCheck, paquete genérico de Microsoft (no específico de
          ASP.NET Core), usable sin FrameworkReference a AspNetCore.App. -->
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.11" />
+    <!-- F3-03: BackgroundService/IHostedService para OutboxPublisherBackgroundService, sin
+         necesidad de referenciar Microsoft.AspNetCore.App. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
   </ItemGroup>
 
 

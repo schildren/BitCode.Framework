@@ -54,4 +54,20 @@ public sealed class OutboxMessage : ITenantEntity
 
     /// <summary>Reservado para el relay de Fase 3 (motivo del último fallo de publicación); F1-23 no lo establece.</summary>
     public string? Error { get; set; }
+
+    /// <summary>
+    /// F3-03 (Outbox Publisher): mientras es mayor que <see cref="DateTime.UtcNow"/>, esta fila está
+    /// "reclamada" por la instancia de <see cref="LockedBy"/> — otra instancia del worker (varias
+    /// réplicas del proceso, ya anticipado por la Fase 4 de alta disponibilidad) no puede volver a
+    /// reclamarla mientras el lock siga vigente (ver <c>OutboxBatchProcessor.ClaimBatchAsync</c>, que
+    /// usa <c>UPDLOCK, READPAST</c> para que dos instancias concurrentes nunca reclamen la misma fila
+    /// a la vez). Vuelve a <see langword="null"/> en cuanto la fila se marca como procesada, o se
+    /// limpia explícitamente si la publicación de esa fila falla (para que el siguiente ciclo de
+    /// sondeo pueda reintentarla sin esperar a que el lock expire). Si el proceso muere sin llegar a
+    /// limpiarlo, el lock expira solo (por tiempo) y otra instancia puede reclamar la fila.
+    /// </summary>
+    public DateTime? LockedUntilUtc { get; set; }
+
+    /// <summary>Identificador de la instancia de worker que reclamó esta fila (ver <see cref="LockedUntilUtc"/>); solo para diagnóstico/observabilidad, F3-03.</summary>
+    public string? LockedBy { get; set; }
 }

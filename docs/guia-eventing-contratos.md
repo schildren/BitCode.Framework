@@ -160,21 +160,48 @@ la clasificación de error transitorio/permanente y el backoff con reintentos es
 
 ## Qué NO resuelve F3-02
 
-- Integración con `OutboxMessage`/`InboxMessage` (relay real de Outbox F3-03, consumer de Inbox F3-04).
+- Integración con `OutboxMessage`/`InboxMessage` (relay real de Outbox, agregado después por F3-03 —
+  ver sección más abajo; consumer de Inbox sigue pendiente, F3-04).
 - Particionamiento definitivo (F3-05), compatibilidad de esquema (F3-06), retries con backoff (F3-07),
   DLQ (F3-08), poison messages (F3-09), observabilidad/métricas (F3-10), seguridad de transporte real
   con SASL/SSL (F3-11) ni catálogo de eventos (F3-12).
 - Habilitar tráfico productivo sobre Kafka: sigue condicionado a una aprobación humana adicional en el
   momento de ese despliegue (ADR `docs/adr/0005-mensajeria-kafka.md`, adenda de F3-02).
 
+## Relay de Outbox (F3-03)
+
+F3-03 agrega `OutboxBatchProcessor`/`OutboxPublisherBackgroundService`
+(`Shared.Infrastructure.Persistence.Outbox`): el worker que lee por lotes las filas `OutboxMessage`
+pendientes (F1-23), reconstruye el `IIntegrationEvent` correspondiente a cada una y lo publica vía
+`IEventPublisher` (F3-02) — el "relay" que las tareas anteriores dejaron pendiente. El detalle completo
+del mecanismo de bloqueo entre réplicas y, sobre todo, la decisión de diseño del mapeo
+`OutboxMessage` → `IIntegrationEvent` (la pieza más delicada de F3-03) están documentados en
+`docs/guia-outbox-publisher.md` — este archivo solo resume el resultado:
+
+- Un `DomainEvent` (Shared.Kernel) que además implementa `IIntegrationEvent` en el mismo `record` se
+  publica tal cual al llegar su turno en el relay. Un `DomainEvent` que NUNCA implementó
+  `IIntegrationEvent` es puramente interno al bounded context: el relay lo marca como procesado sin
+  publicar nada.
+- `services.AddSharedOutboxPublisher(configureOptions?)` (`Shared.Infrastructure.Persistence.Outbox`),
+  llamado DESPUÉS de `AddSharedPersistence<TContext>` y de registrar un `IEventPublisher` concreto (por
+  ejemplo, `AddSharedMessagingKafka`), registra el `BackgroundService` que corre el relay en loop.
+
+Pruebas: `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs`
+verifica, contra SQL Server real y Kafka real, el criterio de aceptación "reinicio no pierde eventos"
+(caída antes de publicar, caída después de publicar pero antes de marcar — duplicado aceptable pero
+nunca una fila huérfana sin publicar) y que dos instancias concurrentes del worker nunca publican la
+misma fila dos veces.
+
 ## Referencias
 
 - `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`.
 - `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`, `TestIntegrationEvents.cs`.
 - `src/Shared.Infrastructure.Messaging.Kafka/` (F3-02): `KafkaMessagingOptions.cs`, `KafkaClientConfigFactory.cs`, `IKafkaTopicNameResolver.cs`, `KafkaIntegrationEventSerializer.cs`, `KafkaEventPublisher.cs`, `KafkaEventConsumer.cs`, `KafkaServiceCollectionExtensions.cs`.
+- `src/Shared.Infrastructure.Persistence/Outbox/` (F3-03): `OutboxBatchProcessor.cs`, `OutboxBatchResult.cs`, `OutboxPublisherOptions.cs`, `OutboxPublisherBackgroundService.cs`, `OutboxPublisherServiceCollectionExtensions.cs`. Ver `docs/guia-outbox-publisher.md` para el detalle completo.
 - `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`.
-- `docs/convenciones.md` (regla dura 17/18/22, Outbox/Inbox/adapter Kafka, F1-23/F1-24/F3-02).
-- `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Outbox-Inbox).
+- `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs` (F3-03).
+- `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox, F1-23/F1-24/F3-02/F3-03).
+- `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Inbox).
 - `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).
 - `docs/politica-versionado.md` (versión de esquema de eventos de integración).
 - ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).

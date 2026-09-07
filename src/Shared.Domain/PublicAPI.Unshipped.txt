@@ -135,6 +135,10 @@ BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.get -> int
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.RetryCount.set -> void
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.get -> string?
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.Error.set -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.LockedUntilUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.LockedUntilUtc.set -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.LockedBy.get -> string?
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.LockedBy.set -> void
 BitCode.Framework.Shared.Domain.Inbox.InboxMessage
 BitCode.Framework.Shared.Domain.Inbox.InboxMessage.InboxMessage() -> void
 BitCode.Framework.Shared.Domain.Inbox.InboxMessage.Id.get -> System.Guid

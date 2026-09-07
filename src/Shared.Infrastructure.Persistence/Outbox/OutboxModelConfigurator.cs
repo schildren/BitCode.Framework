@@ -29,10 +29,17 @@ public static class OutboxModelConfigurator
             entity.Property(message => message.EventType).HasMaxLength(500).IsRequired();
             entity.Property(message => message.PayloadJson).IsRequired();
             entity.Property(message => message.Error).HasMaxLength(2000);
+            entity.Property(message => message.LockedBy).HasMaxLength(200);
 
-            // Índice pensado para el relay de Fase 3 (todavía no implementado): filtrar rápido las
-            // filas pendientes de publicar (ProcessedAtUtc nulo) sin recorrer toda la tabla.
+            // Índice pensado para el relay de Fase 3: filtrar rápido las filas pendientes de publicar
+            // (ProcessedAtUtc nulo) sin recorrer toda la tabla.
             entity.HasIndex(message => message.ProcessedAtUtc);
+
+            // F3-03 (Outbox Publisher): índice compuesto para el claim por lotes —
+            // OutboxBatchProcessor.ClaimBatchAsync filtra "ProcessedAtUtc IS NULL AND (LockedUntilUtc
+            // IS NULL OR LockedUntilUtc < @now)" ordenando por OccurredAtUtc; sin este índice, cada
+            // ciclo de sondeo de cada instancia del worker escanearía toda la tabla.
+            entity.HasIndex(message => new { message.ProcessedAtUtc, message.LockedUntilUtc, message.OccurredAtUtc });
         });
     }
 }

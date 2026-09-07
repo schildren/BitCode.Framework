@@ -1,0 +1,205 @@
+using System.Text.Json;
+using BitCode.Framework.Shared.Application.Eventing;
+using BitCode.Framework.Shared.Domain.Outbox;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
+
+/// <summary>
+/// Relay de Outbox (F3-03): lee por lotes las filas <see cref="OutboxMessage"/> pendientes
+/// (<c>ProcessedAtUtc IS NULL</c>), las bloquea para que dos instancias concurrentes de este proceso
+/// nunca publiquen la misma fila dos veces en simultáneo, reconstruye el <see cref="IIntegrationEvent"/>
+/// correspondiente a cada una y lo publica vía <see cref="IEventPublisher"/> — solo marca la fila como
+/// procesada (<see cref="OutboxMessage.ProcessedAtUtc"/>) DESPUÉS de que la publicación tuvo éxito.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>Bloqueo (evitar publicación duplicada entre réplicas):</b> <see cref="ClaimBatchAsync"/> ejecuta
+/// una única sentencia SQL (CTE + <c>UPDATE ... OUTPUT</c>) contra la tabla de <see cref="OutboxMessage"/>
+/// con las pistas de bloqueo <c>UPDLOCK, ROWLOCK, READPAST</c>: cada fila que una instancia ya tiene
+/// bloqueada (fila con lock de escritura pendiente de esa misma sentencia) se salta silenciosamente
+/// (<c>READPAST</c>) en vez de esperar a que se libere, así que dos instancias que sondean al mismo
+/// tiempo reclaman conjuntos disjuntos de filas sin bloquearse entre sí. El campo
+/// <see cref="OutboxMessage.LockedUntilUtc"/> es la segunda mitad del mecanismo: una vez que la fila
+/// sale de esa sentencia (auto-commit, sentencia única), el lock de fila de SQL Server ya no la
+/// protege — <see cref="OutboxMessage.LockedUntilUtc"/> es lo que impide que otra instancia la reclame
+/// mientras esta sigue viva procesándola (o hasta <see cref="OutboxPublisherOptions.LockDuration"/>
+/// después, si el proceso murió sin llegar a liberarlo explícitamente).
+/// </para>
+/// <para>
+/// <b>Mapeo <see cref="OutboxMessage"/> → <see cref="IIntegrationEvent"/> (la decisión de diseño más
+/// delicada de esta tarea):</b> <see cref="OutboxMessage.EventType"/> es el
+/// <c>Type.AssemblyQualifiedName</c> del <c>DomainEvent</c> interno (F1-23) — NO necesariamente el de
+/// un <see cref="IIntegrationEvent"/>. Esta clase resuelve ese tipo con <see cref="Type.GetType(string, bool)"/>
+/// y deserializa <see cref="OutboxMessage.PayloadJson"/> a esa instancia concreta. Si el resultado
+/// implementa <see cref="IIntegrationEvent"/> (porque su autor hizo que el <c>record</c> del
+/// <c>DomainEvent</c> implementara también esa interfaz — ver <c>docs/guia-outbox-publisher.md</c>), se
+/// publica tal cual. Si NO la implementa, es un <c>DomainEvent</c> puramente interno que nunca fue
+/// pensado para cruzar el límite del bounded context: la fila se marca como procesada de todos modos
+/// (ya fue "considerada" por el relay), pero nunca se publica nada a Kafka. Esto evita tener que
+/// mantener una tabla de mapeo/registro adicional por bounded context: la decisión de qué eventos son
+/// de integración queda en el propio tipo del evento, igual que <c>IHasDomainEvents</c>/
+/// <c>AggregateRoot&lt;TId&gt;</c> ya deciden qué agregados participan del Outbox (F1-23).
+/// </para>
+/// <para>
+/// <b>Fallos de publicación:</b> si <see cref="IEventPublisher.PublishAsync(IIntegrationEvent, System.Threading.CancellationToken)"/>
+/// lanza una excepción para una fila del lote, esa fila NO se marca como procesada (queda con
+/// <see cref="OutboxMessage.RetryCount"/> incrementado y <see cref="OutboxMessage.Error"/> con el
+/// mensaje, lock liberado para reintento inmediato en el próximo ciclo) — las demás filas del lote
+/// siguen procesándose con normalidad (mismo criterio documentado en la firma de
+/// <c>IEventPublisher.PublishAsync(IEnumerable&lt;IIntegrationEvent&gt;, ...)</c>: sin atomicidad entre
+/// eventos del lote frente al broker).
+/// </para>
+/// <para>
+/// <b>Reinicio no pierde eventos (criterio de aceptación literal de F3-03):</b> el <c>SaveChangesAsync</c>
+/// que marca <see cref="OutboxMessage.ProcessedAtUtc"/> se ejecuta INMEDIATAMENTE después de que la
+/// publicación de ESA fila tuvo éxito (no al final de todo el lote) — minimiza, sin eliminarlo del
+/// todo, el intervalo en el que un evento ya fue entregado al broker pero la fila todavía no quedó
+/// marcada. Si el proceso muere exactamente en ese intervalo, el reinicio (con el lock ya expirado o
+/// liberado) vuelve a publicar la misma fila: el evento llega dos veces al broker (duplicado
+/// aceptable, semántica "at-least-once" ya documentada en el Plan Maestro, sección 3.2 — nunca se
+/// promete exactly-once de punta a punta), pero la fila nunca queda huérfana sin publicar.
+/// </para>
+/// </remarks>
+public sealed class OutboxBatchProcessor(
+    DbContext context,
+    IEventPublisher eventPublisher,
+    OutboxPublisherOptions options,
+    ILogger<OutboxBatchProcessor> logger)
+{
+    public async Task<OutboxBatchResult> ProcessBatchAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var claimed = await ClaimBatchAsync(now, cancellationToken).ConfigureAwait(false);
+
+        if (claimed.Count == 0)
+        {
+            return OutboxBatchResult.Empty;
+        }
+
+        var published = 0;
+        var skippedInternal = 0;
+        var failed = 0;
+
+        foreach (var message in claimed)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            object? deserialized;
+            Type? eventType;
+            try
+            {
+                eventType = Type.GetType(message.EventType, throwOnError: false);
+                deserialized = eventType is null ? null : JsonSerializer.Deserialize(message.PayloadJson, eventType);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(
+                    ex,
+                    "No se pudo deserializar OutboxMessage {OutboxMessageId} (EventType {EventType}); se reintentará en el próximo ciclo.",
+                    message.Id,
+                    message.EventType);
+                eventType = null;
+                deserialized = null;
+            }
+
+            if (eventType is null || deserialized is null)
+            {
+                message.RetryCount++;
+                message.Error = $"No se pudo resolver/deserializar el tipo '{message.EventType}'.";
+                message.LockedUntilUtc = null;
+                message.LockedBy = null;
+                failed++;
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            if (deserialized is not IIntegrationEvent integrationEvent)
+            {
+                // DomainEvent puramente interno: nunca implementó IIntegrationEvent a propósito, así
+                // que no cruza el límite del bounded context. Ver docs/guia-outbox-publisher.md.
+                message.ProcessedAtUtc = DateTime.UtcNow;
+                message.LockedUntilUtc = null;
+                message.LockedBy = null;
+                skippedInternal++;
+                await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            try
+            {
+                await eventPublisher.PublishAsync(integrationEvent, cancellationToken).ConfigureAwait(false);
+
+                message.ProcessedAtUtc = DateTime.UtcNow;
+                message.LockedUntilUtc = null;
+                message.LockedBy = null;
+                message.Error = null;
+                published++;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                message.RetryCount++;
+                message.Error = ex.Message;
+                message.LockedUntilUtc = null;
+                message.LockedBy = null;
+                failed++;
+
+                logger.LogWarning(
+                    ex,
+                    "Fallo al publicar OutboxMessage {OutboxMessageId} (EventType {EventType}); se reintentará en el próximo ciclo.",
+                    message.Id,
+                    integrationEvent.EventType);
+            }
+
+            await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return new OutboxBatchResult(claimed.Count, published, skippedInternal, failed);
+    }
+
+    /// <summary>
+    /// Reclama hasta <see cref="OutboxPublisherOptions.BatchSize"/> filas pendientes en una única
+    /// sentencia SQL (CTE + <c>UPDATE ... OUTPUT</c>) con <c>UPDLOCK, ROWLOCK, READPAST</c> — ver el
+    /// comentario de bloqueo en el <c>remarks</c> de la clase. <c>IgnoreQueryFilters()</c> es
+    /// necesario porque este relay procesa TODOS los tenants, no el tenant del scope actual (que aquí
+    /// ni siquiera existe: no hay ningún <c>ITenantProvider</c> de request de por medio).
+    /// </summary>
+    private async Task<List<OutboxMessage>> ClaimBatchAsync(DateTime now, CancellationToken cancellationToken)
+    {
+        var entityType = context.Model.FindEntityType(typeof(OutboxMessage))
+            ?? throw new InvalidOperationException(
+                "OutboxMessage no está registrado en el modelo de EF Core: falta invocar " +
+                "OutboxModelConfigurator.Configure(modelBuilder) en el DbContext consumidor.");
+
+        var tableName = entityType.GetTableName()
+            ?? throw new InvalidOperationException("OutboxMessage no tiene una tabla asignada en el modelo de EF Core.");
+        var schema = entityType.GetSchema();
+        var qualifiedTable = schema is null ? $"[{tableName}]" : $"[{schema}].[{tableName}]";
+        var lockUntil = now.Add(options.LockDuration);
+
+        // Con el prefijo `$$` (raw string literal interpolado "de segundo nivel"), solo `{{expr}}`
+        // interpola de verdad — un `{N}` simple queda literal en el SQL resultante (placeholders
+        // posicionales de FromSqlRaw). El nombre de tabla/esquema viene de los metadatos de EF Core
+        // (confiable, no input de usuario), así que interpolarlo directamente en el texto del comando
+        // no es una inyección SQL.
+        var sql = $$"""
+            WITH candidates AS (
+                SELECT TOP ({0}) *
+                FROM {{qualifiedTable}} WITH (UPDLOCK, ROWLOCK, READPAST)
+                WHERE [ProcessedAtUtc] IS NULL
+                  AND ([LockedUntilUtc] IS NULL OR [LockedUntilUtc] < {1})
+                ORDER BY [OccurredAtUtc] ASC, [Id] ASC
+            )
+            UPDATE candidates
+            SET [LockedUntilUtc] = {2}, [LockedBy] = {3}
+            OUTPUT inserted.*;
+            """;
+
+        return await context.Set<OutboxMessage>()
+            .FromSqlRaw(sql, options.BatchSize, now, lockUntil, options.WorkerId)
+            .IgnoreQueryFilters()
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+}
