@@ -1,0 +1,53 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "timezone": "America/Argentina/Buenos_Aires",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "labels": [
+    "dependencies",
+    "docker-digest"
+  ],
+  "prConcurrentLimit": 3,
+  "kubernetes": {
+    "enabled": true,
+    "fileMatch": [
+      "^k8s/.+\\.ya?ml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchCategories": ["docker"],
+      "enabled": true,
+      "pinDigests": true
+    },
+    {
+      "description": "Imagenes base .NET pineadas por digest en los Containerfiles de F4-01/F4-08 (docker/sample-api/Dockerfile, docker/gateway/Dockerfile). Se agrupan en un unico PR semanal para no generar ruido de revision -- ver docs/politica-contenedores.md seccion 3.3.",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": [
+        "mcr.microsoft.com/dotnet/sdk",
+        "mcr.microsoft.com/dotnet/aspnet"
+      ],
+      "groupName": "digest imagenes base .NET (sample-api/gateway)",
+      "schedule": ["before 6am on monday"],
+      "automerge": false
+    },
+    {
+      "description": "Imagen del OpenTelemetry Collector usada en k8s/otel-collector/deployment.yaml (F4-10) -- se revisa por separado del grupo .NET porque su ciclo de release y su criterio de compatibilidad (config de pipelines/receivers/exporters) son independientes.",
+      "matchManagers": ["kubernetes"],
+      "matchPackageNames": [
+        "otel/opentelemetry-collector-contrib"
+      ],
+      "groupName": "otel-collector-contrib",
+      "schedule": ["before 6am on monday"],
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"]
+  }
+}

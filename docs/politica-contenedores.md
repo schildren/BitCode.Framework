@@ -4,6 +4,8 @@
 **Fecha:** 2026-09-07
 **Estado:** Aplicado. Cierra la brecha #11 registrada en `docs/inventario-tecnico.md` ("Sin Dockerfile/manifiestos de contenedor en el repo relevado"). El criterio de aceptación de la fila F4-01 es "Escaneo sin CVE crítica": se ejecutó un escaneo real local con Trivy contra la imagen construida (evidencia en la sección 5) y se agregó un job `container-scan` a `.github/workflows/ci.yml` que repite ese mismo escaneo en cada build de CI — pero **la validación continua/gate real del pipeline solo queda confirmada la primera vez que ese job corra en GitHub Actions**, igual que el precedente de `docs/politica-dependencias.md` (SCA de NuGet). Tratar el gate de CI como "agregado, pendiente de primera verificación en pipeline real".
 
+**Actualización (2026-09-07, tarea de mantenimiento posterior a F4-01):** la brecha explícita "automatización de actualización de digests (Renovate/Dependabot)" registrada originalmente en la sección 3.3 queda **cerrada a nivel de configuración** con `renovate.json` (raíz del repo) — ver la sección 6 para el detalle completo. Sigue **pendiente una acción humana de administración de GitHub** (instalar la app de Renovate en el repositorio/organización) para que la automatización quede efectivamente activa; ver sección 6.4.
+
 ---
 
 ## 1. Alcance: qué proyectos tienen Containerfile
@@ -56,7 +58,9 @@ docker pull mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra
 docker inspect --format='{{index .RepoDigests 0}}' mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra
 ```
 
-— y se actualiza el `FROM` correspondiente en el Containerfile en un commit dedicado (no silencioso, revisable en PR). Automatizar esto con una herramienta de dependency-update (Renovate/Dependabot, que soportan pineado por digest de imágenes Docker) queda fuera de alcance de F4-01 y se deja como brecha explícita para una tarea de mantenimiento continuo.
+— y se actualiza el `FROM` correspondiente en el Containerfile en un commit dedicado (no silencioso, revisable en PR).
+
+**Brecha de F4-01 ("automatizar la actualización de digests"), cerrada por una tarea de mantenimiento posterior:** el procedimiento manual de arriba queda como respaldo/explicación, pero la actualización real ahora está automatizada con [Renovate](https://docs.renovatebot.com/) (`renovate.json` en la raíz del repo). Ver la sección 6 para el detalle completo: qué cubre, por qué Renovate y no Dependabot, y el paso humano pendiente (instalar la app de Renovate en GitHub) que queda fuera del alcance de un cambio de código.
 
 ### 3.4 Usuario non-root
 
@@ -125,10 +129,46 @@ Todo lo siguiente se ejecutó localmente con Docker Desktop 29.4.1 disponible en
 
 ---
 
-## 6. Referencias
+## 6. Automatización de actualización de digests (brecha de F4-01, cerrada por tarea de mantenimiento)
+
+**Fecha de esta sección:** 2026-09-07. **Estado:** configuración agregada al repo (`renovate.json`); **pendiente de una acción humana de administración de GitHub** para quedar activa (ver 6.4). Hasta que esa acción se realice, sigue rigiendo el procedimiento manual de la sección 3.3 como respaldo.
+
+### 6.1 Qué cubre
+
+`renovate.json` (raíz del repo) habilita:
+
+- **Manager `docker`**, con `pinDigests: true`, sobre `docker/sample-api/Dockerfile` y `docker/gateway/Dockerfile` — las dos imágenes base pineadas por digest SHA-256 de la sección 3.3 (`mcr.microsoft.com/dotnet/sdk`, `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra`). Renovate detecta el patrón `FROM imagen@sha256:...` sin configuración adicional (es el manager de Dockerfile estándar) y abre un PR actualizando el digest cuando el tag correspondiente (`10.0`) publica una imagen nueva — sea por versión de patch de .NET o por rebuild de seguridad del SO base (justamente el escenario que motivaba el procedimiento manual de la sección 3.3).
+- **Manager `kubernetes`**, sobre `k8s/**/*.yaml`, para `otel/opentelemetry-collector-contrib:0.111.0` en `k8s/otel-collector/deployment.yaml` — esa imagen hoy está pineada por tag semver, no por digest; Renovate igual la mantiene al día proponiendo el bump de versión (no se agregó `pinDigests` a este grupo porque, a diferencia de las imágenes .NET, el Collector no comparte el mismo Containerfile/criterio de reproducibilidad bit-a-bit de F4-01 — es una decisión independiente, fuera del alcance de esta brecha, si conviene pinearlo por digest también).
+- **Agrupación** de las dos imágenes .NET en un único PR semanal (`groupName: "digest imagenes base .NET (sample-api/gateway)"`) para no generar dos PRs separados por el mismo digest compartido, y un grupo separado para `otel-collector-contrib`.
+- **Schedule semanal** (`"before 6am on monday"`, zona horaria `America/Argentina/Buenos_Aires`) en vez de continuo, para no generar ruido de PRs fuera de una cadencia de revisión razonable — coherente con "recomendado: mensual" de la sección 3.3 (semanal es más conservador, no menos).
+- **`automerge: false` explícito** en ambos `packageRules`: cada actualización de digest queda como PR abierto para revisión humana, nunca se mergea sola. Esto es intencional y coherente con el criterio "CVE críticas abiertas: 0" (sección 8.3 del Plan Maestro) y con el `container-scan` de CI (sección 4 de este documento): un digest nuevo pasa por el mismo pipeline (build + Trivy) antes de mergearse, igual que cualquier otro cambio.
+- **`vulnerabilityAlerts.enabled: true`**: además del bump periódico, Renovate abre un PR fuera de agenda si detecta una vulnerabilidad conocida en una dependencia — no reemplaza a Trivy (que escanea la imagen final construida, con SO y runtime .NET), pero da una señal adicional más temprana a nivel de manifiesto.
+
+### 6.2 Por qué Renovate y no Dependabot
+
+Dependabot (nativo de GitHub) soporta actualizar Dockerfiles, pero solo cuando la imagen está referenciada por **tag**; no reescribe ni actualiza un `FROM imagen@sha256:...` pineado por digest, que es exactamente el patrón que usan `docker/sample-api/Dockerfile` y `docker/gateway/Dockerfile` desde F4-01 (sección 3.3, "reproducibilidad: pineado por digest, no por tag"). Renovate sí soporta `pinDigests`/actualización de digest de forma nativa y configurable (agrupación, schedule, packageRules por imagen), y es una herramienta ampliamente adoptada en proyectos .NET/monorepo. No hace falta un ADR completo para esta elección (no es una de las categorías de decisión con aprobación humana obligatoria de la sección 13 del Plan Maestro — no es un IdP, KMS, base de datos/broker nuevo, ni un cambio de contrato público); queda documentada acá con la razón técnica concreta.
+
+### 6.3 Validación realizada en este entorno
+
+- `renovate.json` es JSON válido (`node -e "JSON.parse(...)"`, sin errores).
+- Se validó además con la herramienta oficial `renovate-config-validator` (paquete npm `renovate`, ejecutado sin instalación previa vía `npx --yes -p renovate renovate-config-validator renovate.json`, sin ningún ajuste manual del entorno) — resultado real: `INFO: Validating renovate.json` → `INFO: Config validated successfully`. La primera versión de este archivo usaba la clave de nivel superior `"docker": { "enabled": true, "pinDigests": true }`, que el validador marcó como `WARN: Config migration necessary` (sintaxis deprecada); se corrigió al formato recomendado actual, `packageRules` con `"matchCategories": ["docker"]`, y la segunda corrida ya no reporta ninguna advertencia de migración.
+
+### 6.4 Acción humana pendiente (fuera de alcance de este cambio)
+
+Renovate solo actúa si la **app de GitHub "Renovate"** (o el equivalente self-hosted) está instalada y habilitada en el repositorio/organización — eso es una acción de administración del repo en GitHub (Settings → GitHub Apps → Renovate, o el flujo de onboarding de `https://github.com/apps/renovate`), no un cambio de código, y no puede verificarse ni ejecutarse desde este entorno de desarrollo. Hasta que se instale:
+
+- El procedimiento manual de la sección 3.3 sigue siendo el mecanismo real de actualización de digests.
+- `renovate.json` queda en el repo, listo, sin efecto hasta que la app corra por primera vez contra este repositorio (mismo patrón que el job `container-scan` de CI — sección 4 — que queda "agregado, pendiente de primera verificación en pipeline real").
+
+Se deja registrado como la brecha administrativa pendiente para quien tenga permisos de instalación de GitHub Apps sobre la organización.
+
+---
+
+## 7. Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — fila F4-01 del backlog (Fase 4), sección 7.3 (orden del pipeline, paso "Container scan").
 - [`inventario-tecnico.md`](inventario-tecnico.md) — brecha #11 (sin Dockerfile en el repo), ahora cerrada por esta tarea.
 - [`politica-dependencias.md`](politica-dependencias.md) — mismo patrón de gate conservador (solo `Critical` bloquea) aplicado aquí al escaneo de contenedor.
 - [`adr/0002-persistencia-sql-server.md`](adr/0002-persistencia-sql-server.md) — por qué `Sample.Api` depende de SQL Server real (motivo del hallazgo de Globalization Invariant Mode).
 - `docker/sample-api/Dockerfile`, `.dockerignore`, `.github/workflows/ci.yml` (job `container-scan`) — implementación de esta política.
+- [`renovate.json`](../renovate.json) — automatización de actualización de digests (sección 6), cierra la brecha registrada en la sección 3.3.
