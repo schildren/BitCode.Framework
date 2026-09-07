@@ -13,3 +13,4 @@ resources:
   - service.yaml
   - configmap.yaml
   - hpa.yaml
+  - pdb.yaml

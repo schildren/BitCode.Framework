@@ -162,9 +162,43 @@ spec:
               drop:
                 - ALL
       # -------------------------------------------------------------------
-      # TODO(F4-07): topologySpreadConstraints / afinidad anti-afinidad entre
-      # zonas y nodos (fila F4-07, PDB y spread), fuera de alcance de F4-02.
-      # -------------------------------------------------------------------
+      # F4-07 (PDB y spread), criterio "Pérdida de nodo sin caída":
+      # `topologySpreadConstraints` distribuye las réplicas de este Deployment entre nodos (siempre) y
+      # zonas de disponibilidad (cuando el cluster las expone vía el label estándar
+      # `topology.kubernetes.io/zone` en cada Node) para que la pérdida de UN nodo (o zona) no derribe
+      # todas las réplicas a la vez -- complementa al `PodDisruptionBudget` (`base/pdb.yaml`), que cubre
+      # disrupciones VOLUNTARIAS (drain, upgrade) pero no dice nada sobre CÓMO el scheduler distribuye
+      # los pods en primer lugar. Se usa `topologySpreadConstraints` (no `podAntiAffinity`): expresa
+      # "balancear lo más parejo posible" con `maxSkew`, en vez del "nunca compartir nodo/zona"
+      # binario de una anti-affinity `requiredDuringScheduling` -- con `maxReplicas` del HPA superando
+      # a menudo la cantidad de nodos/zonas reales (ver F4-06, hasta 10 réplicas en prod), una
+      # anti-affinity estricta dejaría réplicas del HPA sin poder programarse; `maxSkew: 1` sigue
+      # repartiendo parejo sin ese bloqueo total.
+      #
+      # Los valores de este `base/deployment.yaml` son el default de dev (mismo criterio que
+      # `resources`/HPA: el ambiente que menos se aparta del piso) -- `whenUnsatisfiable: ScheduleAnyway`
+      # en AMBOS ejes porque un cluster de desarrollo típico (1 solo nodo, sin labels de zona reales)
+      # jamás podría satisfacer un `DoNotSchedule` -- eso dejaría el/los pod(s) de dev perpetuamente
+      # `Pending` por un objetivo de alta disponibilidad que ese cluster no tiene con qué cumplir.
+      # `overlays/staging/deployment-patch.yaml` y `overlays/prod/deployment-patch.yaml` lo endurecen a
+      # `DoNotSchedule` para el eje de nodo (y, en prod, también el de zona) -- ver el comentario en cada
+      # patch para el detalle y el riesgo documentado de esa decisión por ambiente. La lista hace merge
+      # estratégico por `topologyKey` (mismo mecanismo que `containers` hace merge por `name`), así que
+      # cada overlay solo necesita repetir el `topologyKey` que quiere tocar, sin reescribir `maxSkew`/
+      # `labelSelector`.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
       securityContext:
         seccompProfile:
           type: RuntimeDefault

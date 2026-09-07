@@ -18,3 +18,41 @@ spec:
             limits:
               cpu: 1000m
               memory: 512Mi
+      # F4-07 (PDB y spread): endurece AMBOS ejes heredados de base/deployment.yaml de
+      # `ScheduleAnyway` a `DoNotSchedule` -- prod es el único ambiente donde el criterio de aceptación
+      # "Pérdida de nodo sin caída" tiene que sostenerse de verdad con tráfico real, y ya asume un
+      # cluster multi-nodo y multi-zona (ver el comentario de `minReplicas: 3` en hpa-patch.yaml,
+      # "tolerante a la pérdida de un nodo/zona"). `DoNotSchedule` en el eje de NODO
+      # (`kubernetes.io/hostname`) rechaza ubicar una 2ª réplica en un nodo que ya tiene una mientras
+      # exista otro nodo disponible que respete `maxSkew: 1`; en el eje de ZONA
+      # (`topology.kubernetes.io/zone`) hace lo mismo entre zonas de disponibilidad.
+      #
+      # Riesgo documentado, no oculto: si el cluster de prod REAL termina siendo de una sola zona (o de
+      # menos nodos que réplicas mínimas), `DoNotSchedule` en el eje de zona puede dejar réplicas del
+      # HPA en estado `Pending` en vez de tolerar el desbalance -- a diferencia de `ScheduleAnyway`, que
+      # sí las programaría igual aunque el reparto quede desparejo. Esta decisión asume que el cluster
+      # de prod real será multi-zona (coherente con el resto de los comentarios de este overlay); no hay
+      # cluster real disponible en este entorno para confirmarlo (ver sección 5 de
+      # docs/politica-manifiestos-kubernetes.md) -- confirmar la topología real del cluster de prod
+      # antes de aplicar este overlay es explícitamente parte de F4-14 (Capacity tests)/las pruebas
+      # obligatorias de esta fase, no de esta tarea.
+      #
+      # NOTA de implementación: se redeclara la lista COMPLETA (`$patch: replace`) en vez de un patch
+      # parcial por `topologyKey` -- verificado en este entorno que `kubectl kustomize` (1.34.1 /
+      # Kustomize v5.7.1) NO fusiona `topologySpreadConstraints` por esa clave (concatena en vez de
+      # reemplazar, dejando entradas duplicadas y contradictorias); ver el mismo comentario, con el
+      # detalle completo de la verificación, en overlays/staging/deployment-patch.yaml.
+      topologySpreadConstraints:
+        - $patch: replace
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api

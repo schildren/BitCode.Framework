@@ -16,6 +16,7 @@ patches:
   - path: configmap-patch.yaml
   - path: deployment-patch.yaml
   - path: hpa-patch.yaml
+  - path: pdb-patch.yaml
 
 images:
   # Staging: tag inmutable versionado por build de CI (ej. commit SHA corto o
