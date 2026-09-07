@@ -55,7 +55,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 | [0002](adr/0002-persistencia-sql-server.md) | Persistencia: SQL Server | Accepted |
 | [0003](adr/0003-tenancy-multi-tenant-por-filtro-global.md) | Tenancy: filtro global por `ITenantEntity` (T1) | Accepted |
 | [0004](adr/0004-identidad-idp-oidc-oauth2.md) | Identidad: OIDC/OAuth2, proveedor de IdP pendiente | Proposed |
-| [0005](adr/0005-mensajeria-kafka.md) | Mensajería: Kafka | Proposed |
+| [0005](adr/0005-mensajeria-kafka.md) | Mensajería: Kafka | Accepted |
 | [0006](adr/0006-cache-hybridcache-valkey-redis.md) | Cache: HybridCache + Valkey/Redis | Accepted |
 | [0007](adr/0007-gateway-yarp.md) | Gateway: YARP | Proposed |
 | [0008](adr/0008-licencias-open-core.md) | Licencias: Open-Core (Apache-2.0 + propietario) | Proposed |

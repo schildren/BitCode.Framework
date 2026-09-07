@@ -1,8 +1,8 @@
 # 0005. Mensajería: Kafka como broker de eventos de integración
 
-**Estado:** Proposed
-**Fecha:** 2026-09-05
-**Responsable:** Pendiente de asignación
+**Estado:** Accepted
+**Fecha:** 2026-09-05 (Proposed) / 2026-09-06 (Accepted)
+**Responsable:** Aprobado por el responsable de producto/arquitectura vía sesión de ejecución de la Fase 3
 
 ## Contexto
 
@@ -60,3 +60,20 @@ resuelto el mecanismo genérico:
 - Ningún consumidor real de Kafka existe todavía: `IInboxMessageProcessor` es, por ahora, un mecanismo
   genérico invocable manualmente (o desde pruebas), sin ninguna suscripción a un broker — igual que
   F1-23, esto sigue siendo trabajo de Fase 3, condicionado a la aprobación humana de este ADR.
+
+## Addendum F3-02 (aprobación humana y adapter Kafka)
+
+Este ADR queda `Accepted` a partir de esta fecha: la aprobación humana explícita que exige la sección 13
+del Plan Maestro ("introducción de una nueva base de datos o broker") fue solicitada antes de comenzar
+F3-02 y confirmada por el responsable en la sesión de ejecución de la Fase 3. Alcance de la aprobación:
+
+- Se aprueba **Kafka como broker de eventos de integración** para el desarrollo del adapter (F3-02) y el
+  resto de la Fase 3 (Outbox Publisher F3-03, Inbox Consumer F3-04, particionamiento F3-05, schema
+  F3-06, retries F3-07, DLQ F3-08, poison messages F3-09, observabilidad F3-10, seguridad F3-11,
+  catálogo F3-12, prueba de referencia F3-13) sobre entornos de desarrollo, CI y pruebas de integración
+  (Testcontainers) usando un broker real no productivo.
+- La aprobación **no** cubre "habilitación de tráfico productivo" (sección 13, ítem separado): aprovisionar
+  y habilitar Kafka en un ambiente productivo sigue requiriendo una aprobación humana explícita adicional
+  en el momento de ese despliegue.
+- Alternativa RabbitMQ/Azure Service Bus: se mantiene descartada por lo ya expuesto en "Alternativas
+  consideradas" — no se reabre la comparación.
