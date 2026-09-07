@@ -1,7 +1,7 @@
 # Política de versionado y compatibilidad — BitCode.Framework
 
-**Tarea:** F0-05 (Fase 0 — Gobierno, arquitectura y línea base) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Sección 2 actualizada por F1-04 (Fase 1 — Épica F1-A, "Versionado") con la elección de herramienta de versionado automático, ya aplicada en código (`src/Directory.Build.props`). Sección 4 actualizada por F1-27 (Fase 1 — Épica F1-E, "API versioning"): el mecanismo de versionado de API HTTP dejó de ser propuesta y quedó implementado en código (`Asp.Versioning.Http`, `samples/Sample.Api`).
-**Fecha:** 2026-09-06
+**Tarea:** F0-05 (Fase 0 — Gobierno, arquitectura y línea base) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Sección 2 actualizada por F1-04 (Fase 1 — Épica F1-A, "Versionado") con la elección de herramienta de versionado automático, ya aplicada en código (`src/Directory.Build.props`). Sección 4 actualizada por F1-27 (Fase 1 — Épica F1-E, "API versioning"): el mecanismo de versionado de API HTTP dejó de ser propuesta y quedó implementado en código (`Asp.Versioning.Http`, `samples/Sample.Api`). Sección 5 actualizada por F3-06 (Fase 3 — Plataforma de eventos, "Schema y versionado"): las reglas forward/backward de eventos de integración quedaron instrumentadas con un mecanismo de validación ejecutable (`EventSchemaCompatibilityChecker`, `Shared.Testing`), no solo documentadas.
+**Fecha:** 2026-09-07
 **Estado:** Parcialmente propuesto — el criterio de aceptación de F0-05 exige "casos de ejemplo aprobados". Los casos de ejemplo de la sección 7 están redactados y listos para revisión, pero **no fueron aprobados todavía por un responsable humano**. Este documento no debe tratarse como vigente hasta esa aprobación explícita en lo que respecta a esos casos. La sección 2 (herramienta de versionado automático, F1-04) y la sección 4 (mecanismo de versionado de API HTTP, F1-27) son decisiones de diseño técnico ya aplicadas en código, no casos de ejemplo pendientes de aprobación humana.
 
 Este documento desarrolla el eje "Compatibilidad" de [`architecture-principles.md`](architecture-principles.md) (sección 5) y aplica las reglas de compatibilidad de la sección 11 del Plan Maestro ("Estrategia de migración desde BitCode actual") a los cuatro tipos de contrato que el framework expone hoy o expondrá: paquetes NuGet, API HTTP, eventos de dominio/integración y esquemas de base de datos.
@@ -81,15 +81,22 @@ Todo lo que sigue es una instrumentación concreta de ese principio para cada ti
 
 ## 5. Versionado de eventos de dominio e integración
 
-**Estado actual:** el repositorio todavía no tiene un mecanismo de eventos de dominio/integración implementado — `architecture-principles.md` (sección 2, "Brecha actual") confirma que Outbox/Inbox/Idempotency están clasificados como "Ausentes — construir" en el Plan Maestro (sección 4.1). Esta política define el contrato que ese mecanismo deberá cumplir cuando se construya (Fase 1/Fase 3), no modifica código existente.
+**Estado actual (actualizado en F3-01/F3-06):** el mecanismo de eventos de integración ya está implementado (`IIntegrationEvent`, Fase 3 — F3-01 a F3-05, ver `docs/guia-eventing-contratos.md`). Esta sección definía originalmente el contrato que ese mecanismo debía cumplir cuando se construyera; F3-06 instrumenta esas reglas con un mecanismo de validación EJECUTABLE (`EventSchemaCompatibilityChecker`, `Shared.Testing`) — ver el detalle operativo completo en `docs/guia-eventing-contratos.md`, sección "Compatibilidad de esquema (F3-06)".
 
 **Regla:**
 
-- Un evento de integración (el que cruza el límite de un bounded context, vía Outbox/Kafka) lleva un campo explícito de versión de esquema (por ejemplo `SchemaVersion` o convención de nombre `NombreDelEvento.V1`, `NombreDelEvento.V2`) — nunca se infiere la versión del payload por heurística.
-- **Cambio aditivo (no rompe):** agregar un campo nuevo **opcional** (con default razonable) al payload de un evento existente, sin cambiar el significado de los campos existentes. No requiere nueva versión del esquema; los consumidores que ignoran campos desconocidos siguen funcionando (regla de deserialización tolerante: los consumidores deben ignorar campos no reconocidos, nunca fallar por su presencia).
-- **Cambio breaking (rompe):** eliminar un campo, cambiar su tipo, cambiar su significado semántico, o agregar un campo **requerido** sin default. Esto exige publicar una nueva versión del evento (`V2`) y mantener ambas versiones activas durante la ventana de coexistencia acordada (Plan Maestro, sección 11) — el productor publica ambas versiones (o publica solo `V2` y los consumidores migran antes del corte, según lo acordado explícitamente) hasta confirmar que no quedan consumidores de `V1`.
+- Un evento de integración (el que cruza el límite de un bounded context, vía Outbox/Kafka) lleva un campo explícito de versión de esquema (`IIntegrationEvent.SchemaVersion`, `int`, F3-01) — nunca se infiere la versión del payload por heurística.
+- **Cambio aditivo (no rompe):** agregar un campo nuevo **opcional** (nullable — `Nullable<T>` para tipos valor, o una anotación de referencia nullable `string?` para tipos referencia) al payload de un evento existente, sin cambiar el significado de los campos existentes. No requiere nueva versión del esquema; los consumidores que ignoran campos desconocidos siguen funcionando (regla de deserialización tolerante: los consumidores deben ignorar campos no reconocidos, nunca fallar por su presencia — comportamiento por defecto de `System.Text.Json`, usado por `KafkaIntegrationEventSerializer`, F3-02).
+- **Cambio breaking (rompe), instrumentado como violación detectable por `EventSchemaCompatibilityChecker`:**
+  - Eliminar un campo existente del payload.
+  - Cambiar el tipo CLR de un campo existente (aunque el nombre no cambie).
+  - Agregar un campo nuevo **requerido** (no nullable, sin default aceptable) — un consumidor de la versión anterior no puede asumir su presencia.
+  - Cambiar el significado semántico de un campo existente sin cambiar su forma (esto el checker automático NO lo detecta — es responsabilidad de la revisión humana del cambio, igual que cualquier cambio de contrato).
+
+  Cualquiera de los tres primeros casos exige publicar una nueva versión del evento (incrementar `SchemaVersion`, por ejemplo `1` → `2`) y mantener ambas versiones activas durante la ventana de coexistencia acordada (Plan Maestro, sección 11) — el productor publica ambas versiones (o publica solo la nueva y los consumidores migran antes del corte, según lo acordado explícitamente) hasta confirmar que no quedan consumidores de la versión anterior.
 - Un evento nunca cambia de significado dentro de la misma versión de esquema — eso es indistinguible de un bug de datos para el consumidor.
-- La compatibilidad hacia atrás (un consumidor viejo puede leer un evento nuevo) y hacia adelante (un consumidor nuevo puede leer un evento viejo, dentro de la ventana de coexistencia) se prueban explícitamente con contract tests cuando el pipeline los incorpore (ver `docs/inventario-tecnico.md`, sección 5, gate "Contract tests" todavía ausente).
+- **Mecanismo de validación ejecutable (F3-06):** `EventSchemaCompatibilityChecker.CheckBackwardCompatibility(previousVersion, currentVersion)` (`Shared.Testing`, `BitCode.Framework.Shared.Testing`) compara por reflexión los tipos .NET concretos de dos versiones de un mismo `IIntegrationEvent` y devuelve las violaciones concretas de las reglas de arriba. `tests/Shared.Application.Tests/Eventing/EventSchemaCompatibilityTests.cs` es el test de referencia (corre en CI, job `test-unit`, sin broker ni Testcontainers) que cada bounded context puede replicar para sus propios pares de versiones de evento — ver `docs/guia-eventing-contratos.md` para el detalle completo y las limitaciones del mecanismo (no reemplaza la revisión humana de cambios de significado semántico ni fuerza el incremento real de `SchemaVersion`, solo detecta si la forma es o no compatible).
+- La compatibilidad hacia adelante (un consumidor viejo, escrito antes de que se agregue un campo opcional nuevo, sigue funcionando al recibir la versión nueva) se apoya en la deserialización tolerante de `System.Text.Json` (ignora miembros desconocidos por defecto) — no requiere instrumentación adicional más allá de la regla de "cambio aditivo" de arriba.
 
 ---
 
@@ -161,6 +168,7 @@ migrationBuilder.AddColumn<string>(
 - [`inventario-tecnico.md`](inventario-tecnico.md) — estado real de paquetes, CI y ausencia de CPM/versionado automático.
 - `samples/Sample.Api/Productos/ProductosModule.cs` — estado actual del enrutamiento (`/api/v1`/`/api/v2` coexistiendo, F1-27), referenciado en la sección 4.
 - `docs/guia-versionado-api.md` — guía operativa completa del mecanismo de versionado de API HTTP implementado en F1-27.
+- `docs/guia-eventing-contratos.md`, sección "Compatibilidad de esquema (F3-06)" — mecanismo ejecutable de validación de compatibilidad de eventos (`EventSchemaCompatibilityChecker`, `Shared.Testing`).
 
 ## Aprobación
 

@@ -281,10 +281,114 @@ relativo entre ellos); (3) un evento que NO implementa `IHasPartitionKey` sigue 
 cubre la forma del contrato (`IHasPartitionKey` opcional, ejemplo `AggregateId` y ejemplo `TenantId`) sin
 necesitar ningún broker.
 
+## Compatibilidad de esquema (F3-06)
+
+F3-06 cierra lo que F3-01 dejó reservado en `IIntegrationEvent.SchemaVersion` ("la política de
+compatibilidad forward/backward concreta sobre este campo es trabajo de F3-06") con dos entregables:
+las reglas concretas (ya integradas en `docs/politica-versionado.md`, sección 5) y un mecanismo de
+validación **ejecutable** que corre en CI sin necesitar ningún broker.
+
+### Reglas de compatibilidad forward/backward (resumen operativo)
+
+Entre la versión N (`SchemaVersion = N`) y N+1 de un mismo `IIntegrationEvent` (mismo `EventType`):
+
+| Cambio en el payload | ¿Rompe? | Acción requerida |
+|---|---|---|
+| Agregar un campo nuevo **nullable** (`T?`) | No — aditivo | Ninguna, `SchemaVersion` no cambia |
+| Eliminar un campo existente | Sí | Incrementar `SchemaVersion`, ventana de coexistencia |
+| Cambiar el tipo CLR de un campo existente | Sí | Incrementar `SchemaVersion`, ventana de coexistencia |
+| Agregar un campo nuevo **no nullable** (requerido) | Sí | Incrementar `SchemaVersion`, ventana de coexistencia |
+| Cambiar el significado semántico de un campo sin cambiar su forma | Sí (no detectable automáticamente) | Incrementar `SchemaVersion`; requiere revisión humana del cambio, el checker no lo detecta |
+
+La razón de usar "nullable" como criterio de "opcional" (en vez de, por ejemplo, un atributo custom o
+un valor default de constructor) es que es la señal que `System.Text.Json` ya usa de forma coherente
+con la deserialización tolerante (miembros desconocidos ignorados por defecto,
+`KafkaIntegrationEventSerializer`, F3-02): un campo nullable ausente en un payload viejo deserializa a
+`null`/valor por defecto sin lanzar, y un consumidor viejo frente a un payload nuevo con un campo
+nullable adicional simplemente lo ignora.
+
+### Mecanismo de validación ejecutable
+
+`EventSchemaCompatibilityChecker` (`BitCode.Framework.Shared.Testing`, `src/Shared.Testing/EventSchemaCompatibilityChecker.cs`)
+compara por reflexión dos tipos .NET concretos de un mismo evento:
+
+```csharp
+public static EventSchemaCompatibilityResult CheckBackwardCompatibility(Type previousVersion, Type currentVersion)
+```
+
+`EventSchemaCompatibilityResult.IsBackwardCompatible` es `false` si encuentra alguna de las tres
+primeras violaciones de la tabla de arriba; `Violations` trae el detalle en texto legible (nombre del
+campo, versión de origen/destino y la regla de `docs/politica-versionado.md` que se violó), listo para
+un mensaje de aserción de test. Los cuatro campos del envelope de `IIntegrationEvent` (`EventId`,
+`OccurredOnUtc`, `EventType`, `SchemaVersion`) quedan excluidos de la comparación — no son parte del
+payload de datos específico del evento.
+
+**Por qué en `Shared.Testing` y no en `Shared.Application`:** es una herramienta de prueba (reflexión
+sobre tipos, pensada para usarse solo desde proyectos de test), no un componente que participe en
+tiempo de ejecución de publicación/consumo de eventos — mismo criterio que ya aplican
+`KafkaContainerFixture`/`SqlServerContainerFixture` en el mismo proyecto. `Shared.Testing` ya está
+sujeto al mismo gate de compatibilidad de API pública que el resto de `src/`
+(`docs/gate-compatibilidad-api.md`), así que un cambio futuro a la forma de
+`EventSchemaCompatibilityChecker`/`EventSchemaCompatibilityResult` pasa por el mismo análisis de
+impacto que cualquier otro contrato público del framework.
+
+**Por qué reflexión sobre tipos .NET y no un snapshot de JSON Schema committeado:** el repositorio no
+tiene todavía ningún evento de negocio real (solo los de ejemplo en
+`tests/Shared.Application.Tests/Eventing/TestIntegrationEvents.cs`) ni una librería de JSON Schema ya
+evaluada (`docs/politica-dependencias.md`); comparar directamente los tipos .NET concretos da la misma
+señal (forma del payload) sin agregar una dependencia nueva ni un artefacto de snapshot adicional que
+mantener sincronizado a mano. Si en el futuro el catálogo de eventos (F3-12) necesita publicar JSON
+Schema real para consumidores no-.NET, ese es un mecanismo complementario a evaluar en esa tarea, no un
+reemplazo de este checker interno.
+
+**Prueba de referencia (criterio de aceptación "Contratos validados en CI" y "Schema compatible e
+incompatible" de la Fase 3):** `tests/Shared.Application.Tests/Eventing/EventSchemaCompatibilityTests.cs`
+corre en el job `test-unit` de `.github/workflows/ci.yml` (no tiene `Integration` en el nombre, no
+requiere Testcontainers) y cubre:
+
+- **Caso compatible:** `TestOrderCreatedIntegrationEvent` (V1) →
+  `TestOrderCreatedWithOptionalDiscountIntegrationEvent` (agrega `DiscountAmount` nullable, mismo
+  `SchemaVersion = 1`) — `IsBackwardCompatible` es `true`.
+- **Caso incompatible (campo eliminado):** V1 →
+  `TestOrderCreatedMissingCustomerNameIntegrationEvent` (elimina `CustomerName`) —
+  `IsBackwardCompatible` es `false`.
+- **Caso incompatible (tipo cambiado):** V1 →
+  `TestOrderCreatedWithCustomerNameAsNumberIntegrationEvent` (`CustomerName` pasa de `string` a `int`)
+  — `IsBackwardCompatible` es `false`.
+- **Caso incompatible (campo requerido agregado), evento real de F3-01:** V1 →
+  `TestOrderCreatedV2IntegrationEvent` (agrega `Total`, `decimal` no nullable) —
+  `IsBackwardCompatible` es `false`; este caso documenta explícitamente POR QUÉ
+  `TestOrderCreatedV2IntegrationEvent` (creado en F3-01 como ejemplo de "evolución de esquema") tuvo
+  que incrementar `SchemaVersion` a `2` en vez de mantenerse en `1`.
+
+Cualquier bounded context con eventos de negocio reales puede replicar este mismo patrón: cuando
+declara `PedidoCreadoV2IntegrationEvent`, un test que llama a
+`EventSchemaCompatibilityChecker.CheckBackwardCompatibility(typeof(PedidoCreadoIntegrationEvent), typeof(PedidoCreadoV2IntegrationEvent))`
+documenta y verifica en CI si la evolución fue realmente aditiva o si ameritaba (correctamente) el
+incremento de `SchemaVersion`.
+
+### Qué NO resuelve F3-06
+
+- No genera ni publica JSON Schema/Avro/Protobuf real para consumidores no-.NET — sigue siendo JSON
+  libre serializado del tipo .NET concreto (decisión ya tomada en F3-02).
+- No detecta cambios de significado semántico de un campo que mantiene su forma (mismo nombre, mismo
+  tipo, distinto significado) — la tabla de arriba lo marca explícitamente como "no detectable
+  automáticamente"; sigue dependiendo de la revisión humana del cambio, igual que cualquier otro
+  contrato público (`docs/politica-versionado.md`, sección 1).
+- No fuerza ni automatiza el incremento real de `SchemaVersion` en el evento — es responsabilidad del
+  autor del cambio; el checker solo confirma si la forma resultante habría sido compatible sin ese
+  incremento.
+- No valida compatibilidad contra ningún evento ya publicado en un tópico Kafka real (no hay registro
+  de esquema/Schema Registry, F3-02) — la comparación es siempre entre dos tipos .NET del propio
+  repositorio, en tiempo de compilación/test.
+- Catálogo de eventos con owner/PII/consumidores registrados (F3-12), retries (F3-07), DLQ (F3-08),
+  poison messages (F3-09), observabilidad (F3-10) ni seguridad de transporte (F3-11).
+
 ## Referencias
 
 - `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`, `IHasPartitionKey.cs` (F3-05).
-- `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`, `TestIntegrationEvents.cs`.
+- `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`, `TestIntegrationEvents.cs`, `EventSchemaCompatibilityTests.cs` (F3-06).
+- `src/Shared.Testing/EventSchemaCompatibilityChecker.cs` (F3-06), `src/Shared.Testing/PublicAPI.Unshipped.txt`.
 - `src/Shared.Infrastructure.Messaging.Kafka/` (F3-02/F3-05): `KafkaMessagingOptions.cs`, `KafkaClientConfigFactory.cs`, `IKafkaTopicNameResolver.cs`, `KafkaIntegrationEventSerializer.cs`, `KafkaEventPublisher.cs`, `KafkaEventConsumer.cs`, `KafkaServiceCollectionExtensions.cs`.
 - `src/Shared.Infrastructure.Persistence/Outbox/` (F3-03): `OutboxBatchProcessor.cs`, `OutboxBatchResult.cs`, `OutboxPublisherOptions.cs`, `OutboxPublisherBackgroundService.cs`, `OutboxPublisherServiceCollectionExtensions.cs`. Ver `docs/guia-outbox-publisher.md` para el detalle completo.
 - `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`, incluida `Integration/KafkaEventPublisherPartitioningIntegrationTests.cs` (F3-05).
@@ -293,5 +397,6 @@ necesitar ningún broker.
 - `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox/particionamiento, F1-23/F1-24/F3-02/F3-03/F3-05).
 - `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Inbox).
 - `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).
-- `docs/politica-versionado.md` (versión de esquema de eventos de integración).
+- `docs/politica-versionado.md`, sección 5 (reglas de compatibilidad forward/backward de eventos de integración, actualizada por F3-06).
+- `docs/gate-compatibilidad-api.md` (gate de superficie pública que también cubre `Shared.Testing`, incluido `EventSchemaCompatibilityChecker`).
 - ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).

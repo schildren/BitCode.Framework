@@ -1,4 +1,19 @@
 #nullable enable
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityChecker
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Violations) -> void
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.EventSchemaCompatibilityResult(System.Collections.Generic.IReadOnlyList<string!>! Violations) -> void
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Equals(BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult? other) -> bool
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.IsBackwardCompatible.get -> bool
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Violations.get -> System.Collections.Generic.IReadOnlyList<string!>!
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Violations.init -> void
+override BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.GetHashCode() -> int
+override BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.ToString() -> string!
+static BitCode.Framework.Shared.Testing.EventSchemaCompatibilityChecker.CheckBackwardCompatibility(System.Type! previousVersion, System.Type! currentVersion) -> BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult!
+static BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.operator !=(BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult? left, BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult? right) -> bool
+static BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.operator ==(BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult? left, BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult? right) -> bool
+BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.<Clone>$() -> BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult!
 BitCode.Framework.Shared.Testing.KafkaContainerFixture
 BitCode.Framework.Shared.Testing.KafkaContainerFixture.BootstrapServers.get -> string!
 BitCode.Framework.Shared.Testing.KafkaContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
