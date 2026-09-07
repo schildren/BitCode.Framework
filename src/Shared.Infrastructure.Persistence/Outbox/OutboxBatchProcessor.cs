@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using BitCode.Framework.Shared.Application.Eventing;
@@ -107,11 +108,16 @@ public sealed class OutboxBatchProcessor(
 {
     public async Task<OutboxBatchResult> ProcessBatchAsync(CancellationToken cancellationToken = default)
     {
+        // F3-10: mide el ciclo completo (reclamo + publicación de cada fila reclamada), incluido el caso
+        // "nada reclamado" — un ciclo vacío que tarda de más igual es una señal útil (por ejemplo, la
+        // consulta de reclamo compitiendo con otras réplicas o degradación de SQL Server).
+        var stopwatch = Stopwatch.StartNew();
         var now = DateTime.UtcNow;
         var claimed = await ClaimBatchAsync(now, cancellationToken).ConfigureAwait(false);
 
         if (claimed.Count == 0)
         {
+            OutboxDiagnostics.RecordBatch(OutboxBatchResult.Empty, stopwatch.Elapsed.TotalMilliseconds);
             return OutboxBatchResult.Empty;
         }
 
@@ -212,7 +218,9 @@ public sealed class OutboxBatchProcessor(
             await PublishDeadLetterIfJustExhaustedAsync(message, integrationEvent.EventType, cancellationToken).ConfigureAwait(false);
         }
 
-        return new OutboxBatchResult(claimed.Count, published, skippedInternal, failed, exhausted);
+        var result = new OutboxBatchResult(claimed.Count, published, skippedInternal, failed, exhausted);
+        OutboxDiagnostics.RecordBatch(result, stopwatch.Elapsed.TotalMilliseconds);
+        return result;
     }
 
     /// <summary>
@@ -283,9 +291,11 @@ public sealed class OutboxBatchProcessor(
                     SourceMessageId = message.Id.ToString(),
                 },
                 cancellationToken).ConfigureAwait(false);
+            OutboxDiagnostics.RecordDeadLetter(success: true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            OutboxDiagnostics.RecordDeadLetter(success: false);
             logger.LogWarning(
                 ex,
                 "No se pudo publicar OutboxMessage {OutboxMessageId} al tópico dead-letter; la fila " +

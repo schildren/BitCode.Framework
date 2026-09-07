@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Text;
 using BitCode.Framework.Shared.Application.Eventing;
 using BitCode.Framework.Shared.Application.Inbox;
@@ -110,10 +112,13 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     private readonly IConsumer<string, byte[]> _consumer;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly string _eventType;
+    private readonly string _topic;
     private readonly IEventPublishFailureClassifier _failureClassifier;
     private readonly IDeadLetterPublisher? _deadLetterPublisher;
     private readonly ILogger<KafkaEventConsumer<TEvent>>? _logger;
     private readonly ConcurrentDictionary<string, int> _attemptsByMessageId = new();
+    private readonly ObservableGauge<long> _lagGauge;
+    private volatile bool _disposed;
 
     /// <summary>
     /// Política de reintentos con backoff (F3-07) aplicada a mensajes cuyo handler falla — ver el
@@ -169,11 +174,22 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         _logger = logger;
 
         var resolver = topicNameResolver ?? DefaultKafkaTopicNameResolver.Instance;
-        var topic = resolver.ResolveTopicName(eventType);
+        _topic = resolver.ResolveTopicName(eventType);
 
         _consumer = new ConsumerBuilder<string, byte[]>(KafkaClientConfigFactory.BuildConsumerConfig(options, consumerGroupIdOverride))
             .Build();
-        _consumer.Subscribe(topic);
+        _consumer.Subscribe(_topic);
+
+        // F3-10 ("lag" en el criterio de aceptación literal): gauge observable (pull-based, el SDK de
+        // OpenTelemetry lo invoca cada vez que exporta métricas — nunca en el hot path de
+        // ConsumeAndHandleOnceAsync) que reporta, por partición asignada, la diferencia entre el high
+        // watermark del tópico y la posición actual de este consumidor. Best-effort: QueryWatermarkOffsets
+        // necesita ida y vuelta al broker (con timeout corto) y puede fallar durante un rebalance o si el
+        // broker está temporalmente inalcanzable — esos casos se omiten en vez de propagar la excepción
+        // (un observable callback que lanza rompe la recolección de TODAS las métricas del proceso, no
+        // solo la de este consumidor). Ver docs/guia-observabilidad-eventos.md para el panel/alerta
+        // sugeridos sobre esta métrica.
+        _lagGauge = KafkaEventingDiagnostics.CreateConsumerLagGauge(ObserveLag);
     }
 
     /// <summary>
@@ -205,6 +221,21 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
             return false;
         }
 
+        // F3-10 (correlación end-to-end): si el mensaje trae headers W3C Trace Context (escritos por
+        // KafkaEventingDiagnostics.InjectTraceContext del lado publisher), este Activity se abre como hijo
+        // REMOTO de ese contexto — mismo TraceId que el Activity del publisher, visible de punta a punta en
+        // cualquier backend de trazas que entienda el formato estándar. Igual que el lado publisher, sin
+        // ningún listener de ActivitySource registrado esto es un no-op (StartActivity devuelve null).
+        var parentContext = KafkaEventingDiagnostics.ExtractTraceContext(result.Message.Headers);
+        using var activity = KafkaEventingDiagnostics.ActivitySource.StartActivity(
+            $"{_topic} consume", ActivityKind.Consumer, parentContext);
+        activity?.SetTag("messaging.system", "kafka");
+        activity?.SetTag("messaging.destination.name", _topic);
+        activity?.SetTag("messaging.operation", "consume");
+        activity?.SetTag("bitcode.messaging.event_type", _eventType);
+
+        var stopwatch = Stopwatch.StartNew();
+
         TEvent integrationEvent;
         try
         {
@@ -221,11 +252,16 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
             // bloqueada.
             await IsolatePoisonMessageAsync(result, ex, cancellationToken).ConfigureAwait(false);
             _consumer.Commit(result);
+            activity?.SetStatus(ActivityStatusCode.Error, "PoisonMessage");
+            KafkaEventingDiagnostics.RecordConsume(_eventType, "poison", stopwatch.Elapsed.TotalMilliseconds);
+            KafkaEventingDiagnostics.RecordDeadLetter(_eventType, "PoisonMessage");
             return true;
         }
 
+        activity?.SetTag("bitcode.messaging.event_id", integrationEvent.EventId.ToString());
         var messageId = integrationEvent.EventId.ToString();
 
+        InboxProcessOutcome outcome;
         try
         {
             await using (var scope = _scopeFactory.CreateAsyncScope())
@@ -233,7 +269,7 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
                 var inboxProcessor = scope.ServiceProvider.GetRequiredService<IInboxMessageProcessor>();
                 var handler = scope.ServiceProvider.GetRequiredService<IEventConsumer<TEvent>>();
 
-                await inboxProcessor.ProcessAsync(
+                outcome = await inboxProcessor.ProcessAsync(
                     messageId,
                     _eventType,
                     Encoding.UTF8.GetString(result.Message.Value),
@@ -261,9 +297,14 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
                 // cualquier mensaje inválido, no solo el que agotó reintentos— es F3-09).
                 await PublishToDeadLetterAsync(exhausted, result.Message.Value, cancellationToken).ConfigureAwait(false);
                 _consumer.Commit(result);
+                activity?.SetStatus(ActivityStatusCode.Error, "RetriesExhausted");
+                KafkaEventingDiagnostics.RecordConsume(_eventType, "exhausted", stopwatch.Elapsed.TotalMilliseconds);
+                KafkaEventingDiagnostics.RecordDeadLetter(_eventType, "RetriesExhausted");
                 throw;
             }
 
+            activity?.SetStatus(ActivityStatusCode.Error, "TransientFailure");
+            KafkaEventingDiagnostics.RecordConsume(_eventType, "failure", stopwatch.Elapsed.TotalMilliseconds);
             throw; // El mensaje todavía tiene margen: se relanza para que el offset no se confirme.
         }
 
@@ -271,7 +312,69 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         _attemptsByMessageId.TryRemove(messageId, out _);
         _consumer.Commit(result);
 
+        KafkaEventingDiagnostics.RecordConsume(
+            _eventType,
+            outcome == InboxProcessOutcome.Discarded ? "duplicate" : "processed",
+            stopwatch.Elapsed.TotalMilliseconds);
+
         return true;
+    }
+
+    /// <summary>
+    /// Callback del gauge observable de lag (<see cref="_lagGauge"/>, F3-10) — invocado por el SDK de
+    /// OpenTelemetry cuando exporta métricas, nunca desde <see cref="ConsumeAndHandleOnceAsync"/>. No usa
+    /// <c>yield return</c> dentro de un <c>try/catch</c> (no permitido por el compilador dentro de un
+    /// iterador): arma la lista completa antes de devolverla. Cualquier fallo (rebalance en curso, timeout
+    /// contra el broker, consumidor ya dispuesto vía <see cref="Dispose"/>) se traga y devuelve una lista
+    /// vacía — un callback observable que lanza rompe la recolección de TODAS las métricas del proceso, no
+    /// solo la de este consumidor.
+    /// </summary>
+    private IEnumerable<Measurement<long>> ObserveLag()
+    {
+        var measurements = new List<Measurement<long>>();
+
+        if (_disposed)
+        {
+            return measurements;
+        }
+
+        try
+        {
+            var assignment = _consumer.Assignment;
+            foreach (var partition in assignment)
+            {
+                try
+                {
+                    var watermark = _consumer.QueryWatermarkOffsets(partition, TimeSpan.FromSeconds(1));
+                    var position = _consumer.Position(partition);
+                    if (watermark.High == Offset.Unset || position == Offset.Unset)
+                    {
+                        continue;
+                    }
+
+                    var lag = Math.Max(0, watermark.High.Value - position.Value);
+                    measurements.Add(new Measurement<long>(
+                        lag,
+                        new KeyValuePair<string, object?>("messaging.destination.name", partition.Topic),
+                        new KeyValuePair<string, object?>("bitcode.messaging.partition", partition.Partition.Value),
+                        new KeyValuePair<string, object?>("bitcode.messaging.event_type", _eventType)));
+                }
+                catch (KafkaException ex)
+                {
+                    _logger?.LogDebug(
+                        ex,
+                        "No se pudo calcular el lag de la partición {Partition} del tópico del evento {EventType}; se omite esta muestra.",
+                        partition.Partition.Value,
+                        _eventType);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.LogDebug(ex, "No se pudo calcular el lag de consumo para {EventType}; se omite esta muestra.", _eventType);
+        }
+
+        return measurements;
     }
 
     /// <summary>
@@ -417,6 +520,13 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
 
     public void Dispose()
     {
+        // F3-10: primero que nada, para que ObserveLag (invocado de forma asincrónica por cualquier
+        // exporter de métricas que esté sondeando en paralelo) deje de tocar _consumer apenas empieza el
+        // Dispose — el ObservableGauge en sí sigue registrado en el Meter compartido (los instrumentos
+        // individuales no son disposables, ver remarks de KafkaEventingDiagnostics), pero su callback
+        // devuelve una lista vacía a partir de acá.
+        _disposed = true;
+
         // Close() abandona el grupo de consumidores de forma prolija (trigger inmediato de rebalance
         // en vez de esperar el session timeout) antes de liberar el handle nativo.
         _consumer.Close();

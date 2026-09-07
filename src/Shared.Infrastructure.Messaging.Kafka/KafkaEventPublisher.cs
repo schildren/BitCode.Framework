@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BitCode.Framework.Shared.Application.Eventing;
 using Confluent.Kafka;
 
@@ -54,7 +55,24 @@ public sealed class KafkaEventPublisher : IEventPublisher
         ArgumentNullException.ThrowIfNull(integrationEvent);
 
         var topic = _topicNameResolver.ResolveTopicName(integrationEvent.EventType);
+
+        // F3-10: span "productor" — abre un Activity nuevo si algo escucha KafkaEventingDiagnostics.ActivitySource
+        // (típicamente el SDK de OpenTelemetry vía TracerProviderBuilder.AddSource, ver
+        // docs/guia-observabilidad-eventos.md); si nadie escucha, StartActivity devuelve null sin costo
+        // extra y Activity.Current queda como estaba (el ambiente del llamador, si lo hay).
+        using var activity = KafkaEventingDiagnostics.ActivitySource.StartActivity($"{topic} publish", ActivityKind.Producer);
+        activity?.SetTag("messaging.system", "kafka");
+        activity?.SetTag("messaging.destination.name", topic);
+        activity?.SetTag("messaging.operation", "publish");
+        activity?.SetTag("bitcode.messaging.event_type", integrationEvent.EventType);
+        activity?.SetTag("bitcode.messaging.event_id", integrationEvent.EventId.ToString());
+
         var (value, headers) = KafkaIntegrationEventSerializer.Serialize(integrationEvent);
+
+        // F3-10 (correlación end-to-end): copia el TraceId/SpanId vigente (el Activity recién abierto, o
+        // el ambiente del llamador si nadie escucha ActivitySource) a headers Kafka W3C Trace Context —
+        // ver remarks de KafkaEventingDiagnostics.
+        KafkaEventingDiagnostics.InjectTraceContext(headers);
 
         var message = new Message<string, byte[]>
         {
@@ -67,6 +85,17 @@ public sealed class KafkaEventPublisher : IEventPublisher
             Headers = headers,
         };
 
-        await _producer.ProduceAsync(topic, message, cancellationToken).ConfigureAwait(false);
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            await _producer.ProduceAsync(topic, message, cancellationToken).ConfigureAwait(false);
+            KafkaEventingDiagnostics.RecordPublish(integrationEvent.EventType, topic, "success", stopwatch.Elapsed.TotalMilliseconds);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            KafkaEventingDiagnostics.RecordPublish(integrationEvent.EventType, topic, "failure", stopwatch.Elapsed.TotalMilliseconds);
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 }
