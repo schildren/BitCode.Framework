@@ -364,17 +364,19 @@ objetivo real de retención regulatoria. Es un placeholder de desarrollo, no una
 productiva, con el mismo tratamiento explícito que `InMemoryAuditWriter` (F2-15) y
 `ConfigurationSecretProvider` (F2-12).
 
-### Proveedor productivo real: pendiente de aprobación humana (ADR 0017, `Proposed`)
+### Proveedor productivo real: MinIO/S3 Object Lock aprobado (ADR 0017, `Accepted`)
 
 Igual que ocurrió con el proveedor de secretos (F2-12, ADR 0014), la elección de un backend WORM productivo
 real es una decisión de infraestructura sujeta a la sección 13 del Plan Maestro ("nueva base de datos o
 broker"). **ADR 0017** propone MinIO/S3 Object Lock (modo `COMPLIANCE`) como candidato -- imagen oficial de
 contenedor apta para Testcontainers, self-hosteable, y con la semántica WORM ya resuelta por el propio
-protocolo S3 -- pero lo deja explícitamente `Proposed`, no `Accepted`: esta tarea NO construye ese
-proveedor, a la espera de la misma aprobación explícita que recibió Vault. Un proyecto que necesite
-cumplimiento regulatorio real HOY debe conectar su propio `IWormStorage` (por ejemplo, contra un S3/MinIO/
-Azure Blob Storage con Immutable Storage ya aprobado en su propia organización) registrándolo después de
-`AddSharedAuditWormExport` -- gana la resolución, mismo principio que el resto de los `AddShared*`.
+protocolo S3 -- y fue aprobado explícitamente por Javier León el 2026-09-06. Esta tarea (F2-18) NO construyó
+ese proveedor: la aprobación cubre la elección del proveedor/protocolo, no su implementación concreta ni su
+aprovisionamiento operativo, que quedan como trabajo de seguimiento (`MinioWormStorage` o similar, ver ADR
+0017). Hasta que ese trabajo se implemente, un proyecto que necesite cumplimiento regulatorio real HOY puede
+conectar su propio `IWormStorage` (contra el mismo protocolo S3 aprobado, u otro backend de su organización)
+registrándolo después de `AddSharedAuditWormExport` -- gana la resolución, mismo principio que el resto de
+los `AddShared*`.
 
 ### Integración con F2-17: acoplada, decisión explícita
 
@@ -398,8 +400,9 @@ distinto) porque:
   (SOX, PCI-DSS, normativa local de cada industria) -- `AuditWormExportOptions.RetentionPeriod` es un
   default configurable (placeholder de 7 años), no una recomendación normativa; cada proyecto consumidor
   fija el valor que corresponda a su propio marco regulatorio.
-- **No implementa un proveedor productivo real** -- ver "Proveedor productivo real" arriba, ADR 0017 sigue
-  `Proposed`.
+- **No implementa un proveedor productivo real** -- ver "Proveedor productivo real" arriba; ADR 0017 aprueba
+  MinIO/S3 Object Lock como candidato, pero su implementación concreta (`MinioWormStorage`) queda como
+  trabajo de seguimiento, no entregada por F2-18.
 - **No expone una API de consulta/lectura administrativa** -- `IAuditWormExportPipeline.ReadAsync` lee UN
   objeto por su clave exacta, no busca ni pagina; la API administrativa de búsqueda es F2-20.
 - **No agrupa lotes ni genera claves automáticamente** -- mismo criterio que `IAuditBatchSigner` (F2-17):
@@ -1000,10 +1003,10 @@ Todas las piezas se apoyan en el mismo `AuditEntry`/`IAuditWriter` de F2-15 sin 
 de contrato público breaking a lo largo de las seis tareas -- cada tarea agregó una capa nueva (verificación,
 firma, exportación, redacción, consulta) por composición (decoradores sobre `IAuditWriter`, o servicios
 adicionales que operan sobre `AuditEntry`), nunca modificando lo que las tareas anteriores ya habían
-entregado y probado. Lo que sigue abierto (almacenamiento persistente real productivo, proveedor WORM real
--- ADR 0017 `Proposed`, y las integraciones de auditoría todavía no cableadas listadas en "Qué NO quedó
-cableado todavía") son decisiones de infraestructura/alcance explícitamente fuera del backlog de F2-D, no
-huecos de esta épica.
+entregado y probado. Lo que sigue abierto (implementación concreta del proveedor WORM ya aprobado -- ADR
+0017 `Accepted`, MinIO/S3 Object Lock, pendiente el trabajo de seguimiento `MinioWormStorage` -- y las
+integraciones de auditoría todavía no cableadas listadas en "Qué NO quedó cableado todavía") son decisiones
+de infraestructura/alcance explícitamente fuera del backlog de F2-D, no huecos de esta épica.
 
 ## Referencias
 
@@ -1028,8 +1031,9 @@ huecos de esta épica.
   con la firma de F2-17, lote vacío, retención por defecto vs. explícita por lote, propagación de
   conflictos de `IWormStorage`; `AuditWormExportServiceCollectionExtensionsTests`: registro por defecto,
   singleton, reemplazo por un proyecto consumidor, lectura de configuración).
-- `docs/adr/0017-worm-proveedor-minio-object-lock-propuesto.md` — `IWormStorage` (`Accepted`) + MinIO/S3
-  Object Lock como proveedor concreto (`Proposed`, pendiente de aprobación humana, sección 13).
+- `docs/adr/0017-worm-proveedor-minio-object-lock-propuesto.md` — `IWormStorage` + MinIO/S3 Object Lock como
+  proveedor productivo (ambos `Accepted`, aprobado por Javier León el 2026-09-06); implementación concreta
+  pendiente como trabajo de seguimiento.
 - `tests/Shared.Infrastructure.Security.Tests/Audit/HmacAuditBatchSignerTests.cs` — suite de pruebas de
   F2-17 (firma/verificación válida con instancias distintas, lote vacío, alteración de cualquier campo,
   reconstrucción completa y consistente de la cadena alternativa -- el hueco explícito de F2-16 --,

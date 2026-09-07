@@ -1,8 +1,8 @@
-# 0017. WORM de auditoría: abstracción `IWormStorage` (Accepted) y MinIO/S3 Object Lock propuesto como proveedor
+# 0017. WORM de auditoría: abstracción `IWormStorage` y MinIO/S3 Object Lock como proveedor productivo (ambos Accepted)
 
-**Estado:** Proposed
+**Estado:** Accepted
 **Fecha:** 2026-09-06
-**Responsable de aprobación:** pendiente (Plan Maestro sección 13 — "nueva base de datos o broker"/infraestructura de almacenamiento productiva)
+**Responsable de aprobación:** Javier León (2026-09-06)
 
 ## Contexto
 
@@ -37,11 +37,12 @@ Se separan dos decisiones de distinto nivel, mismo patrón que ADR 0014 (Vault) 
    válida tras expirar la retención — ver pruebas en `tests/Shared.Infrastructure.Security.Tests/Audit/Worm/InMemoryWormStorageTests.cs`)
    pero no persiste entre reinicios ni entre instancias del proceso — NO es una fuente de verdad WORM
    productiva.
-3. **MinIO con Object Lock (API compatible S3) queda PROPUESTO, no decidido**, como candidato de proveedor
-   concreto de nivel empresarial para un `IWormStorage` productivo real. Esta tarea NO implementa ese
-   proveedor (ver "Qué NO resuelve F2-18" más abajo) — queda a la espera de la aprobación humana explícita
-   de la sección 13 antes de construirse, exactamente el mismo tratamiento que recibió Vault en ADR 0014
-   antes de su aprobación.
+3. **MinIO con Object Lock (API compatible S3) queda ACEPTADO como proveedor concreto de nivel empresarial**
+   para un `IWormStorage` productivo real, aprobado explícitamente por Javier León el 2026-09-06 (Plan
+   Maestro sección 13). Esta tarea (F2-18) NO implementó ese proveedor (ver "Qué NO resuelve F2-18" más
+   abajo) — la aprobación cubre la elección del proveedor y su protocolo (compatible S3), no su
+   implementación concreta ni su aprovisionamiento operativo, que quedan como trabajo de seguimiento (ver
+   "Consecuencias").
 
 ## Por qué se propone MinIO/S3 Object Lock (y no se implementó ya)
 
@@ -91,25 +92,35 @@ Se separan dos decisiones de distinto nivel, mismo patrón que ADR 0014 (Vault) 
   `AuditWormExportPipeline`, `AuditWormExportRequest`, `AuditWormExportedBatch`, `AuditWormBatchSerializer`,
   `AuditWormExportOptions`, `AuditWormExportServiceCollectionExtensions.AddSharedAuditWormExport`). Ver
   `docs/guia-auditoria-inmutable.md`, sección F2-18, para el detalle de diseño.
-- Mientras este ADR siga `Proposed`, ningún proyecto consumidor tiene un `IWormStorage` productivo real
-  ofrecido por el framework — solo el placeholder en memoria. Un proyecto que necesite cumplimiento
-  regulatorio real sobre retención de auditoría HOY debe implementar su propio `IWormStorage` (por ejemplo,
-  contra un S3/MinIO/Azure Blob ya aprobado en su propia organización) hasta que este ADR se apruebe.
-- Si se aprueba MinIO/S3 Object Lock como proveedor concreto, el trabajo de seguimiento incluye: cliente S3
-  real (`MinioWormStorage` o similar), aprovisionamiento del bucket con versionado + Object Lock habilitados
-  desde su creación, mapeo de `WormWriteRequest.RetentionPeriod` a un modo de retención (`COMPLIANCE` vs.
-  `GOVERNANCE` -- esta elección en sí también amerita registrarse como una decisión explícita, dado que
-  `GOVERNANCE` reintroduce un punto de fuga controlado), y pruebas de integración vía Testcontainers
-  (imagen `minio/minio`) equivalentes a `VaultContainerFixture`.
+- La aprobación humana de la sección 13 sobre el proveedor WORM productivo ya fue otorgada (Javier León,
+  2026-09-06): MinIO/S3 Object Lock queda aceptado como candidato de nivel empresarial. Hasta que el
+  trabajo de seguimiento (`MinioWormStorage` o similar) se implemente, ningún proyecto consumidor tiene
+  todavía un `IWormStorage` productivo real ofrecido por el framework — solo el placeholder en memoria. Un
+  proyecto que necesite cumplimiento regulatorio real sobre retención de auditoría hoy puede implementar su
+  propio `IWormStorage` (contra el mismo protocolo S3 aprobado, u otro backend de su organización) sin
+  esperar ese trabajo de seguimiento, registrándolo después de `AddSharedAuditWormExport` (último registro
+  gana, mismo principio que el resto del framework).
+- **Trabajo de seguimiento habilitado por esta aprobación** (fuera del alcance de F2-18/esta sesión, tarea
+  aparte del backlog): cliente S3 real (`MinioWormStorage` o similar) contra la API compatible S3 de MinIO;
+  aprovisionamiento del bucket con versionado + Object Lock habilitados desde su creación (no se puede
+  activar retroactivamente); mapeo de `WormWriteRequest.RetentionPeriod` a un modo de retención concreto
+  (`COMPLIANCE` por defecto -- ningún punto de fuga ni para una cuenta administrativa -- con `GOVERNANCE`
+  como opción explícita y documentada por separado, dado que reintroduce un punto de fuga controlado); y
+  pruebas de integración vía Testcontainers (imagen `minio/minio`) equivalentes a `VaultContainerFixture`
+  (F2-12).
 
 ## Riesgos y mitigación
 
 - **Riesgo:** que un proyecto consumidor asuma que `InMemoryWormStorage` ya es "WORM productivo" solo
   porque pasa las pruebas de semántica. Mitigado: la documentación de la clase, `docs/guia-auditoria-inmutable.md`
   y este ADR lo dejan explícito, mismo patrón que `InMemoryAuditWriter`/`ConfigurationSecretProvider`.
-- **Riesgo:** construir el proveedor real (MinIO/S3) sin la aprobación humana de la sección 13. Mitigación:
-  este ADR queda explícitamente `Proposed`, no `Accepted`, hasta que se registre una aprobación explícita
-  con fecha y responsable (mismo mecanismo que formalizó ADR 0014 para Vault).
+- **Riesgo (mitigado):** que se construyera el proveedor real (MinIO/S3) sin la aprobación humana de la
+  sección 13. Mitigado: la aprobación fue otorgada (Javier León, 2026-09-06) y este ADR quedó `Accepted`,
+  mismo mecanismo que formalizó ADR 0014 para Vault y ADR 0016 para la firma de lotes.
+- **Riesgo:** que el trabajo de seguimiento (`MinioWormStorage`) elija el modo de retención `GOVERNANCE`
+  sin una decisión explícita separada, reintroduciendo un punto de fuga controlado sin que quede
+  documentado como tal. Mitigación: este ADR ya deja constancia de que esa elección concreta amerita su
+  propio registro explícito al implementarse.
 - **Riesgo:** que la política de retención concreta (años) que cada proyecto/regulación exige nunca se
   documente y cada equipo la fije de forma ad hoc. Mitigación parcial: `AuditWormExportOptions.RetentionPeriod`
   es explícito y configurable, con un default documentado como placeholder no normativo (ver "Qué NO
