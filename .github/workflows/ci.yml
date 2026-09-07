@@ -115,3 +115,43 @@ jobs:
         with:
           name: dependency-vulnerability-report
           path: vulnerability-report.txt
+
+  container-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # F4-01 (docs/politica-contenedores.md, sección 4): construye la imagen del único
+      # host ejecutable real de la solución hoy (samples/Sample.Api) y la escanea con
+      # Trivy. Gate igual al de dependency-scan: solo CRITICAL bloquea el pipeline; HIGH
+      # y menores quedan como hallazgo publicado, no como bloqueo (mismo criterio
+      # conservador que docs/politica-dependencias.md sección 5).
+      - name: Build de la imagen (docker/sample-api/Dockerfile)
+        run: docker build -f docker/sample-api/Dockerfile -t bitcode/sample-api:ci .
+
+      - name: Escaneo de vulnerabilidades de contenedor (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: bitcode/sample-api:ci
+          format: table
+          output: container-vulnerability-report.txt
+          severity: CRITICAL,HIGH
+          scanners: vuln,secret,misconfig
+          exit-code: 0
+
+      - name: Bloquear el pipeline ante CVE CRITICAL
+        run: |
+          cat container-vulnerability-report.txt
+          if grep -q "CRITICAL" container-vulnerability-report.txt; then
+            echo "::error::Se encontraron vulnerabilidades CRITICAL en la imagen. Ver docs/politica-contenedores.md."
+            exit 1
+          fi
+          echo "Sin vulnerabilidades CRITICAL en la imagen. Hallazgos HIGH (si los hay) quedan registrados en el reporte, no bloquean el pipeline por ahora."
+
+      - name: Publicar reporte de vulnerabilidades de contenedor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-vulnerability-report
+          path: container-vulnerability-report.txt
