@@ -46,12 +46,59 @@ spec:
             - secretRef:
                 name: sample-api-secrets
           # -----------------------------------------------------------------
-          # TODO(F4-04): startupProbe / livenessProbe / readinessProbe.
-          # Sample.Api todavía no expone endpoints de health/readiness (fila
-          # F4-04 del backlog, fuera de alcance de F4-02). No se declara un
-          # probe HTTP contra un endpoint inexistente porque eso rompería el
-          # pod al desplegar (bucle de reinicio) en vez de solo documentar la
-          # brecha. Cuando F4-04 agregue los endpoints, completar acá.
+          # F4-04: startupProbe / livenessProbe / readinessProbe contra los
+          # endpoints de F1-25 (Shared.Infrastructure.Web, ver
+          # docs/guia-health-checks.md). Los tres apuntan por nombre de puerto
+          # ("http", containerPort 8080) — la imagen "chiseled" (F4-01) no
+          # tiene shell/curl, así que solo httpGet es viable (no exec).
+          #
+          # startupProbe -> /health/live: mismo endpoint que livenessProbe, es
+          # el patrón recomendado por Kubernetes para permitir un arranque
+          # lento (acá, SampleDbContext.Database.EnsureCreatedAsync() en
+          # Program.cs, que corre ANTES de que Kestrel empiece a escuchar)
+          # sin que livenessProbe mate el contenedor a mitad de esa
+          # inicialización. No depende de SQL Server/Redis (mismo Predicate
+          # que descarta todos los checks) — solo confirma que el proceso
+          # .NET puede responder HTTP. Da hasta 60s (30 x 2s) antes de que
+          # Kubernetes considere el startup fallido y reinicie el pod; en la
+          # práctica Kestrel no acepta conexiones hasta que EnsureCreatedAsync
+          # termina, así que el primer intento exitoso ya implica init
+          # completa.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          # livenessProbe -> /health/live: SOLO indica "el proceso .NET está
+          # vivo y puede responder". Nunca evalúa SQL Server/Redis (ver
+          # HealthCheckEndpointRouteBuilderExtensions, Predicate = _ => false)
+          # -- una caída de una dependencia externa no crítica para el
+          # proceso NO debe disparar un restart (criterio de aceptación de
+          # esta fila: "sin bucles de reinicio por dependencia no crítica").
+          # Reinicia el pod solo tras 3 fallos consecutivos (30s sin
+          # respuesta) de un proceso que ya pasó el startupProbe.
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # readinessProbe -> /health/ready: SÍ refleja el estado de las
+          # dependencias críticas (SQL Server siempre; Redis si el proyecto
+          # configuró Caching:RedisConnectionString) -- 503 si alguna está
+          # caída. Un readinessProbe fallido saca el pod del Service (deja de
+          # recibir tráfico) SIN reiniciarlo -- Kubernetes solo actúa sobre
+          # livenessProbe/startupProbe para reinicios.
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
           # -----------------------------------------------------------------
           # TODO(F4-05): preStop hook / terminationGracePeriodSeconds ajustado
           # para drenar tráfico y detener consumers correctamente (fila F4-05,
@@ -73,7 +120,7 @@ spec:
             runAsNonRoot: true
             runAsUser: 1654
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false # dotnet publish self-contained=false escribe en /tmp; revisar al habilitar F4-04/F4-05 si se puede endurecer.
+            readOnlyRootFilesystem: false # dotnet publish self-contained=false escribe en /tmp; revisar al habilitar F4-05 si se puede endurecer.
             capabilities:
               drop:
                 - ALL

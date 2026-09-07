@@ -41,7 +41,7 @@ esa complejidad adicional. Esta decisión no requiere aprobación humana de la s
 k8s/sample-api/
 ├── base/
 │   ├── kustomization.yaml
-│   ├── deployment.yaml       # 1 réplica base, TODOs explícitos para F4-04/F4-05/F4-07
+│   ├── deployment.yaml       # 1 réplica base, probes F4-04, TODOs explícitos para F4-05/F4-07
 │   ├── service.yaml          # ClusterIP:80 -> containerPort 8080 (http)
 │   ├── configmap.yaml        # Config no sensible (ASPNETCORE_ENVIRONMENT, logging, Secrets:Provider)
 │   └── secret.example.yaml   # PLANTILLA documental, no se aplica ni se referencia desde kustomization.yaml
@@ -94,14 +94,18 @@ de aplicarlo — es lo que se usó para la validación de la sección 5.
 - Tag de imagen inmutable en staging/prod (`0.1.0`, no `latest`), mutable solo en dev (`dev`) — mismo
   principio de reproducibilidad que `docs/politica-contenedores.md` sección 3.3 aplica a las imágenes
   base del Containerfile.
+- `startupProbe`/`livenessProbe`/`readinessProbe` (F4-04) contra `/health/live` y `/health/ready`
+  (F1-25, `Shared.Infrastructure.Web` — ver `docs/guia-health-checks.md`). `livenessProbe` y
+  `startupProbe` apuntan a `/health/live`, que nunca depende de SQL Server/Redis (mismo criterio que
+  la guía de F1-25: un `restart` no arregla una dependencia externa caída, así que el proceso nunca se
+  reinicia por eso — criterio de aceptación de F4-04, "sin bucles de reinicio por dependencia no
+  crítica"). `readinessProbe` apunta a `/health/ready`, que sí refleja SQL Server (y Redis si está
+  configurado): si falla, el pod sale del `Service` sin reiniciarse. Ver la sección 5 (evidencia F4-04)
+  para la prueba real con el contenedor de F4-01 y SQL Server arriba/abajo.
 
 **Deliberadamente fuera de alcance (tareas futuras del backlog, marcadas con `TODO(F4-0N)` en
 `deployment.yaml`), para no mezclar el alcance de tareas distintas (Plan Maestro sección 3.2):**
 
-- **Probes** (`startupProbe`/`livenessProbe`/`readinessProbe`) — F4-04. `Sample.Api` todavía no expone
-  endpoints de health/readiness; declarar un probe HTTP contra un endpoint inexistente rompería el pod
-  al desplegar (bucle de reinicio) en vez de solo documentar la brecha, así que no se declaró ningún
-  probe todavía.
 - **Shutdown graceful** (`preStop`, `terminationGracePeriodSeconds`) — F4-05.
 - **HPA** (`HorizontalPodAutoscaler`) — F4-06. Los `replicas` fijos actuales (1/2/3 por ambiente) son el
   piso que el HPA de esa tarea tomará como mínimo, no lo reemplazan.
@@ -174,10 +178,37 @@ como brecha explícita, no oculta.
 
 ---
 
+## 5-bis. Evidencia de validación (F4-04, probes)
+
+El criterio de aceptación de F4-04 es "Sin bucles de reinicio por dependencia no crítica". Se validó en
+dos niveles:
+
+1. **`kubectl kustomize` sobre los 3 overlays** confirma que `startupProbe`/`livenessProbe`/
+   `readinessProbe` quedan en el YAML final con `port: http` resuelto contra `containerPort: 8080` del
+   contenedor `sample-api` en los tres ambientes (dev/staging/prod).
+2. **Contenedor real (imagen de F4-01) + SQL Server real (contenedor `mcr.microsoft.com/mssql/server`,
+   sin Testcontainers)**, sin clúster Kubernetes disponible en este entorno (misma limitación que F4-02,
+   sección 5, punto 3) — se ejecutó manualmente la secuencia que un `kubelet` reproduce contra los tres
+   endpoints:
+   - Con SQL Server disponible: `/health/live` → `200`, `/health/ready` → `200` (`Healthy`).
+   - Con SQL Server detenido (`docker stop`, simulando una dependencia crítica caída):
+     `/health/live` → sigue en `200` (el proceso .NET nunca dejó de responder — un `kubelet` real NO
+     reiniciaría el pod), `/health/ready` → `503` (`Unhealthy`) — un `kubelet` real sacaría el pod del
+     `Service` sin reiniciarlo, exactamente la semántica que exige el criterio de aceptación.
+
+   Esto confirma en tiempo de ejecución (no solo por inspección del código) que `livenessProbe`/
+   `startupProbe` (apuntan a `/health/live`) nunca dependen de SQL Server/Redis, y que solo
+   `readinessProbe` (`/health/ready`) lo hace — sin necesidad de un clúster real, porque la superficie
+   que Kubernetes evalúa (el código de estado HTTP de cada endpoint) es exactamente la que se probó.
+
+---
+
 ## 6. Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — fila F4-02 del backlog (Fase 4).
 - [`politica-contenedores.md`](politica-contenedores.md) — F4-01, la imagen que este paquete despliega.
+- [`guia-health-checks.md`](guia-health-checks.md) — F1-25, semántica de `/health/live` y `/health/ready`
+  que consumen los probes de F4-04.
 - [`adr/0007-gateway-yarp.md`](adr/0007-gateway-yarp.md) — por qué el `Service` es `ClusterIP` sin
   exposición externa todavía (F4-08 la agrega).
 - [`adr/0014-secretos-proveedor-vault-propuesto.md`](adr/0014-secretos-proveedor-vault-propuesto.md) /
