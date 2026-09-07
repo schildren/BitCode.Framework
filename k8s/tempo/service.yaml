@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempo
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # ClusterIP: mismo criterio que k8s/otel-collector/service.yaml -- solo tráfico interno del cluster (el
+  # OTel Collector, único cliente hoy vía el exporter "otlp/tempo"). El DNS interno resultante es
+  # "tempo.bitcode-observability.svc.cluster.local" (o "tempo" dentro del mismo namespace) -- ver el
+  # exporter "otlp/tempo" en k8s/otel-collector/otel-collector-config.yaml.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: tempo
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+      protocol: TCP
+    # API HTTP de consulta de Tempo (GET /api/traces/{traceID}, GET /api/search, GET /ready) -- sin
+    # cliente todavía dentro del cluster (no hay Grafana desplegado en este cierre de pendiente, ver
+    # docs/guia-otel-collector.md sección 4), pero se expone igual: es el mismo puerto que usan los
+    # probes del Deployment, y es la vía de consulta manual (port-forward) documentada en la evidencia de
+    # validación.
+    - name: http
+      port: 3200
+      targetPort: http
+      protocol: TCP

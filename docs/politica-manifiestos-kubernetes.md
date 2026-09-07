@@ -4,9 +4,11 @@
 actualizado por F4-04 (probes), F4-05 (shutdown graceful), F4-06 (HPA), F4-07 (PDB y spread), F4-10
 (OTel Collector — agrega el paquete `k8s/otel-collector/` y `OpenTelemetry__OtlpEndpoint` a los ConfigMap
 de `sample-api`/`gateway`; ver [`guia-otel-collector.md`](guia-otel-collector.md) para el detalle y la
-evidencia de validación específica de ese paquete, no repetida acá) y F4-13 (`spec.strategy` de
+evidencia de validación específica de ese paquete, no repetida acá), F4-13 (`spec.strategy` de
 `RollingUpdate` en los tres `Deployment` — ver [`politica-despliegue-gradual.md`](politica-despliegue-gradual.md)
-para el detalle y la evidencia de validación, no repetida acá).
+para el detalle y la evidencia de validación, no repetida acá) y el cierre de pendiente de F4-10 (agrega
+el paquete `k8s/tempo/`, backend real de trazas — ver [`guia-otel-collector.md`](guia-otel-collector.md)
+sección 4/5-bis, no repetida acá).
 **Fecha:** 2026-09-07
 **Estado:** Aplicado. El criterio de aceptación de la fila F4-02 es "Configuración validada": no hay un
 clúster Kubernetes real disponible en este entorno, así que la validación se hizo con herramientas

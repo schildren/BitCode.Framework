@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Security.Claims;
 using BitCode.Framework.Shared.Domain.MultiTenancy;
 using BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy;
 using FluentAssertions;
@@ -210,5 +211,106 @@ public class TenantLogEnrichmentMiddlewareTests
         await client.GetAsync("/");
 
         capturedTag.Should().Be(tenantId);
+    }
+
+    /// <summary>
+    /// Cierre de pendiente F4-10 (<c>docs/guia-otel-collector.md</c> sección 2): el middleware también
+    /// etiqueta el Activity/traza OTel vigente con "user_id" (<see cref="ClaimTypes.NameIdentifier"/> del
+    /// usuario autenticado) -- uno de los atributos de "telemetría mínima" exigidos por la Fase 4 del
+    /// Plan Maestro que F4-10 había dejado explícitamente pendiente.
+    /// </summary>
+    [Fact]
+    public async Task UserId_IsSetAsActivityTag_ForAuthenticatedRequest()
+    {
+        var tenantId = Guid.NewGuid();
+        var userId = Guid.NewGuid().ToString();
+        using var activitySource = new ActivitySource(nameof(UserId_IsSetAsActivityTag_ForAuthenticatedRequest));
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source == activitySource,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        object? capturedTag = null;
+
+        var host = await new HostBuilder()
+            .ConfigureWebHost(builder => builder
+                .UseTestServer()
+                .ConfigureServices(services => services.AddScoped<ITenantContext>(_ => new FixedTenantContext(tenantId)))
+                .Configure(app =>
+                {
+                    // Simula el pipeline real: UseAuthentication()/UseAuthorization() ya habrían resuelto
+                    // el ClaimsPrincipal del token JWT antes de que corra este middleware (ver el
+                    // <remarks> de la clase) -- acá se asigna directamente por simplicidad, sin un
+                    // handler de autenticación real de por medio.
+                    app.Use(async (ctx, next) =>
+                    {
+                        var identity = new ClaimsIdentity(
+                            [new Claim(ClaimTypes.NameIdentifier, userId)],
+                            authenticationType: "TestScheme");
+                        ctx.User = new ClaimsPrincipal(identity);
+                        using var activity = activitySource.StartActivity("test-request");
+                        await next();
+                    });
+                    app.UseTenantContextLogging();
+                    app.Run(ctx =>
+                    {
+                        capturedTag = Activity.Current?.GetTagItem("user_id");
+                        return ctx.Response.WriteAsync("ok");
+                    });
+                }))
+            .StartAsync();
+
+        using var client = host.GetTestServer().CreateClient();
+        await client.GetAsync("/");
+
+        capturedTag.Should().Be(userId);
+    }
+
+    /// <summary>
+    /// Contraparte del test anterior: un request anónimo (sin <see cref="ClaimTypes.NameIdentifier"/> en
+    /// el <see cref="ClaimsPrincipal"/>) no debe fallar ni dejar un tag "user_id" con un valor inventado
+    /// -- <c>Activity.SetTag(key, null)</c> es un no-op seguro (mismo criterio que ya aplica "tenant_id"
+    /// con multitenancy deshabilitada).
+    /// </summary>
+    [Fact]
+    public async Task UserId_IsNotSet_ForAnonymousRequest()
+    {
+        var tenantId = Guid.NewGuid();
+        using var activitySource = new ActivitySource(nameof(UserId_IsNotSet_ForAnonymousRequest));
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source == activitySource,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        object? capturedTag = null;
+
+        var host = await new HostBuilder()
+            .ConfigureWebHost(builder => builder
+                .UseTestServer()
+                .ConfigureServices(services => services.AddScoped<ITenantContext>(_ => new FixedTenantContext(tenantId)))
+                .Configure(app =>
+                {
+                    app.Use(async (_, next) =>
+                    {
+                        using var activity = activitySource.StartActivity("test-request");
+                        await next();
+                    });
+                    app.UseTenantContextLogging();
+                    app.Run(ctx =>
+                    {
+                        capturedTag = Activity.Current?.GetTagItem("user_id");
+                        return ctx.Response.WriteAsync("ok");
+                    });
+                }))
+            .StartAsync();
+
+        using var client = host.GetTestServer().CreateClient();
+        await client.GetAsync("/");
+
+        capturedTag.Should().BeNull();
     }
 }

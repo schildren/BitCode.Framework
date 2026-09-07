@@ -9,11 +9,14 @@
 #
 # Patrón: apps (Sample.Api, BitCode.Gateway) -> OTel Collector (este pipeline, rol "agente/gateway"
 # combinado en un único Deployment por ahora, sin separar agente-por-nodo de gateway-central todavía) ->
-# backend(s) de observabilidad. Sin un backend real de observabilidad aprobado/desplegado en este
-# entorno (Grafana Tempo/Loki/Prometheus, Jaeger, Datadog, etc.), el único exporter ACTIVO es "debug"
-# (nombre actual del exporter que en versiones más viejas del Collector se llamaba "logging" — mismo
-# propósito, imprime el payload recibido en stdout del propio Collector). Ver la sección "exporters" más
-# abajo para los ejemplos comentados y el TODO explícito de la decisión de backend pendiente.
+# backend(s) de observabilidad. TRAZAS: exportan a Grafana Tempo real (k8s/tempo/, exporter
+# "otlp/tempo"), además de "debug" para diagnóstico -- ver docs/guia-otel-collector.md sección 4 para la
+# justificación de esta elección de backend (cierre de un TODO que F4-10 dejó explícitamente pendiente).
+# MÉTRICAS/LOGS: sin un backend real desplegado todavía (Prometheus/Mimir, Loki u otro) -- el único
+# exporter activo en esos dos pipelines sigue siendo "debug" (nombre actual del exporter que en
+# versiones más viejas del Collector se llamaba "logging" -- mismo propósito, imprime el payload
+# recibido en stdout del propio Collector). Ver la sección "exporters" más abajo para el TODO explícito
+# de métricas/logs, deliberadamente fuera de alcance de este cierre de pendiente.
 
 extensions:
   # Expone GET /health en el puerto 13133 — usado por livenessProbe/readinessProbe del Deployment
@@ -72,32 +75,44 @@ processors:
         action: upsert
 
 exporters:
-  # Placeholder documentado -- NO es un backend de observabilidad real, solo imprime el payload recibido
-  # (verbosity: detailed) en la salida estándar del propio contenedor del Collector. Sirve para verificar
-  # que el pipeline recibe/correlaciona señales reales (ver evidencia de smoke test en
-  # docs/guia-otel-collector.md), pero no persiste nada -- reiniciar el Pod pierde toda la telemetría ya
-  # "exportada" acá.
+  # Se mantiene activo junto a "otlp/tempo" (traces) -- útil para diagnóstico rápido del propio Collector
+  # sin tener que consultar la API de Tempo (p. ej. confirmar que una señal llegó al receiver aunque
+  # Tempo esté caído/mal configurado). No persiste nada -- reiniciar el Pod pierde toda la telemetría ya
+  # "exportada" acá; eso es exactamente lo que SÍ resuelve "otlp/tempo" para trazas (ver abajo).
   debug:
     verbosity: detailed
 
-  # -----------------------------------------------------------------------------------------------
-  # TODO (F4-10): la elección del backend de observabilidad REAL (a qué sistema apunta este Collector en
-  # un cluster productivo -- Grafana Tempo/Loki/Mimir, Jaeger, Prometheus, Datadog, New Relic, etc.) es
-  # una decisión de infraestructura que esta tarea deliberadamente NO toma. No es una de las categorías
-  # listadas explícitamente en la sección 13 del Plan Maestro ("Decisiones que requieren aprobación
-  # humana"), pero es del mismo tipo: compromete un costo operativo/contractual (retención de datos,
-  # licenciamiento SaaS vs. self-hosted, SLA del propio backend) que un ADR debe registrar ANTES de
-  # desplegarlo contra tráfico real -- ver el mismo criterio que ya aplicó ADR 0014 (proveedor de
-  # secretos) para una decisión de infraestructura equivalente. Dos ejemplos de exporters reales, EN
-  # COMENTARIO, listos para descomentar una vez que exista esa decisión (agregarían el exporter acá Y su
-  # nombre a `service.pipelines.*.exporters` más abajo, junto a o en reemplazo de `debug`):
+  # Backend REAL de trazas (cierre del TODO que dejó F4-10): Grafana Tempo, desplegado en el mismo
+  # cluster (k8s/tempo/, namespace "bitcode-observability", mismo namespace que este Collector). Elección
+  # documentada con el mismo rigor que otras decisiones técnicas de la Fase 4 (p. ej. Kustomize sobre
+  # Helm, F4-02) en docs/guia-otel-collector.md sección 4 -- resumen: Tempo es OSS (sin costo de
+  # licencia), habla OTLP nativo (el mismo protocolo que ya expone el receiver de este Collector, sin
+  # traducir a un formato propietario), y tiene menor huella operativa que Jaeger para este alcance (no
+  # requiere Elasticsearch/Cassandra como dependencia obligatoria de storage -- Tempo en modo
+  # "single binary" solo necesita un filesystem local). Coherente con el resto del stack de este
+  # framework, todo self-hosted (SQL Server, Redis, Kafka).
   #
-  # otlp/tempo:
-  #   endpoint: tempo.observability.svc.cluster.local:4317
-  #   tls:
-  #     insecure: true   # ajustar a TLS real (docs/politica-seguridad-kafka.md sección de TLS es la
-  #                       # referencia de patrón, aunque sea para Kafka -- mismo principio de no exponer
-  #                       # tráfico interno en texto plano en un cluster productivo real)
+  # Solo cubre TRAZAS -- ver el pipeline "traces" más abajo. Métricas (Prometheus/Mimir) y logs (Loki u
+  # otro) quedan EXPLÍCITAMENTE fuera de este cierre de pendiente (no se despliegan, no se simulan como
+  # resueltos) -- sus pipelines siguen exportando solo a "debug", igual que antes de este cambio. Ver el
+  # TODO actualizado más abajo.
+  otlp/tempo:
+    endpoint: tempo.bitcode-observability.svc.cluster.local:4317
+    tls:
+      # Tráfico intra-cluster, mismo criterio que ya documentaba el ejemplo comentado que reemplaza este
+      # exporter: en un cluster productivo real, reemplazar por TLS real (docs/politica-seguridad-kafka.md
+      # sección de TLS es la referencia de patrón, aunque sea para Kafka -- mismo principio de no exponer
+      # tráfico interno en texto plano). No se resuelve acá: mTLS intra-cluster es una decisión de
+      # infraestructura de red separada (p. ej. un service mesh), fuera del alcance de este cierre de
+      # pendiente puntual.
+      insecure: true
+
+  # -----------------------------------------------------------------------------------------------
+  # TODO: métricas (Prometheus/Mimir) y logs (Loki u otro) siguen sin un backend real desplegado -- fuera
+  # de alcance de este cierre de pendiente (que resolvió específicamente TRAZAS vía Tempo, ver arriba).
+  # Ejemplo de exporter real, EN COMENTARIO, listo para descomentar el día que se apruebe/despliegue un
+  # backend de métricas (agregaría el exporter acá Y su nombre a `service.pipelines.metrics.exporters`
+  # más abajo, junto a o en reemplazo de `debug`):
   #
   # prometheusremotewrite:
   #   endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
@@ -111,7 +126,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
-      exporters: [debug]
+      exporters: [debug, otlp/tempo]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, resource, batch]
