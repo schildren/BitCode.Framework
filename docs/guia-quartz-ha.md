@@ -4,7 +4,9 @@
 **Fecha:** 2026-09-07.
 **Estado:** Completada — `AddSharedBackgroundJobs` soporta un `AdoJobStore` persistente clusterizado
 sobre SQL Server, verificado con dos schedulers Quartz.NET reales compartiendo el mismo SQL Server
-(Testcontainers).
+(Testcontainers). El pendiente de recovery con dos procesos de sistema operativo reales (dejado
+explícitamente abierto por la versión original de esta tarea) se cerró el 2026-09-07 — ver sección
+6.1.
 
 ---
 
@@ -167,7 +169,98 @@ Quartz reales dentro de un mismo test (para probarlos simultáneamente, no en se
 `dotnet test` levanta un proceso (`testhost`) por proyecto, separarlo en su propio proyecto evita la
 colisión sin modificar el test unitario existente (`BackgroundJobsServiceCollectionExtensionsTests`).
 
-### 6.1. Recovery ante caída de un nodo — no verificado empíricamente en esta tarea
+### 6.1. Recovery ante caída de un nodo — verificado empíricamente con dos procesos de SO reales
+
+**Cerrado el 2026-09-07**, como seguimiento explícito del pendiente que dejó F4-11 (texto original de
+esta sección conservado más abajo para trazabilidad). El escenario pedido — un job con
+`RequestRecovery()` ejecutándose en el nodo A es retomado por el nodo B si el PROCESO de sistema
+operativo del nodo A muere a mitad de la ejecución, sin duplicar su efecto de negocio — se verificó
+con el mismo patrón de dos procesos reales que `docs/auditoria-estado-runtime-f4-03.md` (sección 2.2)
+usó para `samples/Sample.Api`: dos binarios publicados (`dotnet publish -c Release`) ejecutados como
+dos procesos de SO independientes, contra un SQL Server 2022 real (contenedor Docker, no
+Testcontainers — esta prueba es manual, no forma parte de `dotnet test`), y `taskkill /F` para matar
+uno de los dos procesos mientras el job seguía en ejecución.
+
+**Herramienta:** `tools/QuartzHaRecoveryHarness` (nuevo, `dotnet run`/binario publicado independiente
+del resto del repositorio — no se agregó a ningún proyecto de test porque no es parte de la suite
+automatizada, es un binario de diagnóstico manual conservado como herramienta reutilizable). Expone
+tres comandos:
+
+```
+QuartzHaRecoveryHarness init   <connectionString>
+QuartzHaRecoveryHarness run    <connectionString> <nodeLabel> [workSeconds=30]
+QuartzHaRecoveryHarness status <connectionString>
+```
+
+`init` crea la base de datos, aplica el esquema `QRTZ_*` (mismo `QuartzSqlServerSchemaInitializer` de
+producción) y crea una tabla propia `RecoveryEvidence` (una fila por `JobKey`, con `Status`,
+`AttemptCount`, quién la inició/completó y si fue una ejecución de recovery). `run` arranca UN
+scheduler Quartz.NET real, clusterizado (`AddSharedBackgroundJobs(..., ha => ha.Clustered = true)`,
+mismos parámetros que expone `QuartzHighAvailabilityOptions`, con `ClusterCheckinInterval`/
+`ClusterCheckinMisfireThreshold` reducidos a 3s/6s solo para que la prueba manual no tarde minutos —
+mismo criterio que ya aplica `QuartzHighAvailabilityIntegrationTests`), registra un único
+`RecoveryProbeJob` (`.RequestRecovery().StoreDurably()`, `JobKey`/`TriggerKey` fijos e idénticos en
+ambos procesos) y queda corriendo indefinidamente hasta que el proceso se termine. El job simula
+trabajo real con `Task.Delay(workSeconds)` entre dos escrituras a SQL Server real: al empezar,
+un `MERGE` que dedica `RecoveryEvidence.Status = 'Started'` con el `InstanceId`/PID del nodo y si
+`context.Recovering == true`; al terminar, un `UPDATE ... WHERE Status <> 'Completed'` que marca
+`Status = 'Completed'` — idempotente por diseño (patrón de la sección 5 de este documento / regla
+dura 28 de `docs/convenciones.md`): si el job ya está `Completed` al arrancar `Execute`, no repite el
+efecto.
+
+**Procedimiento ejecutado:**
+
+1. SQL Server 2022 real en un contenedor Docker dedicado (puerto `15533`), una única base de datos.
+2. `QuartzHaRecoveryHarness.dll init` — crea el esquema `QRTZ_*` y `RecoveryEvidence`.
+3. Dos procesos de SO reales arrancados por separado desde el mismo binario publicado:
+   `QuartzHaRecoveryHarness.dll run <connStr> NodeA 30` (PID `30140`) y
+   `QuartzHaRecoveryHarness.dll run <connStr> NodeB 30` (PID `14384`), ambos apuntando al mismo SQL
+   Server, mismo `JobKey`/`TriggerKey`, arrancados casi simultáneamente.
+4. El trigger disparó a los 5s de ambos arranques; por coordinación de clustering (`QRTZ_LOCKS`), solo
+   **NodeB** lo ejecutó (`Recovering=False`, log `18:33:52.110`).
+5. A los ~3.7s de iniciado el trabajo simulado (30s), se mató el proceso de NodeB con
+   `taskkill /F /PID 14384` (`18:34:06`) — equivalente exacto a `SIGKILL`/eliminación forzada de un
+   pod, no un shutdown ordenado.
+6. NodeA, el nodo superviviente, detectó la caída vía su `ClusterManager` (log real):
+   ```
+   18:34:14.017 ClusterManager: detected 1 failed or restarted instances.
+   18:34:14.017 ClusterManager: Scanning for instance "Victus...270108743"'s failed in-progress jobs.
+   18:34:14.147 ClusterManager: ......Deleted 1 complete triggers(s).
+   18:34:14.147 ClusterManager: ......Scheduled 1 recoverable job(s) for recovery.
+   18:34:19.867 Handling 1 trigger(s) that missed their scheduled fire-time.
+   18:34:20.053 [NodeA] Job recovery-probe-job INICIADO (pid=30140, Recovering=True) — 30s de trabajo
+   18:34:50.072 [NodeA] Job recovery-probe-job COMPLETADO (pid=30140)
+   ```
+   La detección tardó ~8s desde la muerte del proceso (`ClusterCheckinMisfireThreshold=6s` + margen del
+   ciclo de `ClusterManager`), consistente con la configuración de la prueba — en producción, con los
+   defaults de `QuartzHighAvailabilityOptions` (10s/20s), la detección tardaría más, por diseño (evita
+   falsos positivos por GC/latencia de red transitoria).
+7. `QuartzHaRecoveryHarness status` contra SQL Server real, después de que NodeA completó:
+   ```
+   JobKey=recovery-probe-job Status=Completed AttemptCount=2
+   StartedBy=Victus...269973712/pid=30140 StartedAtUtc=2026-09-07 22:34:20 Recovering=True
+   CompletedBy=Victus...269973712/pid=30140 CompletedAtUtc=2026-09-07 22:34:50
+   ```
+
+**Resultado:** exactamente **una** fila en `RecoveryEvidence` para el job lógico, con `Status =
+'Completed'` una única vez y `CompletedBy` apuntando al nodo superviviente (NodeA, no el nodo muerto).
+`AttemptCount = 2` refleja los dos `Execute` reales que sí ocurrieron (el intento de NodeB que murió a
+mitad de camino sin completar, y el intento de recovery de NodeA que sí completó) — no una duplicación
+del efecto de negocio: el efecto observable (`Status = 'Completed'`, una sola vez) es idéntico al que
+produciría una ejecución sin caídas. Esto confirma, con procesos de SO reales (no dos schedulers en el
+mismo proceso .NET, que es lo que ya cubre `QuartzHighAvailabilityIntegrationTests`), tanto que Quartz
+detecta la caída del nodo (`ClusterCheckinMisfireThreshold`) como que `RequestRecovery()` re-dispara
+el job en el nodo superviviente (`IJobExecutionContext.Recovering == true`) sin que el patrón de
+idempotencia documentado en la sección 5 permita que el efecto de negocio final quede duplicado.
+
+**Limpieza:** ambos procesos de SO (`taskkill /F`) y el contenedor SQL Server (`docker rm -f`) se
+destruyeron al finalizar — no queda infraestructura de prueba residual. `tools/QuartzHaRecoveryHarness`
+se conserva en el repositorio como herramienta de diagnóstico reutilizable (no se agregó a ningún
+pipeline de CI ni a `dotnet test` — se invoca manualmente, igual que este procedimiento, contra
+cualquier SQL Server real cuando haga falta repetir la verificación).
+
+<details>
+<summary>Texto original de esta sección (pendiente antes del 2026-09-07), conservado para trazabilidad</summary>
 
 El enunciado de la tarea pedía, "si es viable", verificar también que un job con `RequestsRecovery()`
 sea recuperado por el nodo superviviente si el nodo que lo ejecutaba muere a mitad de la ejecución.
@@ -186,6 +279,8 @@ clustering real. Verificar el comportamiento de recovery de punta a punta con un
 procesos reales queda como pendiente explícito, análogo en espíritu a la prueba de dos instancias
 reales de `samples/Sample.Api` de F4-03, pero fuera del alcance mínimo de esta tarea.
 
+</details>
+
 ## Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 4, fila F4-11.
@@ -194,4 +289,5 @@ reales de `samples/Sample.Api` de F4-03, pero fuera del alcance mínimo de esta 
 - `src/Shared.Infrastructure.BackgroundJobs/BackgroundJobsServiceCollectionExtensions.cs` — implementación.
 - `src/Shared.Infrastructure.BackgroundJobs/QuartzHighAvailabilityOptions.cs` — opciones.
 - `src/Shared.Infrastructure.BackgroundJobs/QuartzSqlServerSchemaInitializer.cs` / `Schema/quartz-sqlserver-schema.sql` — esquema `QRTZ_*`.
-- `tests/Shared.Infrastructure.BackgroundJobs.IntegrationTests/Integration/QuartzHighAvailabilityIntegrationTests.cs` — evidencia del criterio de aceptación.
+- `tests/Shared.Infrastructure.BackgroundJobs.IntegrationTests/Integration/QuartzHighAvailabilityIntegrationTests.cs` — evidencia del criterio de aceptación (clustering, dos schedulers en el mismo proceso .NET).
+- `tools/QuartzHaRecoveryHarness/Program.cs` — herramienta de diagnóstico manual usada para la verificación de recovery con dos procesos de SO reales (sección 6.1).

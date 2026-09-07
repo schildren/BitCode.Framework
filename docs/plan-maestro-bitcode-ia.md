@@ -580,9 +580,14 @@ Cada request, comando, job y evento propagará cuando aplique:
 [^f4-gate-6]: Demostrado en ejecución real por F4-11 (`AdoJobStore` clusterizado, dos schedulers
     Quartz.NET reales sobre el mismo SQL Server, sin duplicar el disparo) y confirmado de nuevo en
     F4-14 (`docs/informe-capacity-tests-f4-14.md` sección 1.2). El recovery real ante la muerte del
-    nodo que ejecuta un job a mitad de la ejecución sigue sin verificarse con dos procesos de sistema
-    operativo reales (gap heredado de F4-11, documentado, no bloqueante para este ítem del gate porque
-    "persistente e idempotente" ya tiene evidencia real de coordinación).
+    nodo que ejecuta un job a mitad de la ejecución se verificó el 2026-09-07 con dos PROCESOS de
+    sistema operativo reales (`tools/QuartzHaRecoveryHarness`, mismo patrón de dos binarios/`taskkill
+    /F` que F4-03 usó para `samples/Sample.Api`): matar el proceso del nodo que ejecutaba el job a
+    mitad de un trabajo simulado de 30s hizo que el nodo superviviente detectara la caída
+    (`ClusterManager`) y completara el mismo job lógico vía `RequestRecovery()`
+    (`IJobExecutionContext.Recovering == true`) sin duplicar su efecto de negocio — ver
+    `docs/guia-quartz-ha.md` sección 6.1 para el procedimiento y la evidencia completos. Gap heredado
+    de F4-11 cerrado, ya no bloqueante ni pendiente para este ítem del gate.
 
 #### Hito
 
