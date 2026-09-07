@@ -1,0 +1,18 @@
+<Project>
+
+  <!-- BitCode.Gateway es un HOST ejecutable (F4-08), no una librería/building block del framework:
+       importa directamente el Directory.Build.props de la RAÍZ (TargetFramework/Nullable/
+       ImplicitUsings), sin pasar por src/Directory.Build.props (que agrega metadatos de empaquetado
+       NuGet, IsPackable=true/PackageId/etc., y el gate de compatibilidad de API pública,
+       Microsoft.CodeAnalysis.PublicApiAnalyzers: ninguno de los dos aplica a un host, mismo criterio
+       que samples/Directory.Build.props usa para samples/Sample.Api, ver docs/politica-empaquetado.md).
+       MSBuild solo auto-importa el Directory.Build.props MÁS CERCANO en el árbol: este archivo, al
+       vivir directamente en src/BitCode.Gateway/, reemplaza (no complementa) a src/Directory.Build.props
+       para este proyecto. -->
+  <Import Project="$(MSBuildThisFileDirectory)..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

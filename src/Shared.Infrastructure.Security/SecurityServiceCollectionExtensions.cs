@@ -1,12 +1,9 @@
-using System.Text;
 using BitCode.Framework.Shared.Infrastructure.Security.Identity;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using BitCode.Framework.Shared.Infrastructure.Security.Permissions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 
 namespace BitCode.Framework.Shared.Infrastructure.Security;
 
@@ -30,12 +27,6 @@ public static class SecurityServiceCollectionExtensions
         where TRole : ApplicationRole
         where TContext : MultiTenantIdentityDbContext<TUser, TRole>
     {
-        var jwtSection = configuration.GetSection(JwtOptions.SectionName);
-        services.Configure<JwtOptions>(jwtSection);
-        var jwtOptions = jwtSection.Get<JwtOptions>()
-            ?? throw new InvalidOperationException(
-                $"Falta la sección de configuración '{JwtOptions.SectionName}' (SecretKey/Issuer/Audience).");
-
         services
             .AddIdentityCore<TUser>()
             .AddRoles<TRole>()
@@ -72,26 +63,10 @@ public static class SecurityServiceCollectionExtensions
 
         services.AddScoped<IPermissionService, PermissionService<TUser, TRole>>();
 
-        services
-            .AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidateAudience = true,
-                    ValidAudience = jwtOptions.Audience,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SecretKey)),
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero,
-                };
-            });
+        // F4-08: extraído a JwtBearerAuthenticationServiceCollectionExtensions.AddSharedJwtBearerAuthentication
+        // para que BitCode.Gateway (y cualquier otro host que solo valide tokens, sin Identity propia)
+        // reutilice exactamente la misma construcción de TokenValidationParameters sin duplicarla.
+        services.AddSharedJwtBearerAuthentication(configuration);
 
         return services;
     }

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <!-- Auth boundary (F4-08): reutiliza AddSharedJwtBearerAuthentication (JWT Bearer, mismo criterio
+         de validación que AddSharedSecurity) sin arrastrar ASP.NET Core Identity/EF Core: el Gateway
+         no posee usuarios ni roles propios, solo valida el token antes de proxyar. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <!-- Telemetría (F3-10/F4-08): AddSharedObservability instrumenta ASP.NET Core + HttpClient
+         (traza/métricas), correlacionando automáticamente el trace_id del request entrante con el
+         request proxyado hacia el backend vía W3C Trace Context (ver Program.cs). -->
+    <ProjectReference Include="..\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- YARP: gateway/reverse proxy fijado por el Plan Maestro (sección 2) y ADR 0007. Referencia
+         directa (no vía Shared.Infrastructure.Web, que trae además el BFF de sesión-cookie de F2-03,
+         Asp.Versioning y OpenApi, superficie que este host no necesita) para mantener el Gateway
+         liviano, coherente con el objetivo de overhead p95 hasta 10 ms (Plan Maestro, sección 8.1).
+         Misma versión que Shared.Infrastructure.Web para evitar dos versiones distintas del paquete en
+         el grafo de dependencias del repositorio. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
+  </ItemGroup>
+
+</Project>

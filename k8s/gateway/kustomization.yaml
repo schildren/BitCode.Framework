@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# F4-08: paquete de manifiestos Kustomize básico -- deliberadamente sin overlays por ambiente (a
+# diferencia de k8s/sample-api/, F4-02), fuera del alcance de esta tarea. Un consumidor real que
+# despliegue el Gateway a producción replica el mismo patrón de overlays/dev/staging/prod que ya
+# existe para sample-api (namespace + patches de replicas/resources/imagen), no lo reinventa.
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: gateway
+      app.kubernetes.io/part-of: bitcode-framework
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: true
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml

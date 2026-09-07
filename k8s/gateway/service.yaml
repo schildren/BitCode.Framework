@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # LoadBalancer (no ClusterIP como sample-api): el Gateway ES el punto de entrada del tráfico
+  # externo del cluster hacia la plataforma (ADR 0007, F4-08) -- sample-api y cualquier otro backend
+  # siguen siendo ClusterIP, solo alcanzables a través del Gateway. Un ambiente real normalmente
+  # coloca un Ingress/LB externo delante de este Service (terminación TLS, F4-09/WAF) -- fuera de
+  # alcance de esta tarea, ver k8s/sample-api/base/service.yaml para el comentario equivalente.
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
