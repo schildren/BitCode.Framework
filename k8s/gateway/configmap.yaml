@@ -16,6 +16,10 @@ data:
   RateLimiting__PermitLimit: "100"
   RateLimiting__WindowSeconds: "10"
   RateLimiting__QueueLimit: "0"
+  # Límite de tamaño de request body (F4-09), defensa en profundidad de aplicación -- ver también
+  # ingress.yaml (nginx.ingress.kubernetes.io/proxy-body-size), la primera línea de defensa perimetral
+  # con el mismo valor (10 MiB). docs/politica-perimetral-waf.md documenta la relación entre ambos.
+  RequestLimits__MaxRequestBodySizeBytes: "10485760"
   # Routing (F4-08): destino real del cluster "sample-api-cluster" -- ClusterIP del Service
   # sample-api (k8s/sample-api/base/service.yaml), resoluble por DNS interno del cluster
   # ("sample-api.<namespace>.svc.cluster.local" o simplemente "sample-api" dentro del mismo

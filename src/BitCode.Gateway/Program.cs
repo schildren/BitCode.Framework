@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Infrastructure.Observability;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using BitCode.Gateway.RateLimiting;
+using BitCode.Gateway.RequestLimits;
 using BitCode.Gateway.Security;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -40,6 +41,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // sección "RateLimiting" -- configurable, no hardcodeada).
 builder.Services.AddGatewayRateLimiting(builder.Configuration);
 
+// Límite de tamaño de request body (F4-09): defensa en profundidad de aplicación, complementaria del
+// límite equivalente declarado a nivel de Ingress/WAF perimetral (docs/politica-perimetral-waf.md,
+// k8s/gateway/ingress.yaml). Sección "RequestLimits" (GatewayRequestLimitsOptions) -- configurable, no
+// hardcodeada, mismo patrón que "RateLimiting".
+builder.Services.AddGatewayRequestLimits(builder.Configuration);
+
 // Routing (F4-08): rutas/clusters declarados en la sección "ReverseProxy" (ReverseProxy:Routes/
 // ReverseProxy:Clusters, formato estándar de YARP) -- externalizable por ambiente, ningún host/ruta
 // hardcodeado en código. AddTransforms agrega SensitiveHeaderSanitizingTransform a TODAS las rutas
@@ -53,6 +60,11 @@ builder.Services
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+// Límite de tamaño de request body (F4-09): PRIMERO en el pipeline (después de ForwardedHeaders, antes
+// de auth/rate limiting/proxy) -- rechaza un payload sobredimensionado sin gastar trabajo de
+// autenticación ni de rate limiting en él, mismo criterio de "rechazar barato antes de trabajo caro".
+app.UseGatewayMaxRequestBodySize();
 
 // Liveness propio del Gateway: solo confirma que el proceso .NET responde -- no depende de que el/los
 // backend(s) proxyados estén disponibles (mismo criterio que /health/live de Shared.Infrastructure.Web,

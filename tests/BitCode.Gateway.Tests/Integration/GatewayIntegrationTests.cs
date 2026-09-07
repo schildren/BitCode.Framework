@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using BitCode.Framework.Shared.Infrastructure.Security.Identity;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
@@ -35,6 +36,7 @@ public class GatewayIntegrationTests : IAsyncLifetime
         ["RateLimiting:PermitLimit"] = "RateLimiting__PermitLimit",
         ["RateLimiting:WindowSeconds"] = "RateLimiting__WindowSeconds",
         ["RateLimiting:QueueLimit"] = "RateLimiting__QueueLimit",
+        ["RequestLimits:MaxRequestBodySizeBytes"] = "RequestLimits__MaxRequestBodySizeBytes",
     };
 
     public async Task InitializeAsync()
@@ -60,6 +62,9 @@ public class GatewayIntegrationTests : IAsyncLifetime
         SetEnvironmentVariable("RateLimiting:PermitLimit", "2");
         SetEnvironmentVariable("RateLimiting:WindowSeconds", "30");
         SetEnvironmentVariable("RateLimiting:QueueLimit", "0");
+        // Límite angosto y a propósito (1 KiB) para que el test de tamaño de body (más abajo) no
+        // dependa de enviar un payload real de varios MiB.
+        SetEnvironmentVariable("RequestLimits:MaxRequestBodySizeBytes", "1024");
 
         _factory = new WebApplicationFactory<Program>();
         _client = _factory.CreateClient();
@@ -164,6 +169,35 @@ public class GatewayIntegrationTests : IAsyncLifetime
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         third.StatusCode.Should().Be((HttpStatusCode)429);
+    }
+
+    [Fact]
+    public async Task Proxy_ConBodyQueSuperaElLimiteConfigurado_Rechaza413AntesDeAutenticarNiProxyar()
+    {
+        // Deliberadamente SIN token: el límite de tamaño de body (F4-09) se evalúa ANTES de auth en
+        // Program.cs -- si ese orden se rompiera, este request fallaría con 401 en vez de 413.
+        var oversizedBody = new string('a', 2048); // supera el límite de 1024 bytes configurado en InitializeAsync
+        var content = new StringContent(oversizedBody, Encoding.UTF8, "text/plain");
+        content.Headers.ContentLength = oversizedBody.Length;
+
+        var response = await _client.PostAsync("/api/echo", content);
+
+        response.StatusCode.Should().Be((HttpStatusCode)413);
+    }
+
+    [Fact]
+    public async Task Proxy_ConBodyDentroDelLimiteConfigurado_NoLoRechazaPorTamano()
+    {
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GenerateValidToken());
+        var smallBody = new string('a', 100);
+        var content = new StringContent(smallBody, Encoding.UTF8, "text/plain");
+
+        var response = await _client.PostAsync("/api/echo", content);
+
+        // El backend de prueba solo mapea GET /api/echo -- lo relevante acá es que NO se rechace por
+        // tamaño (413); cualquier otro código de respuesta (p.ej. 404/405 del backend real) confirma
+        // que el middleware de límite de tamaño dejó pasar el request.
+        response.StatusCode.Should().NotBe((HttpStatusCode)413);
     }
 
     [Fact]
