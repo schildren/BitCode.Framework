@@ -1,13 +1,16 @@
 # Manifiestos de despliegue Kubernetes — BitCode.Framework
 
 **Tarea:** F4-02 (Fase 4 — Runtime de alta disponibilidad) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md);
-actualizado por F4-04 (probes) y F4-05 (shutdown graceful).
+actualizado por F4-04 (probes), F4-05 (shutdown graceful) y F4-06 (HPA).
 **Fecha:** 2026-09-07
 **Estado:** Aplicado. El criterio de aceptación de la fila F4-02 es "Configuración validada": no hay un
 clúster Kubernetes real disponible en este entorno, así que la validación se hizo con herramientas
 estáticas reales contra los manifiestos generados (evidencia en la sección 5) — igual que F4-01 dejó
 "escaneo sin CVE crítica" confirmado localmente y pendiente de la primera corrida en CI real. F4-05
-("Sin requests o mensajes perdidos") se documenta en la sección 5-ter.
+("Sin requests o mensajes perdidos") se documenta en la sección 5-ter. F4-06 ("Escala bajo carga") se
+documenta en la sección 5-quater — la política HPA queda declarada y validada sintácticamente, pero el
+criterio literal de "escala bajo carga" en ejecución real queda para F4-14 (Capacity tests), que sí
+requiere un clúster con metrics-server.
 
 ---
 
@@ -43,26 +46,30 @@ esa complejidad adicional. Esta decisión no requiere aprobación humana de la s
 k8s/sample-api/
 ├── base/
 │   ├── kustomization.yaml
-│   ├── deployment.yaml       # 1 réplica base, probes F4-04, shutdown F4-05, TODO explícito para F4-07
+│   ├── deployment.yaml       # 1 réplica base (piso), probes F4-04, shutdown F4-05, TODO explícito para F4-07
 │   ├── service.yaml          # ClusterIP:80 -> containerPort 8080 (http)
 │   ├── configmap.yaml        # Config no sensible (ASPNETCORE_ENVIRONMENT, logging, Secrets:Provider)
+│   ├── hpa.yaml               # HorizontalPodAutoscaler F4-06, CPU 70% base + TODO custom metrics
 │   └── secret.example.yaml   # PLANTILLA documental, no se aplica ni se referencia desde kustomization.yaml
 └── overlays/
     ├── dev/
     │   ├── kustomization.yaml   # namespace bitcode-sample-api-dev, tag "dev"
     │   ├── namespace.yaml
     │   ├── configmap-patch.yaml # ASPNETCORE_ENVIRONMENT=Development, logging Debug
-    │   └── deployment-patch.yaml # replicas: 1, requests/limits reducidos
+    │   ├── deployment-patch.yaml # replicas: 1, requests/limits reducidos
+    │   └── hpa-patch.yaml        # min 1 / max 3, CPU 75%
     ├── staging/
     │   ├── kustomization.yaml   # namespace bitcode-sample-api-staging, tag "0.1.0" (inmutable)
     │   ├── namespace.yaml
     │   ├── configmap-patch.yaml # ASPNETCORE_ENVIRONMENT=Staging
-    │   └── deployment-patch.yaml # replicas: 2, requests/limits intermedios
+    │   ├── deployment-patch.yaml # replicas: 2, requests/limits intermedios
+    │   └── hpa-patch.yaml        # min 2 / max 6, CPU 70%
     └── prod/
         ├── kustomization.yaml   # namespace bitcode-sample-api-prod, tag "0.1.0" (inmutable)
         ├── namespace.yaml
         ├── configmap-patch.yaml # ASPNETCORE_ENVIRONMENT=Production, Secrets:Provider=Vault
-        └── deployment-patch.yaml # replicas: 3 (piso mínimo, tolera pérdida de 1 nodo), requests/limits altos
+        ├── deployment-patch.yaml # replicas: 3 (piso mínimo, tolera pérdida de 1 nodo), requests/limits altos
+        └── hpa-patch.yaml        # min 3 / max 10, CPU 65%
 ```
 
 Cada ambiente se despliega con:
@@ -111,11 +118,18 @@ de aplicarlo — es lo que se usó para la validación de la sección 5.
   `/bin/sh` o un binario `sleep`, ninguno presente en la imagen chiseled — mismo motivo por el que los
   tres probes de arriba son `httpGet`, nunca `exec`).
 
+**Agregado por F4-06 (ver sección 5-quater para el detalle completo):**
+
+- **HPA** (`HorizontalPodAutoscaler`, `base/hpa.yaml` + `overlays/*/hpa-patch.yaml`) — escala por CPU
+  (`resources.requests.cpu`, ya definido desde F4-02) entre el piso `replicas` fijo de cada overlay
+  (1/2/3) y un techo parametrizado por ambiente (3/6/10). La métrica de aplicación queda como `TODO`
+  documentado dentro de `hpa.yaml` (requiere Prometheus Adapter + `custom.metrics.k8s.io`, no instalado
+  en este entorno) — no se agrega un metric type `Pods`/`External` sin esa API real porque rompería el
+  HPA completo, no solo esa métrica.
+
 **Deliberadamente fuera de alcance (tareas futuras del backlog, marcadas con `TODO(F4-0N)` en
 `deployment.yaml`), para no mezclar el alcance de tareas distintas (Plan Maestro sección 3.2):**
 
-- **HPA** (`HorizontalPodAutoscaler`) — F4-06. Los `replicas` fijos actuales (1/2/3 por ambiente) son el
-  piso que el HPA de esa tarea tomará como mínimo, no lo reemplazan.
 - **PodDisruptionBudget y `topologySpreadConstraints`** — F4-07.
 - **Gateway YARP / Ingress** — F4-08. El `Service` es `ClusterIP`, sin exposición externa todavía.
 
@@ -293,9 +307,82 @@ que el default.
 
 ---
 
+## 5-quater. F4-06 (HPA): escalar por CPU y métricas de aplicación
+
+El criterio de aceptación de F4-06 es "Escala bajo carga". Se separan explícitamente dos partes, para no
+declarar cumplido lo que no se pudo comprobar (Plan Maestro sección 3.6, "no marcar Completada con una
+validación fallida"):
+
+### a) Política declarada (esta tarea, F4-06)
+
+`base/hpa.yaml` (`autoscaling/v2 HorizontalPodAutoscaler`, `scaleTargetRef` -> `Deployment/sample-api`)
+más un `hpa-patch.yaml` por overlay (mismo patrón que `deployment-patch.yaml`):
+
+| Ambiente | minReplicas | maxReplicas | Target CPU (`averageUtilization`) |
+|---|---|---|---|
+| dev | 1 | 3 | 75% |
+| staging | 2 | 6 | 70% |
+| prod | 3 | 10 | 65% |
+
+- **CPU (implementado):** único metric type declarado, `type: Resource` / `resource.name: cpu` /
+  `target.type: Utilization`. Requiere `resources.requests.cpu` en el contenedor — ya definido en
+  `deployment.yaml` y en cada overlay desde F4-02, sin cambios adicionales necesarios en esta tarea.
+  `minReplicas` de cada ambiente coincide exactamente con el `replicas` fijo que ya traía
+  `deployment-patch.yaml` (1/2/3) — el HPA lo toma como piso, no lo reemplaza (mismo comentario que ya
+  dejaba `deployment-patch.yaml` antes de esta tarea, ahora hecho realidad). `maxReplicas`/el target de
+  CPU se escalonan por ambiente: prod escala antes (65%, más margen de reacción bajo tráfico real) y
+  tolera más réplicas (10) que dev (75%, 3) — perfil de carga esperado distinto por ambiente, mismo
+  criterio que ya diferenciaba `resources.requests`/`limits` por overlay.
+- **`behavior.scaleDown.stabilizationWindowSeconds: 300`** (los tres ambientes, heredado de
+  `base/hpa.yaml`): evita bajar réplicas ante una caída de CPU de corta duración ("flapping"). `scaleUp`
+  no se sobreescribe — se mantiene el default de Kubernetes (reacciona sin demora), para no introducir
+  latencia extra en el caso que sí importa bajo carga real.
+- **Métrica de aplicación (`TODO`, documentado dentro de `hpa.yaml`, NO implementado en esta tarea):**
+  agregar un metric type `Pods`/`External` (API `custom.metrics.k8s.io`/`external.metrics.k8s.io`)
+  requiere dos piezas que hoy no existen en este repositorio ni en este entorno — (1) un exportador
+  Prometheus real: `AddSharedObservability` (F3-10, `Shared.Infrastructure.Observability`) hoy solo
+  registra `metrics.AddOtlpExporter(...)` (protocolo OTLP hacia un collector), ningún proyecto
+  `Shared.*` ni `samples/Sample.Api` referencia `OpenTelemetry.Exporter.Prometheus.AspNetCore` ni expone
+  un endpoint `/metrics` en formato texto Prometheus; (2) Prometheus Adapter (o el futuro OTel Collector
+  con exportador Prometheus de F4-10) desplegado en el clúster, sirviendo esa API — no instalado en este
+  entorno. Agregar el metric type sin que la API exista rompería el HPA completo (el controller falla
+  `GetMetrics` para TODOS los metric types configurados, no solo el nuevo), así que se deja documentado
+  como TODO explícito en `hpa.yaml` en vez de "preparado pero inactivo". Ver el comentario completo (con
+  los 3 pasos concretos para habilitarlo) directamente en `base/hpa.yaml`.
+
+### b) Validación realizada en este entorno (sin clúster real disponible, misma limitación que F4-02/F4-04/F4-05)
+
+1. **`kubectl kustomize` sobre los 3 overlays** confirma que el `HorizontalPodAutoscaler` se fusiona
+   (`base/hpa.yaml` + `overlays/<env>/hpa-patch.yaml`) sin error, con los valores de `minReplicas`/
+   `maxReplicas`/`averageUtilization` de la tabla de arriba, y queda en el namespace correcto de cada
+   ambiente.
+2. **`kubeconform` v0.8.0 en modo `-strict` contra el YAML final de cada overlay, validado contra el
+   esquema real de Kubernetes 1.30**:
+   ```
+   kubeconform -strict -summary -kubernetes-version 1.30.0 rendered_dev.yaml
+   kubeconform -strict -summary -kubernetes-version 1.30.0 rendered_staging.yaml
+   kubeconform -strict -summary -kubernetes-version 1.30.0 rendered_prod.yaml
+   ```
+   Resultado en los tres casos: `Valid: 5, Invalid: 0, Errors: 0, Skipped: 0` (los 5 recursos por
+   ambiente: `Namespace`, `ConfigMap`, `Service`, `Deployment`, `HorizontalPodAutoscaler`) — confirma que
+   `autoscaling/v2` con `behavior.scaleDown` es sintácticamente válido contra el esquema oficial de 1.30.
+
+### c) Lo que NO se comprobó en esta tarea — explícitamente, no oculto
+
+**"Escala bajo carga" (el criterio de aceptación literal) no se comprobó en ejecución real** — no hay
+clúster Kubernetes disponible en este entorno, y aunque lo hubiera, el HPA depende de `metrics-server`
+(no instalado/aprobado en este entorno) para siquiera calcular `averageUtilization`. Confirmar que el
+HPA efectivamente sube/baja réplicas bajo una carga real generada (p. ej. `docs/perf/k6-smoke.js` u otro
+script de carga sostenida) es explícitamente el alcance de **F4-14 (Capacity tests)** — esta tarea no lo
+simula ni lo declara aprobado sin esa evidencia real, siguiendo el mismo criterio que ya dejaron F4-01
+(escaneo CVE pendiente de CI real) y F4-02 sección 5, punto 3 (`kubectl apply --dry-run` pendiente de un
+clúster real).
+
+---
+
 ## 6. Referencias
 
-- [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — filas F4-02/F4-04/F4-05 del backlog (Fase 4).
+- [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — filas F4-02/F4-04/F4-05/F4-06 del backlog (Fase 4).
 - [`politica-contenedores.md`](politica-contenedores.md) — F4-01, la imagen que este paquete despliega
   (imagen "chiseled", por qué `lifecycle.preStop` de F4-05 usa la acción `sleep` nativa, no `exec`).
 - [`guia-health-checks.md`](guia-health-checks.md) — F1-25, semántica de `/health/live` y `/health/ready`
@@ -310,4 +397,7 @@ que el default.
 - [`adr/0014-secretos-proveedor-vault-propuesto.md`](adr/0014-secretos-proveedor-vault-propuesto.md) /
   [`guia-secret-provider.md`](guia-secret-provider.md) — por qué el `Secret` referenciado no se define en
   este repositorio.
+- `src/Shared.Infrastructure.Observability/ObservabilityServiceCollectionExtensions.cs` — F3-10,
+  confirma que `AddSharedObservability` solo exporta métricas vía OTLP (sin endpoint Prometheus), base
+  del TODO de métrica de aplicación documentado en la sección 5-quater (F4-06).
 - `k8s/sample-api/` — implementación de esta política.

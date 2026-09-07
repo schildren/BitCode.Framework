@@ -1,0 +1,18 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sample-api
+spec:
+  # prod: piso de 3 réplicas (igual al `replicas` fijo del deployment-patch, tolerante a la pérdida
+  # de un nodo/zona -- F4-07), techo de 10. Target de CPU más bajo (65%) que dev/staging para dejar
+  # más margen de reacción antes de saturar bajo tráfico real (escala antes, en vez de esperar a
+  # estar más cerca del límite).
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65

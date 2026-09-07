@@ -7,7 +7,11 @@ metadata:
     app.kubernetes.io/part-of: bitcode-framework
 spec:
   # replicas se fija por overlay de ambiente (dev/staging/prod), no acá — ver
-  # kustomization.yaml de cada overlay (patch de "replicas").
+  # kustomization.yaml de cada overlay (patch de "replicas"). Desde F4-06, este valor es el PISO
+  # (minReplicas) que también declara el HPA de ese mismo overlay (hpa-patch.yaml) -- el HPA (ver
+  # hpa.yaml) toma el control del campo `replicas` en un cluster real con metrics-server, escalando
+  # entre `minReplicas` y `maxReplicas` según CPU; este valor sigue siendo el que se aplica en el
+  # primer despliegue o si el HPA no está disponible.
   replicas: 1
   selector:
     matchLabels:

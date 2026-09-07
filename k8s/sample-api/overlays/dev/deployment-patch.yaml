@@ -3,7 +3,8 @@ kind: Deployment
 metadata:
   name: sample-api
 spec:
-  # F4-06 (HPA) todavía no aplica -- dev corre con réplica fija baja.
+  # F4-06 (HPA): este valor es el piso (minReplicas del HPA, ver hpa-patch.yaml) -- dev arranca con
+  # una única réplica y el HPA la sube hasta 3 solo si la CPU lo justifica.
   replicas: 1
   template:
     spec:

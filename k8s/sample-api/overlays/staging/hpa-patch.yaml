@@ -1,0 +1,16 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sample-api
+spec:
+  # staging: piso de 2 réplicas (igual al `replicas` fijo del deployment-patch), techo de 6 para
+  # validar el comportamiento de escalado multi-pod antes de prod.
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

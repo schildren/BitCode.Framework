@@ -1,0 +1,69 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sample-api
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sample-api
+  # minReplicas/maxReplicas/metrics.resource.cpu.target.averageUtilization se fijan por overlay de
+  # ambiente (dev/staging/prod), no acá — ver overlays/*/hpa-patch.yaml. Los valores de este archivo
+  # base son el default de dev (el ambiente que menos se aparta del piso), igual que deployment.yaml
+  # deja los `resources` base como el perfil más conservador.
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+    # F4-06 (HPA), criterio "Escalar por CPU y métricas de aplicación":
+    #
+    # 1) CPU (implementado acá): `resources.requests.cpu` ya está definido en deployment.yaml y en
+    #    cada overlay (F4-02) -- requisito de metrics-server/HPA v2 para calcular
+    #    `averageUtilization` (porcentaje sobre el request, no sobre el limit). Sin `requests.cpu`
+    #    este metric type directamente no funciona (HPA lo reporta como "missing request for cpu").
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # 2) Métrica de aplicación (TODO, NO implementado en esta tarea -- documentado, no oculto):
+    #    un metric type `Pods`/`External` acá requiere que la API `custom.metrics.k8s.io` (o
+    #    `external.metrics.k8s.io`) exista en el cluster, servida típicamente por
+    #    "Prometheus Adapter" (k8s-sigs/prometheus-adapter) leyendo de un Prometheus real que además
+    #    scrapee un endpoint HTTP en formato Prometheus. Hoy ninguna de esas dos piezas existe en este
+    #    repositorio ni en este entorno:
+    #      - `AddSharedObservability` (Shared.Infrastructure.Observability, F3-10) exporta métricas
+    #        SOLO vía OTLP (`OpenTelemetry.Exporter.OpenTelemetryProtocol`,
+    #        `metrics.AddOtlpExporter(...)`) hacia un collector -- no expone un endpoint
+    #        `/metrics` en formato texto Prometheus (`OpenTelemetry.Exporter.Prometheus.AspNetCore` no
+    #        está referenciado por ningún proyecto `Shared.*` ni por `samples/Sample.Api`).
+    #      - Ni Prometheus ni Prometheus Adapter están instalados en el cluster de este entorno (no
+    #        hay cluster real disponible -- ver docs/politica-manifiestos-kubernetes.md sección 5,
+    #        punto 3) ni se los instaló como parte de esta tarea.
+    #    Agregar un metric type `Pods`/`External` sin que la API exista rompe el HPA completo (no solo
+    #    esa métrica: el controller falla `GetMetrics` y dejar de recalcular réplicas para TODOS los
+    #    metric types configurados, incluido el CPU de arriba) -- por eso se documenta como TODO en vez
+    #    de declararlo "preparado pero inactivo". Para habilitarlo en una tarea futura:
+    #      (a) instalar/aprobar Prometheus + Prometheus Adapter (o el OTel Collector con exportador
+    #          Prometheus, F4-10) en el cluster real,
+    #      (b) exponer la métrica de aplicación elegida (p. ej. tasa de requests HTTP en cola,
+    #          duración p95 de un endpoint crítico) en formato Prometheus real,
+    #      (c) agregar acá un metric type `Pods` (`type: Pods`, `pods.metric.name`,
+    #          `pods.target.type: AverageValue`) apuntando a esa métrica ya expuesta vía
+    #          `custom.metrics.k8s.io`.
+  # F4-14 (Capacity tests) valida "Escala bajo carga" contra un cluster real con metrics-server
+  # instalado -- esta tarea (F4-06) solo deja la política declarada y validada sintácticamente (ver
+  # docs/politica-manifiestos-kubernetes.md), sin clúster real disponible en este entorno para
+  # comprobar el escalamiento en ejecución.
+  behavior:
+    scaleDown:
+      # Ventana de estabilización de 5 minutos antes de bajar réplicas: evita "flapping" (subir/bajar
+      # en ciclos cortos) ante picos de CPU de corta duración -- valor mayor al default de Kubernetes
+      # (300s también, de hecho, pero se lo deja explícito acá en vez de heredar el default implícito
+      # sin documentar la intención). scaleUp no se sobreescribe: se mantiene el default de Kubernetes
+      # (reacciona rápido, sin ventana de estabilización) porque bajo carga real conviene escalar hacia
+      # arriba sin demora.
+      stabilizationWindowSeconds: 300

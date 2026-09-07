@@ -3,9 +3,8 @@ kind: Deployment
 metadata:
   name: sample-api
 spec:
-  # F4-06 (HPA) todavía no aplica -- staging corre con réplica fija >=2 para
-  # validar comportamiento multi-pod sin depender de la política de escalado
-  # que agregará esa tarea futura.
+  # F4-06 (HPA): este valor es el piso (minReplicas del HPA, ver hpa-patch.yaml) -- staging arranca
+  # con 2 réplicas fijas para validar comportamiento multi-pod, y el HPA la sube hasta 6 según CPU.
   replicas: 2
   template:
     spec:
