@@ -194,7 +194,11 @@ using var consumer = new KafkaEventConsumer<PedidoCreadoIntegrationEvent>(
 - **DLQ real** (F3-08, ya implementado — ver `docs/runbook-dlq.md`): F3-07 solo dejó el estado/señal
   (`ExhaustedAtUtc`, `EventProcessingExhaustedException`) que F3-08 consume para el enrutamiento a un
   tópico de mensajes muertos y el reprocesamiento auditado.
-- **Aislamiento de poison messages a nivel de tópico/partición** (F3-09).
+- **Aislamiento de poison messages** (mensajes que ni siquiera se pueden deserializar, F3-09, ya
+  implementado — ver `docs/guia-inbox-consumer.md` sección "Poison messages vs. agotamiento de
+  reintentos" y `docs/runbook-dlq.md` sección "Aislamiento de poison messages (F3-09)"): F3-07 solo
+  clasifica y reintenta fallos del HANDLER de negocio sobre un mensaje ya deserializado; un mensaje que
+  no se puede interpretar en absoluto (JSON corrupto, forma incompatible) nunca pasa por este mecanismo.
 - **Persistencia del conteo de intentos fallidos del lado consumidor** (ver tabla de arriba) — solo
   el relay de Outbox tiene una garantía dura de "nunca más de N intentos totales".
 - **Observabilidad/métricas dedicadas** (F3-10): solo logging vía `ILogger`, sin

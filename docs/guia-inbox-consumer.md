@@ -108,13 +108,32 @@ este lado (no compartidas por el relay de Outbox, que persiste su estado en `Out
   esfuerzo" dentro de la vida de un mismo proceso, no una garantía dura de "nunca más de N intentos
   totales" como sí lo es del lado del relay de Outbox.
 
+## Poison messages (F3-09) vs. agotamiento de reintentos del handler (F3-07)
+
+Son dos fallos distintos, con dos tratamientos distintos dentro de `ConsumeAndHandleOnceAsync`:
+
+| | Poison message (F3-09) | Agotamiento de reintentos (F3-07) |
+|---|---|---|
+| ¿Dónde falla? | `KafkaIntegrationEventSerializer.Deserialize<TEvent>` — ANTES de abrir el scope de DI / invocar Inbox. | `IEventConsumer<TEvent>.ConsumeAsync` (el handler de negocio), dentro de `IInboxMessageProcessor.ProcessAsync`. |
+| ¿El mensaje se pudo interpretar? | No — nunca llegó a existir una instancia de `TEvent`. | Sí — el evento se deserializó e interpretó correctamente. |
+| ¿Es transitorio o permanente? | Siempre permanente: un JSON corrupto o de forma incompatible no se arregla reintentando. | Depende (`IEventPublishFailureClassifier`): puede ser transitorio (dependencia caída) o permanente. |
+| ¿Pasa por backoff/reintentos? | No, nunca — ni siquiera un intento adicional. | Sí, hasta `EventRetryPolicyOptions.MaxAttempts` (o hasta clasificarse `Permanent`). |
+| ¿Incrementa `_attemptsByMessageId`? | No. | Sí. |
+| ¿A dónde va? | Directo a DLQ (`IsolatePoisonMessageAsync`), `DeadLetterEnvelope.Reason` empieza con `"PoisonMessage"`. | A DLQ solo al agotar el margen (`PublishToDeadLetterAsync`), `Reason` es el mensaje de la excepción de negocio. |
+| ¿Se confirma el offset? | Sí, siempre (incluso si la publicación a DLQ también falla). | Solo al agotar el margen (mientras queda margen, el offset NO se confirma y Kafka reentrega). |
+
+Ambos casos terminan aislados en el mismo tópico dead-letter (mismo `IDeadLetterPublisher`) con el offset
+confirmado — la diferencia observable para un operador es el motivo (`Reason`) del registro DLQ, no el
+tópico. Ver el `remarks` de la clase `KafkaEventConsumer<TEvent>` para el detalle completo.
+
 ## Límites conocidos
 
-- **Sin DLQ ni aislamiento de poison messages más allá del límite de reintentos (F3-08/F3-09).** Al
-  agotar `MaxAttempts` (o clasificar un error como permanente), `EventProcessingExhaustedException` es
-  hoy equivalente a cualquier otra excepción no manejada: el offset sigue sin confirmarse, así que Kafka
-  sigue reentregando el mismo mensaje — no hay todavía ningún enrutamiento real a una cola de mensajes
-  muertos, solo el tipo de excepción distinguible que F3-08 puede usar para bifurcar el comportamiento.
+- **DLQ y aislamiento de poison messages best-effort (F3-08/F3-09).** Si `IDeadLetterPublisher` no está
+  configurado, o la publicación a DLQ también falla, el offset se confirma igual (solo queda un warning en
+  el log) — la alternativa (bloquear la partición hasta que el DLQ vuelva) dejaría mensajes siguientes
+  válidos sin procesar por un mensaje que, en el caso de un poison message, NUNCA se va a poder
+  deserializar aunque el DLQ vuelva a estar disponible. El costo aceptado es perder esa copia dead-letter
+  puntual.
 - **Concurrencia entre particiones/consumidores del mismo `messageId`.** Documentado ya por
   `InboxMessageProcessor` (F1-24): dos entregas casi simultáneas del mismo mensaje (dos particiones,
   dos instancias del proceso) pueden ejecutar el handler dos veces en paralelo antes de que la primera
@@ -156,7 +175,8 @@ duplicados aceptables del relay de Outbox contra el broker, no la deduplicación
 
 ## Referencias
 
-- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventConsumer.cs` (F3-04: coordinación con Inbox; F3-07: reintentos clasificados y backoff).
+- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventConsumer.cs` (F3-04: coordinación con Inbox; F3-07: reintentos clasificados y backoff; F3-09: aislamiento de mensajes poison).
+- `docs/runbook-dlq.md` (F3-08/F3-09, operación de la DLQ, incluida la distinción poison vs. agotamiento de reintentos).
 - `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventPublishFailureClassifier.cs` (F3-07).
 - `src/Shared.Application/Eventing/EventRetryPolicyOptions.cs`, `EventRetryBackoff.cs`, `EventProcessingExhaustedException.cs` (F3-07).
 - `src/Shared.Application/Inbox/IInboxMessageProcessor.cs`, `InboxMessageProcessor.cs` (F1-24).

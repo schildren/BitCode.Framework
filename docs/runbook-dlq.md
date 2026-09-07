@@ -1,9 +1,11 @@
-# Runbook — Dead-Letter Queue (DLQ) de eventos de integración (F3-08)
+# Runbook — Dead-Letter Queue (DLQ) de eventos de integración (F3-08/F3-09)
 
-**Tarea:** F3-08 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Trabajo:** DLQ — crear dead-letter topics, metadatos y reprocess.
-**Entregable:** Runbook y tooling.
-**Criterio de aceptación:** "Reprocesamiento auditado".
+**Tarea:** F3-08 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md),
+extendido por F3-09 (aislamiento de poison messages, sección dedicada más abajo).
+**Trabajo:** DLQ — crear dead-letter topics, metadatos y reprocess (F3-08); aislar mensajes inválidos sin
+bloquear la partición (F3-09).
+**Entregable:** Runbook y tooling (F3-08); handler de aislamiento (F3-09).
+**Criterio de aceptación:** "Reprocesamiento auditado" (F3-08); "Consumer continúa operando" (F3-09).
 
 ## Objetivo
 
@@ -77,8 +79,9 @@ Kafka.
 
 Del lado consumidor, al agotar el margen se publica a DLQ y **se confirma el offset** — a diferencia de
 F3-07 (donde el offset nunca se confirmaba y Kafka reentregaba el mismo mensaje sin fin, bloqueando el
-resto de la partición). Esto resuelve el caso puntual de aislamiento de poison messages para mensajes ya
-explícitamente agotados; el aislamiento general de cualquier mensaje inválido es F3-09.
+resto de la partición). Esto resuelve el caso puntual de aislamiento para mensajes ya explícitamente
+agotados; el aislamiento general de cualquier mensaje que ni siquiera se puede deserializar (poison
+message) es F3-09 (ver sección dedicada más abajo).
 
 ## Procedimiento operativo
 
@@ -160,6 +163,35 @@ documentado para el clasificador de fallos, F3-07) para que `IDeadLetterPublishe
 cuando `OutboxBatchProcessor` lo resuelve; si se omite, `OutboxBatchProcessor` sigue funcionando (el
 parámetro es opcional, `null` por defecto) — solo no publica copias a DLQ, la fila se agota igual.
 
+## Aislamiento de poison messages (F3-09)
+
+F3-08 resolvió el aislamiento del caso puntual "mensaje ya explícitamente agotado" (F3-07). F3-09 cierra
+el caso general: un mensaje que `KafkaEventConsumer<TEvent>` **ni siquiera puede deserializar** a su
+`TEvent` (JSON corrupto, forma incompatible, payload de otro esquema) — un error del MENSAJE, no del
+handler de negocio, y por definición PERMANENTE (reintentarlo nunca lo arregla, porque nunca llega a
+ejecutarse ningún handler).
+
+**Diferencia de tratamiento respecto de F3-07/F3-08** (detalle completo en
+`docs/guia-inbox-consumer.md`, sección "Poison messages vs. agotamiento de reintentos"): un poison message
+se detecta ANTES de abrir el scope de DI / invocar Inbox, nunca pasa por
+`IEventPublishFailureClassifier` ni por el backoff de F3-07, y se publica a DLQ con un único intento (no
+hay "agotamiento de margen" porque nunca hubo margen que gastar). El offset se confirma siempre —
+incluida la publicación a DLQ fallida, mismo criterio best-effort ya descrito arriba.
+
+**Cómo distinguir un registro DLQ de poison message de uno de agotamiento de reintentos:** el header
+`bitcode-dlq-reason` (o `DeadLetterEnvelope.Reason`) de un poison message siempre empieza con el prefijo
+`"PoisonMessage"` (por ejemplo, `"PoisonMessage (DeserializationFailure): ..."`), a diferencia del motivo
+de un mensaje agotado, que es el mensaje de la excepción de negocio original.
+
+**Reprocesamiento de un poison message:** no aplica el mismo camino que `IDeadLetterReprocessor`
+(pensado para `OutboxMessage.ExhaustedAtUtc`, que no existe para este caso — un poison message nunca pasó
+por el relay de Outbox del lado emisor de ESTE consumidor, es un mensaje ya recibido con una forma
+inválida). La única forma de "reprocesar" un poison message real es corregir la causa raíz (por ejemplo,
+un productor externo que empezó a emitir una forma de evento distinta) y republicar manualmente una
+versión corregida del payload al tópico original — no hay automatismo de este framework para eso, mismo
+límite ya documentado para el reprocesamiento del lado consumidor en general (ver "Qué NO resuelve F3-08"
+más abajo).
+
 ## Qué NO resuelve F3-08
 
 - **Herramienta de operador con interfaz propia** (UI/CLI dedicada): el "tooling" de esta tarea es la
@@ -175,8 +207,6 @@ parámetro es opcional, `null` por defecto) — solo no publica copias a DLQ, la
   mensaje leído del tópico `.dlq` al tópico original (`IEventPublisher`/`KafkaEventPublisher`), y auditar
   esa acción con el mismo criterio — queda como extensión natural si un proyecto consumidor lo necesita,
   no como automatismo de este framework.
-- **Aislamiento general de poison messages** (cualquier mensaje inválido, no solo el que ya agotó
-  reintentos) — F3-09.
 - **Observabilidad/métricas dedicadas de DLQ** (contadores de mensajes en DLQ, alertas) — F3-10.
 - **Descarte explícito con su propio estado/endpoint** — ver paso 2 del procedimiento operativo.
 
@@ -194,12 +224,19 @@ parámetro es opcional, `null` por defecto) — solo no publica copias a DLQ, la
 - `tests/Shared.Infrastructure.Security.Tests/DeadLetter/OutboxDeadLetterReprocessorTests.cs` —
   `NotFound`/`Conflict` cuando la fila no existe o no está agotada, y que un fallo de `IAuditWriter`
   impide reabrir la fila (orden "auditar primero, mutar después").
+- `tests/Shared.Infrastructure.Messaging.Kafka.Tests/Integration/KafkaEventConsumerPoisonMessageIntegrationTests.cs`
+  (F3-09) — criterio de aceptación literal ("Consumer continúa operando"): contra Kafka real, publica un
+  mensaje poison (bytes no-JSON) seguido de un mensaje válido; verifica que la primera llamada a
+  `ConsumeAndHandleOnceAsync` aísla el poison message (sin lanzar sin manejo, offset confirmado) y que la
+  siguiente llamada procesa con normalidad el mensaje válido — la partición no queda bloqueada. Verifica
+  también que el mensaje poison llega al tópico `.dlq` con el motivo `"PoisonMessage"`.
 
 ## Referencias
 
 - `docs/politica-reintentos-eventos.md` (F3-07, estado/señal de agotamiento que F3-08 consume).
 - `docs/guia-outbox-publisher.md` (F3-03/F3-07, relay de Outbox completo).
-- `docs/guia-inbox-consumer.md` (F3-04/F3-07, consumidor Kafka completo).
+- `docs/guia-inbox-consumer.md` (F3-04/F3-07/F3-09, consumidor Kafka completo, incluida la tabla
+  poison message vs. agotamiento de reintentos).
 - `docs/guia-auditoria-inmutable.md` (F2-15/F2-16, Épica F2-D).
-- `docs/plan-maestro-bitcode-ia.md` (Fase 3, fila F3-08; Épica F2-C, "operaciones privilegiadas").
+- `docs/plan-maestro-bitcode-ia.md` (Fase 3, filas F3-08/F3-09; Épica F2-C, "operaciones privilegiadas").
 - ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted`).

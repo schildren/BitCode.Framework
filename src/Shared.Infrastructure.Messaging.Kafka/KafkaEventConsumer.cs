@@ -82,6 +82,26 @@ namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 /// F3-08 (DLQ) necesita para decidir enrutar el mensaje a una cola de mensajes muertos en vez de seguir
 /// reintentando; F3-07 no implementa ese enrutamiento, solo lo señaliza con un tipo de excepción
 /// distinguible.
+///
+/// <b>Poison messages (F3-09) vs. agotamiento de reintentos del handler (F3-07): son dos fallos
+/// distintos con dos tratamientos distintos.</b> Un mensaje "poison" es uno que
+/// <see cref="KafkaIntegrationEventSerializer.Deserialize{TEvent}"/> ni siquiera puede convertir a
+/// <typeparamref name="TEvent"/> (JSON corrupto, forma incompatible con el tipo) — un error del MENSAJE,
+/// no del handler de negocio, y por definición PERMANENTE: reintentarlo nunca lo va a arreglar, porque
+/// nunca llega a ejecutarse ningún handler. <see cref="ConsumeAndHandleOnceAsync"/> detecta este caso
+/// ANTES de abrir el scope de DI / invocar Inbox, y lo aísla directo a DLQ (ver
+/// <c>IsolatePoisonMessageAsync</c>) sin pasar nunca por <see cref="HandleProcessingFailureAsync"/>, sin
+/// consultar <see cref="IEventPublishFailureClassifier"/> (que clasifica excepciones del HANDLER, no de
+/// deserialización) y sin acumular intentos en <see cref="_attemptsByMessageId"/> — un único intento
+/// alcanza para clasificarlo. El agotamiento de reintentos (F3-07/<see cref="EventProcessingExhaustedException"/>),
+/// en cambio, es un mensaje que SÍ se pudo deserializar e interpretar, pero cuyo handler de negocio falla
+/// persistentemente (dependencia caída, bug del handler, dato de negocio inválido para esa lógica, etc.)
+/// — ahí sí corresponde backoff con reintentos porque el error puede ser transitorio, y solo se aísla a
+/// DLQ después de agotar <see cref="EventRetryPolicyOptions.MaxAttempts"/> o de clasificarse como
+/// <see cref="EventPublishFailureKind.Permanent"/>. Ambos casos terminan aislados en el mismo tópico
+/// dead-letter (mismo <see cref="IDeadLetterPublisher"/>) con el offset confirmado igual, pero el motivo
+/// (<see cref="DeadLetterEnvelope.Reason"/>) distingue "PoisonMessage" de un mensaje de negocio agotado —
+/// ver <c>docs/guia-inbox-consumer.md</c> y <c>docs/runbook-dlq.md</c> para el detalle operativo.
 /// </remarks>
 /// <typeparam name="TEvent">Tipo concreto del evento de integración entregado por este consumidor.</typeparam>
 public sealed class KafkaEventConsumer<TEvent> : IDisposable
@@ -157,19 +177,25 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     }
 
     /// <summary>
-    /// Espera hasta <paramref name="timeout"/> por un único mensaje del tópico suscripto; si llega, lo
-    /// deserializa y lo procesa de forma deduplicada vía <see cref="IInboxMessageProcessor.ProcessAsync"/>
-    /// (F3-04) — solo si retorna sin excepción (procesado o descartado por duplicado) se confirma el
-    /// offset. Devuelve <see langword="false"/> si no llegó ningún mensaje dentro del timeout (no es un
-    /// error: el tópico puede estar vacío).
+    /// Espera hasta <paramref name="timeout"/> por un único mensaje del tópico suscripto; si llega,
+    /// intenta deserializarlo y, si lo logra, lo procesa de forma deduplicada vía
+    /// <see cref="IInboxMessageProcessor.ProcessAsync"/> (F3-04) — solo si retorna sin excepción
+    /// (procesado o descartado por duplicado) se confirma el offset. Devuelve <see langword="false"/> si
+    /// no llegó ningún mensaje dentro del timeout (no es un error: el tópico puede estar vacío).
     /// </summary>
     /// <remarks>
-    /// F3-07: si el handler falla, clasifica la excepción y decide entre (a) esperar el backoff
-    /// calculado y volver a lanzar la excepción original (todavía queda margen de reintentos: el offset
-    /// no se confirma, Kafka reentrega el mismo mensaje en la próxima llamada) o (b) lanzar
-    /// <see cref="EventProcessingExhaustedException"/> (se agotó el margen, o el error es
-    /// <see cref="EventPublishFailureKind.Permanent"/>) — ver el <c>remarks</c> de la clase para la
-    /// limitación real de diseño de este lado (backoff bloqueante, conteo en memoria no persistido).
+    /// F3-09: si el mensaje NI SIQUIERA se puede deserializar (poison message), se aísla directo a DLQ
+    /// (<c>IsolatePoisonMessageAsync</c>) sin pasar por ningún reintento y el offset se confirma siempre
+    /// (retorna <see langword="true"/>) — ver el <c>remarks</c> de la clase para la distinción completa
+    /// con el agotamiento de reintentos de F3-07.
+    ///
+    /// F3-07: si el mensaje SÍ se deserializó pero el handler de negocio falla, clasifica la excepción y
+    /// decide entre (a) esperar el backoff calculado y volver a lanzar la excepción original (todavía
+    /// queda margen de reintentos: el offset no se confirma, Kafka reentrega el mismo mensaje en la
+    /// próxima llamada) o (b) lanzar <see cref="EventProcessingExhaustedException"/> (se agotó el margen,
+    /// o el error es <see cref="EventPublishFailureKind.Permanent"/>) — ver el <c>remarks</c> de la clase
+    /// para la limitación real de diseño de este lado (backoff bloqueante, conteo en memoria no
+    /// persistido).
     /// </remarks>
     public async Task<bool> ConsumeAndHandleOnceAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
@@ -179,7 +205,25 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
             return false;
         }
 
-        var integrationEvent = KafkaIntegrationEventSerializer.Deserialize<TEvent>(result.Message.Value);
+        TEvent integrationEvent;
+        try
+        {
+            integrationEvent = KafkaIntegrationEventSerializer.Deserialize<TEvent>(result.Message.Value);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // F3-09: un mensaje que ni siquiera se puede deserializar es un error PERMANENTE del mensaje
+            // en sí (JSON corrupto, forma incompatible con TEvent, etc.) — nunca del handler de negocio
+            // (F3-07), así que jamás pasa por HandleProcessingFailureAsync/IEventPublishFailureClassifier
+            // (que clasifican fallos del HANDLER, no de deserialización) ni acumula intentos en
+            // _attemptsByMessageId: reintentarlo no lo va a arreglar nunca, se aísla directo a DLQ (ver
+            // IsolatePoisonMessageAsync) y el offset se confirma siempre para que la partición no quede
+            // bloqueada.
+            await IsolatePoisonMessageAsync(result, ex, cancellationToken).ConfigureAwait(false);
+            _consumer.Commit(result);
+            return true;
+        }
+
         var messageId = integrationEvent.EventId.ToString();
 
         try
@@ -292,6 +336,83 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
                 exhausted.MessageId,
                 exhausted.EventType);
         }
+    }
+
+    /// <summary>
+    /// F3-09: aísla un mensaje "poison" (no se pudo deserializar a <typeparamref name="TEvent"/>) sin
+    /// pasar por el ciclo de reintentos de F3-07 — un JSON corrupto o de forma incompatible nunca se
+    /// arregla reintentando, así que se publica una copia best-effort al tópico dead-letter (reutilizando
+    /// <see cref="_deadLetterPublisher"/>, F3-08) con el motivo <c>"PoisonMessage"</c> y el offset se
+    /// confirma siempre desde el llamador, incluso si esta publicación falla.
+    /// </summary>
+    /// <remarks>
+    /// Trade-off deliberado si <see cref="_deadLetterPublisher"/> no está configurado o su publicación
+    /// también falla: igual se deja avanzar el offset (solo un warning en el log). La alternativa —no
+    /// confirmar y bloquear la partición hasta que el DLQ vuelva a estar disponible— contradice el
+    /// criterio de aceptación de esta tarea ("Consumer continúa operando") y dejaría bloqueando
+    /// indefinidamente a mensajes siguientes válidos por un mensaje que, además, NUNCA se va a poder
+    /// deserializar aunque el DLQ vuelva a funcionar (a diferencia de un backend caído, esto no es
+    /// transitorio). El costo aceptado es perder esa copia dead-letter puntual — mismo criterio
+    /// "best-effort" que <see cref="PublishToDeadLetterAsync"/> ya aplica en F3-08 para el agotamiento de
+    /// reintentos del handler.
+    /// </remarks>
+    private async Task IsolatePoisonMessageAsync(ConsumeResult<string, byte[]> result, Exception deserializationError, CancellationToken cancellationToken)
+    {
+        _logger?.LogWarning(
+            deserializationError,
+            "Mensaje poison en el tópico del evento {EventType} (partición {Partition}, offset {Offset}): no se pudo deserializar a {EventClrType}. Se aísla a DLQ y se confirma el offset para no bloquear la partición.",
+            _eventType,
+            result.Partition.Value,
+            result.Offset.Value,
+            typeof(TEvent).FullName);
+
+        if (_deadLetterPublisher is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _deadLetterPublisher.PublishAsync(
+                new DeadLetterEnvelope
+                {
+                    EventType = _eventType,
+                    Payload = result.Message.Value,
+                    Reason = $"PoisonMessage (DeserializationFailure): {deserializationError.Message}",
+                    Attempts = 1,
+                    ExhaustedAtUtc = DateTime.UtcNow,
+                    SourceMessageId = TryGetEventIdHeader(result.Message.Headers),
+                },
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger?.LogWarning(
+                ex,
+                "No se pudo publicar el mensaje poison del tópico del evento {EventType} (partición {Partition}, offset {Offset}) al tópico dead-letter; el offset se confirma igual (el mensaje queda descartado del lado consumidor).",
+                _eventType,
+                result.Partition.Value,
+                result.Offset.Value);
+        }
+    }
+
+    /// <summary>
+    /// Intenta recuperar <see cref="KafkaIntegrationEventSerializer.EventIdHeader"/> del mensaje original
+    /// para correlacionar el registro dead-letter con <c>IIntegrationEvent.EventId</c> — un mensaje
+    /// poison no llegó a deserializarse, así que este header (copia de conveniencia escrita por
+    /// <see cref="KafkaIntegrationEventSerializer.Serialize"/>, no el payload) es la única fuente posible;
+    /// puede no estar presente si el mensaje ni siquiera fue producido por este serializador.
+    /// </summary>
+    private static string? TryGetEventIdHeader(Headers? headers)
+    {
+        if (headers is null)
+        {
+            return null;
+        }
+
+        return headers.TryGetLastBytes(KafkaIntegrationEventSerializer.EventIdHeader, out var bytes)
+            ? Encoding.UTF8.GetString(bytes)
+            : null;
     }
 
     public void Dispose()
