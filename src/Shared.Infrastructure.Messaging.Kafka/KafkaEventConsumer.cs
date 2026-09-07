@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using BitCode.Framework.Shared.Application.Eventing;
 using BitCode.Framework.Shared.Application.Inbox;
@@ -52,11 +53,34 @@ namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 /// cuándo correr el loop de consumo" queda en el proyecto consumidor (ver
 /// <c>docs/guia-inbox-consumer.md</c> para un ejemplo completo).
 ///
-/// Límite conocido (documentado también en <c>docs/guia-inbox-consumer.md</c>): esta clase NO reintenta
-/// automáticamente ni clasifica errores transitorios/permanentes (F3-07) — si <c>ProcessAsync</c> lanza,
-/// la excepción se propaga tal cual a quien llamó <see cref="ConsumeAndHandleOnceAsync"/>, que decide
-/// cómo reaccionar (por ejemplo, un loop que loguea y continúa con el próximo ciclo de sondeo, igual que
-/// <c>OutboxPublisherBackgroundService</c> hace con un fallo de ciclo completo).
+/// <b>Clasificación y backoff (F3-07), y su límite real de diseño:</b> si <c>ProcessAsync</c> lanza (el
+/// handler de negocio falló), esta clase clasifica la excepción con <see cref="IEventPublishFailureClassifier"/>
+/// y, si todavía queda margen (<see cref="EventRetryPolicyOptions.MaxAttempts"/> de <see cref="RetryOptions"/>),
+/// espera el backoff calculado (<see cref="EventRetryBackoff.CalculateDelay"/>) ANTES de volver a lanzar
+/// la excepción original — a diferencia del relay de Outbox (F3-03/F3-07), que puede programar el
+/// próximo intento como una marca de tiempo futura sin bloquear nada (persistida en
+/// <c>OutboxMessage.LockedUntilUtc</c>, consultada recién en el siguiente ciclo de sondeo),
+/// <see cref="ConsumeAndHandleOnceAsync"/> no tiene ningún lugar donde "programar" un reintento futuro
+/// sin bloquear: no hay loop propio (lo maneja el host que la invoca), y Kafka vuelve a entregar el
+/// mismo mensaje en la siguiente llamada sin que este consumidor pueda decirle "esperá". La única forma
+/// de introducir backoff real es demorar la propia llamada que falló con <c>Task.Delay</c> antes de
+/// devolver el control — lo que retrasa también el procesamiento de cualquier mensaje siguiente que este
+/// consumidor recibiría después (una limitación real, no cosmética, de "sin loop propio"; documentada
+/// también en <c>docs/guia-inbox-consumer.md</c>).
+///
+/// El conteo de intentos por mensaje es EN MEMORIA (<see cref="_attemptsByMessageId"/>, por instancia de
+/// este consumidor) — no persistido: un reinicio del proceso pierde el conteo y el mensaje vuelve a
+/// tener margen completo de reintentos. Esto es deliberado (Inbox, F1-24, solo persiste mensajes que
+/// terminaron con éxito, nunca intentos fallidos — agregar esa persistencia es un cambio de esquema de
+/// Inbox fuera del alcance mínimo de F3-07) y es la razón por la que, del lado consumidor, el límite
+/// máximo de reintentos es una protección "mejor esfuerzo" contra un mensaje que falla en loop rápido
+/// dentro de la MISMA vida del proceso, no una garantía dura de "nunca más de N intentos totales" como sí
+/// lo es del lado del relay de Outbox (persistido en <c>OutboxMessage.RetryCount</c>/<c>ExhaustedAtUtc</c>).
+/// Al agotar el límite, se lanza <see cref="EventProcessingExhaustedException"/> (envolviendo la
+/// excepción original) en vez de la excepción original tal cual — el punto de extensión explícito que
+/// F3-08 (DLQ) necesita para decidir enrutar el mensaje a una cola de mensajes muertos en vez de seguir
+/// reintentando; F3-07 no implementa ese enrutamiento, solo lo señaliza con un tipo de excepción
+/// distinguible.
 /// </remarks>
 /// <typeparam name="TEvent">Tipo concreto del evento de integración entregado por este consumidor.</typeparam>
 public sealed class KafkaEventConsumer<TEvent> : IDisposable
@@ -65,6 +89,15 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     private readonly IConsumer<string, byte[]> _consumer;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly string _eventType;
+    private readonly IEventPublishFailureClassifier _failureClassifier;
+    private readonly ConcurrentDictionary<string, int> _attemptsByMessageId = new();
+
+    /// <summary>
+    /// Política de reintentos con backoff (F3-07) aplicada a mensajes cuyo handler falla — ver el
+    /// <c>remarks</c> de la clase para la limitación real de diseño de este lado (backoff bloqueante,
+    /// conteo en memoria no persistido).
+    /// </summary>
+    public EventRetryPolicyOptions RetryOptions { get; }
 
     /// <param name="options">Configuración de conexión/autenticación al broker.</param>
     /// <param name="eventType">
@@ -83,17 +116,30 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     /// </param>
     /// <param name="consumerGroupIdOverride">Group id explícito; si no se indica, usa <see cref="KafkaMessagingOptions.ConsumerGroupId"/>.</param>
     /// <param name="topicNameResolver">Resolución de tópico; por defecto <see cref="DefaultKafkaTopicNameResolver"/>.</param>
+    /// <param name="retryOptions">
+    /// Política de reintentos (F3-07); por defecto una nueva <see cref="EventRetryPolicyOptions"/> con
+    /// los valores por defecto documentados en esa clase.
+    /// </param>
+    /// <param name="failureClassifier">
+    /// Clasificador de excepciones del handler de negocio (F3-07); por defecto
+    /// <see cref="DefaultEventPublishFailureClassifier"/> (trata todo como transitorio, el valor por
+    /// defecto más seguro para excepciones de negocio arbitrarias sin información específica de Kafka).
+    /// </param>
     public KafkaEventConsumer(
         KafkaMessagingOptions options,
         string eventType,
         IServiceScopeFactory scopeFactory,
         string? consumerGroupIdOverride = null,
-        IKafkaTopicNameResolver? topicNameResolver = null)
+        IKafkaTopicNameResolver? topicNameResolver = null,
+        EventRetryPolicyOptions? retryOptions = null,
+        IEventPublishFailureClassifier? failureClassifier = null)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         _eventType = eventType;
+        RetryOptions = retryOptions ?? new EventRetryPolicyOptions();
+        _failureClassifier = failureClassifier ?? new DefaultEventPublishFailureClassifier();
 
         var resolver = topicNameResolver ?? DefaultKafkaTopicNameResolver.Instance;
         var topic = resolver.ResolveTopicName(eventType);
@@ -110,6 +156,14 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     /// offset. Devuelve <see langword="false"/> si no llegó ningún mensaje dentro del timeout (no es un
     /// error: el tópico puede estar vacío).
     /// </summary>
+    /// <remarks>
+    /// F3-07: si el handler falla, clasifica la excepción y decide entre (a) esperar el backoff
+    /// calculado y volver a lanzar la excepción original (todavía queda margen de reintentos: el offset
+    /// no se confirma, Kafka reentrega el mismo mensaje en la próxima llamada) o (b) lanzar
+    /// <see cref="EventProcessingExhaustedException"/> (se agotó el margen, o el error es
+    /// <see cref="EventPublishFailureKind.Permanent"/>) — ver el <c>remarks</c> de la clase para la
+    /// limitación real de diseño de este lado (backoff bloqueante, conteo en memoria no persistido).
+    /// </remarks>
     public async Task<bool> ConsumeAndHandleOnceAsync(TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         var result = await Task.Run(() => _consumer.Consume(timeout), cancellationToken).ConfigureAwait(false);
@@ -119,23 +173,62 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
         }
 
         var integrationEvent = KafkaIntegrationEventSerializer.Deserialize<TEvent>(result.Message.Value);
+        var messageId = integrationEvent.EventId.ToString();
 
-        await using (var scope = _scopeFactory.CreateAsyncScope())
+        try
         {
-            var inboxProcessor = scope.ServiceProvider.GetRequiredService<IInboxMessageProcessor>();
-            var handler = scope.ServiceProvider.GetRequiredService<IEventConsumer<TEvent>>();
+            await using (var scope = _scopeFactory.CreateAsyncScope())
+            {
+                var inboxProcessor = scope.ServiceProvider.GetRequiredService<IInboxMessageProcessor>();
+                var handler = scope.ServiceProvider.GetRequiredService<IEventConsumer<TEvent>>();
 
-            await inboxProcessor.ProcessAsync(
-                integrationEvent.EventId.ToString(),
-                _eventType,
-                Encoding.UTF8.GetString(result.Message.Value),
-                ct => handler.ConsumeAsync(integrationEvent, ct),
-                cancellationToken).ConfigureAwait(false);
+                await inboxProcessor.ProcessAsync(
+                    messageId,
+                    _eventType,
+                    Encoding.UTF8.GetString(result.Message.Value),
+                    ct => handler.ConsumeAsync(integrationEvent, ct),
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // HandleProcessingFailureAsync incrementa el conteo de intentos y, si ya no queda margen,
+            // lanza EventProcessingExhaustedException en su lugar (esa excepción sale de este catch sin
+            // llegar nunca al "throw;" de abajo). Si todavía queda margen, espera el backoff calculado
+            // y retorna sin lanzar, así que "throw;" relanza la excepción ORIGINAL tal cual.
+            await HandleProcessingFailureAsync(messageId, ex, cancellationToken).ConfigureAwait(false);
+            throw; // El mensaje todavía tiene margen: se relanza para que el offset no se confirme.
         }
 
+        // Éxito: ya no hace falta seguir contando intentos fallidos previos de este mensaje.
+        _attemptsByMessageId.TryRemove(messageId, out _);
         _consumer.Commit(result);
 
         return true;
+    }
+
+    /// <summary>
+    /// Clasifica el fallo, actualiza el conteo de intentos EN MEMORIA de este mensaje y decide entre
+    /// esperar el backoff (deja <paramref name="cause"/> para que el llamador la relance tal cual) o
+    /// lanzar <see cref="EventProcessingExhaustedException"/> si ya no corresponde reintentar más.
+    /// </summary>
+    private async Task HandleProcessingFailureAsync(string messageId, Exception cause, CancellationToken cancellationToken)
+    {
+        var attempts = _attemptsByMessageId.AddOrUpdate(messageId, 1, static (_, existing) => existing + 1);
+        var failureKind = _failureClassifier.Classify(cause);
+        var isExhausted = failureKind == EventPublishFailureKind.Permanent || EventRetryBackoff.IsExhausted(attempts, RetryOptions);
+
+        if (isExhausted)
+        {
+            _attemptsByMessageId.TryRemove(messageId, out _);
+            throw new EventProcessingExhaustedException(messageId, _eventType, attempts, cause);
+        }
+
+        var delay = EventRetryBackoff.CalculateDelay(attempts, RetryOptions);
+        if (delay > TimeSpan.Zero)
+        {
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     public void Dispose()

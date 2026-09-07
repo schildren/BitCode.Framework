@@ -1,3 +1,5 @@
+using BitCode.Framework.Shared.Application.Eventing;
+
 namespace BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 
 /// <summary>
@@ -34,4 +36,13 @@ public sealed class OutboxPublisherOptions
     /// (<see cref="LockDuration"/>) más <c>UPDLOCK, READPAST</c> a nivel de fila.
     /// </summary>
     public string WorkerId { get; set; } = $"{Environment.MachineName}#{Guid.NewGuid():N}";
+
+    /// <summary>
+    /// Política de reintentos con backoff exponencial y jitter (F3-07): cuántos intentos totales
+    /// tolerar por fila antes de marcarla <see cref="Domain.Outbox.OutboxMessage.ExhaustedAtUtc"/> y
+    /// cómo espaciar los reintentos intermedios (<c>OutboxMessage.LockedUntilUtc</c> se usa también
+    /// como "no reclamar antes de" para el próximo intento, no solo como lock entre réplicas — ver
+    /// <c>OutboxBatchProcessor</c>).
+    /// </summary>
+    public EventRetryPolicyOptions Retry { get; set; } = new();
 }

@@ -70,4 +70,16 @@ public sealed class OutboxMessage : ITenantEntity
 
     /// <summary>Identificador de la instancia de worker que reclamó esta fila (ver <see cref="LockedUntilUtc"/>); solo para diagnóstico/observabilidad, F3-03.</summary>
     public string? LockedBy { get; set; }
+
+    /// <summary>
+    /// F3-07 (Retries): distinto de <see langword="null"/> cuando esta fila agotó
+    /// <c>EventRetryPolicyOptions.MaxAttempts</c> (error clasificado como permanente, o transitorio que
+    /// nunca tuvo éxito dentro del límite de reintentos) — <see cref="OutboxBatchProcessor"/> ya no
+    /// vuelve a reclamarla en ningún ciclo de sondeo futuro (ver el filtro de
+    /// <c>OutboxBatchProcessor.ClaimBatchAsync</c>). La fila permanece con <see cref="ProcessedAtUtc"/>
+    /// en <see langword="null"/> — NUNCA se descarta silenciosamente (eso perdería el evento, violando
+    /// "reinicio no pierde eventos", F3-03) — queda visible para un operador o para F3-08 (DLQ), que es
+    /// quien decide qué hacer con una fila agotada; F3-07 solo deja este campo como punto de extensión.
+    /// </summary>
+    public DateTime? ExhaustedAtUtc { get; set; }
 }

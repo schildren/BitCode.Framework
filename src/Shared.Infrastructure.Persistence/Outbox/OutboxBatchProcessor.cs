@@ -43,13 +43,31 @@ namespace BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 /// <c>AggregateRoot&lt;TId&gt;</c> ya deciden qué agregados participan del Outbox (F1-23).
 /// </para>
 /// <para>
-/// <b>Fallos de publicación:</b> si <see cref="IEventPublisher.PublishAsync(IIntegrationEvent, System.Threading.CancellationToken)"/>
+/// <b>Fallos de publicación y reintentos (F3-07):</b> si <see cref="IEventPublisher.PublishAsync(IIntegrationEvent, System.Threading.CancellationToken)"/>
 /// lanza una excepción para una fila del lote, esa fila NO se marca como procesada (queda con
 /// <see cref="OutboxMessage.RetryCount"/> incrementado y <see cref="OutboxMessage.Error"/> con el
-/// mensaje, lock liberado para reintento inmediato en el próximo ciclo) — las demás filas del lote
-/// siguen procesándose con normalidad (mismo criterio documentado en la firma de
-/// <c>IEventPublisher.PublishAsync(IEnumerable&lt;IIntegrationEvent&gt;, ...)</c>: sin atomicidad entre
-/// eventos del lote frente al broker).
+/// mensaje) — las demás filas del lote siguen procesándose con normalidad (mismo criterio documentado
+/// en la firma de <c>IEventPublisher.PublishAsync(IEnumerable&lt;IIntegrationEvent&gt;, ...)</c>: sin
+/// atomicidad entre eventos del lote frente al broker). A diferencia de F3-03 (donde el lock se liberaba
+/// para reintento inmediato en el siguiente ciclo, sin límite), F3-07 clasifica cada excepción con
+/// <see cref="IEventPublishFailureClassifier"/> y decide entre dos caminos:
+/// <list type="bullet">
+/// <item>
+/// <b>Transitorio, dentro del límite</b> (<see cref="EventRetryPolicyOptions.MaxAttempts"/> de
+/// <see cref="OutboxPublisherOptions.Retry"/>): se calcula un backoff exponencial con jitter
+/// (<see cref="EventRetryBackoff.CalculateDelay"/>) a partir de <see cref="OutboxMessage.RetryCount"/>
+/// y se fija <see cref="OutboxMessage.LockedUntilUtc"/> a ese momento futuro — reutilizando el mismo
+/// campo que ya protege contra reclamos concurrentes entre réplicas (F3-03), ahora también como "no
+/// reclamar antes de" para el backoff de reintento, no solo como lock temporal de "en proceso".
+/// </item>
+/// <item>
+/// <b>Permanente, o transitorio que ya agotó el límite:</b> se fija <see cref="OutboxMessage.ExhaustedAtUtc"/>
+/// — la fila deja de ser candidata en <see cref="ClaimBatchAsync"/> (nuevo filtro <c>ExhaustedAtUtc IS
+/// NULL</c>) para siempre, pero NUNCA se marca <see cref="OutboxMessage.ProcessedAtUtc"/> ni se borra:
+/// sigue existiendo, consultable, como punto de extensión explícito para F3-08 (DLQ)/intervención
+/// manual — perderla silenciosamente violaría "reinicio no pierde eventos" (F3-03).
+/// </item>
+/// </list>
 /// </para>
 /// <para>
 /// <b>Reinicio no pierde eventos (criterio de aceptación literal de F3-03):</b> el <c>SaveChangesAsync</c>
@@ -66,6 +84,7 @@ public sealed class OutboxBatchProcessor(
     DbContext context,
     IEventPublisher eventPublisher,
     OutboxPublisherOptions options,
+    IEventPublishFailureClassifier failureClassifier,
     ILogger<OutboxBatchProcessor> logger)
 {
     public async Task<OutboxBatchResult> ProcessBatchAsync(CancellationToken cancellationToken = default)
@@ -81,6 +100,7 @@ public sealed class OutboxBatchProcessor(
         var published = 0;
         var skippedInternal = 0;
         var failed = 0;
+        var exhausted = 0;
 
         foreach (var message in claimed)
         {
@@ -106,11 +126,21 @@ public sealed class OutboxBatchProcessor(
 
             if (eventType is null || deserialized is null)
             {
-                message.RetryCount++;
-                message.Error = $"No se pudo resolver/deserializar el tipo '{message.EventType}'.";
-                message.LockedUntilUtc = null;
-                message.LockedBy = null;
+                // Tipo irresolvible/payload no deserializable: F3-07 lo trata siempre como error
+                // PERMANENTE — ningún reintento futuro puede cambiar el hecho de que el tipo no existe
+                // o el JSON no coincide con él (a diferencia de un fallo de publicación contra el
+                // broker, que sí puede depender de una condición transitoria externa).
+                RegisterFailure(
+                    message,
+                    $"No se pudo resolver/deserializar el tipo '{message.EventType}'.",
+                    EventPublishFailureKind.Permanent,
+                    now);
                 failed++;
+                if (message.ExhaustedAtUtc is not null)
+                {
+                    exhausted++;
+                }
+
                 await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                 continue;
             }
@@ -139,23 +169,63 @@ public sealed class OutboxBatchProcessor(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                message.RetryCount++;
-                message.Error = ex.Message;
-                message.LockedUntilUtc = null;
-                message.LockedBy = null;
+                var failureKind = failureClassifier.Classify(ex);
+                RegisterFailure(message, ex.Message, failureKind, now);
                 failed++;
+                if (message.ExhaustedAtUtc is not null)
+                {
+                    exhausted++;
+                }
 
                 logger.LogWarning(
                     ex,
-                    "Fallo al publicar OutboxMessage {OutboxMessageId} (EventType {EventType}); se reintentará en el próximo ciclo.",
+                    "Fallo ({FailureKind}) al publicar OutboxMessage {OutboxMessageId} (EventType {EventType}, intento {RetryCount}); {Outcome}.",
+                    failureKind,
                     message.Id,
-                    integrationEvent.EventType);
+                    integrationEvent.EventType,
+                    message.RetryCount,
+                    message.ExhaustedAtUtc is null
+                        ? $"se reintentará no antes de {message.LockedUntilUtc:O}"
+                        : "se marcó como agotado, ya no se reintentará");
             }
 
             await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        return new OutboxBatchResult(claimed.Count, published, skippedInternal, failed);
+        return new OutboxBatchResult(claimed.Count, published, skippedInternal, failed, exhausted);
+    }
+
+    /// <summary>
+    /// F3-07: centraliza qué le pasa a una fila que falló este ciclo — incrementa
+    /// <see cref="OutboxMessage.RetryCount"/>, registra el motivo, y decide entre agotarla
+    /// (<see cref="OutboxMessage.ExhaustedAtUtc"/>, ya sea porque <paramref name="failureKind"/>
+    /// es <see cref="EventPublishFailureKind.Permanent"/> o porque superó
+    /// <see cref="EventRetryPolicyOptions.MaxAttempts"/>) o programar el próximo intento con backoff
+    /// exponencial y jitter (<see cref="OutboxMessage.LockedUntilUtc"/> — reutilizado como
+    /// "no reclamar antes de", no solo como lock entre réplicas, ver remarks de la clase).
+    /// </summary>
+    private void RegisterFailure(OutboxMessage message, string error, EventPublishFailureKind failureKind, DateTime now)
+    {
+        message.RetryCount++;
+        message.Error = error;
+        message.LockedBy = null;
+
+        var isPermanent = failureKind == EventPublishFailureKind.Permanent;
+        var isExhausted = isPermanent || EventRetryBackoff.IsExhausted(message.RetryCount, options.Retry);
+
+        if (isExhausted)
+        {
+            message.ExhaustedAtUtc = now;
+            // Una fila agotada nunca vuelve a cumplir "LockedUntilUtc < now" en el futuro por diseño
+            // (ver el WHERE de ClaimBatchAsync, que además exige ExhaustedAtUtc IS NULL): fijar
+            // LockedUntilUtc en null acá es solo higiene de datos, no participa de si se reclama de
+            // nuevo — ExhaustedAtUtc es lo que la excluye.
+            message.LockedUntilUtc = null;
+            return;
+        }
+
+        var delay = EventRetryBackoff.CalculateDelay(message.RetryCount, options.Retry);
+        message.LockedUntilUtc = now.Add(delay);
     }
 
     /// <summary>
@@ -188,6 +258,7 @@ public sealed class OutboxBatchProcessor(
                 SELECT TOP ({0}) *
                 FROM {{qualifiedTable}} WITH (UPDLOCK, ROWLOCK, READPAST)
                 WHERE [ProcessedAtUtc] IS NULL
+                  AND [ExhaustedAtUtc] IS NULL
                   AND ([LockedUntilUtc] IS NULL OR [LockedUntilUtc] < {1})
                 ORDER BY [OccurredAtUtc] ASC, [Id] ASC
             )

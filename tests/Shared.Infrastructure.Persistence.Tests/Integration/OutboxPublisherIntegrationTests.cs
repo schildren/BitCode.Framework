@@ -32,6 +32,11 @@ public class OutboxPublisherIntegrationTests(SqlServerContainerFixture sqlFixtur
         services.AddSharedPersistence<MultiTenantTestDbContext>(connectionString);
         services.AddSingleton(eventPublisher);
         services.AddSingleton(options ?? new OutboxPublisherOptions());
+        // F3-07: sin AddSharedOutboxPublisher/AddSharedMessagingKafka, OutboxBatchProcessor necesita su
+        // clasificador de fallos registrado explícitamente — DefaultEventPublishFailureClassifier
+        // (trata todo como transitorio) alcanza para estos tests, que no ejercitan la clasificación
+        // específica de Kafka (ver KafkaEventPublishFailureClassifierTests para eso).
+        services.AddSingleton<IEventPublishFailureClassifier, DefaultEventPublishFailureClassifier>();
         // Registro manual (sin AddSharedOutboxPublisher): estos tests llaman OutboxBatchProcessor
         // directamente, ciclo por ciclo, en vez de dejar correr el loop de
         // OutboxPublisherBackgroundService — necesitan controlar exactamente cuándo ocurre cada
@@ -113,14 +118,19 @@ public class OutboxPublisherIntegrationTests(SqlServerContainerFixture sqlFixtur
     /// <summary>
     /// Criterio de aceptación literal (parte 2): si la publicación de una fila falla (equivalente,
     /// para este test, a una caída del proceso a mitad del intento), la fila NO se marca como
-    /// procesada y queda lista para reintento en el próximo ciclo — sin necesidad de esperar a que
-    /// expire el lock (se libera explícitamente).
+    /// procesada y queda lista para reintento en un ciclo posterior — F3-07: con
+    /// <see cref="EventRetryPolicyOptions.BaseDelay"/> en cero (configurado explícitamente en este
+    /// test), el backoff calculado es <see cref="TimeSpan.Zero"/>, así que sigue pudiendo reclamarse de
+    /// inmediato en el siguiente ciclo (mismo comportamiento observable que antes de F3-07, sin
+    /// backoff real de por medio) — <c>OutboxPublisherRetryTests</c> cubre el caso con backoff/límite
+    /// real.
     /// </summary>
     [Fact]
     public async Task ProcessBatchAsync_PublishFails_LeavesMessageUnprocessedAndRetriesNextCycle()
     {
         var failingPublisher = new RecordingEventPublisher(shouldThrowOnFirstCall: true);
-        await using var provider = await BuildProviderAsync(BuildIsolatedConnectionString(), failingPublisher);
+        var options = new OutboxPublisherOptions { Retry = new EventRetryPolicyOptions { BaseDelay = TimeSpan.Zero } };
+        await using var provider = await BuildProviderAsync(BuildIsolatedConnectionString(), failingPublisher, options);
         var integrationEvent = new OutboxPublisherTestEvent(Guid.NewGuid(), "Falla la primera vez");
         var message = await SeedOutboxMessageAsync(provider, integrationEvent);
 
@@ -131,14 +141,17 @@ public class OutboxPublisherIntegrationTests(SqlServerContainerFixture sqlFixtur
             firstAttempt.Claimed.Should().Be(1);
             firstAttempt.Failed.Should().Be(1);
             firstAttempt.Published.Should().Be(0);
+            firstAttempt.Exhausted.Should().Be(0, "todavía queda margen de reintentos (MaxAttempts por defecto = 10)");
         }
 
         var afterFirstAttempt = await FindOutboxMessageAsync(provider, message.Id);
         afterFirstAttempt!.ProcessedAtUtc.Should().BeNull("un fallo de publicación nunca debe marcar la fila como procesada");
         afterFirstAttempt.RetryCount.Should().Be(1);
-        afterFirstAttempt.LockedUntilUtc.Should().BeNull("el lock se libera explícitamente para que el próximo ciclo pueda reintentar de inmediato");
+        afterFirstAttempt.ExhaustedAtUtc.Should().BeNull("todavía queda margen de reintentos");
+        afterFirstAttempt.LockedUntilUtc.Should().NotBeNull("F3-07: el próximo intento se programa como una marca de tiempo futura (backoff), no más como lock liberado a null");
 
-        // "Reinicio" (segundo ciclo): esta vez el publisher no falla.
+        // "Reinicio" (ciclo posterior): esta vez el publisher no falla. Con BaseDelay = Zero el backoff
+        // calculado es Zero, así que ya puede reclamarse de nuevo sin esperar nada adicional.
         await using (var scope = provider.CreateAsyncScope())
         {
             var processor = scope.ServiceProvider.GetRequiredService<OutboxBatchProcessor>();

@@ -1,3 +1,4 @@
+using BitCode.Framework.Shared.Application.Eventing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -13,6 +14,16 @@ public static class OutboxPublisherServiceCollectionExtensions
     /// ejemplo, <c>AddSharedMessagingKafka</c>, F3-02) — llamar este método DESPUÉS de
     /// <c>AddSharedPersistence&lt;TContext&gt;</c> y del registro del publisher concreto.
     /// </summary>
+    /// <remarks>
+    /// F3-07 (Retries): también registra, con <c>TryAddSingleton</c>, un
+    /// <see cref="DefaultEventPublishFailureClassifier"/> de reserva para
+    /// <see cref="IEventPublishFailureClassifier"/> — solo toma efecto si ningún adapter de broker
+    /// concreto ya registró el suyo antes (por ejemplo, <c>AddSharedMessagingKafka</c> registra
+    /// <c>KafkaEventPublishFailureClassifier</c>; si se llama antes que este método, como ya exige el
+    /// orden documentado arriba, ese es el que gana). Sin este de reserva, un <see cref="IEventPublisher"/>
+    /// sin adapter de broker Kafka dejaría a <see cref="OutboxBatchProcessor"/> sin poder resolver esa
+    /// dependencia.
+    /// </remarks>
     public static IServiceCollection AddSharedOutboxPublisher(
         this IServiceCollection services,
         Action<OutboxPublisherOptions>? configureOptions = null)
@@ -21,6 +32,7 @@ public static class OutboxPublisherServiceCollectionExtensions
         configureOptions?.Invoke(options);
 
         services.TryAddSingleton(options);
+        services.TryAddSingleton<IEventPublishFailureClassifier, DefaultEventPublishFailureClassifier>();
         services.TryAddScoped<OutboxBatchProcessor>();
         services.AddHostedService<OutboxPublisherBackgroundService>();
 

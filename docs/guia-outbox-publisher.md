@@ -155,11 +155,12 @@ OUTPUT inserted.*;
 - **Caída antes de publicar:** la fila nunca salió de `ProcessedAtUtc = NULL`; el próximo ciclo (de esta
   instancia reiniciada o de otra) la reclama y publica con normalidad. Nada que perder.
 - **Fallo de publicación (`IEventPublisher.PublishAsync` lanza):** la fila NO se marca como procesada;
-  se incrementa `RetryCount`, se registra `Error`, se libera el lock inmediatamente (no hace falta
-  esperar a que expire) para que el próximo ciclo reintente cuanto antes. Las demás filas del lote
-  siguen procesándose con normalidad (mismo criterio documentado en la firma de
-  `IEventPublisher.PublishAsync(IEnumerable<IIntegrationEvent>, ...)`: sin atomicidad entre eventos del
-  lote frente al broker).
+  se incrementa `RetryCount`, se registra `Error` y (F3-07, ver sección dedicada más abajo) se clasifica
+  el error y se programa el próximo intento con backoff exponencial y jitter (o se marca la fila como
+  agotada, si corresponde) — ya no se libera el lock para reintento inmediato sin límite como hacía
+  F3-03. Las demás filas del lote siguen procesándose con normalidad (mismo criterio documentado en la
+  firma de `IEventPublisher.PublishAsync(IEnumerable<IIntegrationEvent>, ...)`: sin atomicidad entre
+  eventos del lote frente al broker).
 - **Caída DESPUÉS de publicar pero ANTES de marcar (el caso más delicado):** el `SaveChangesAsync` que
   marca `OutboxMessage.ProcessedAtUtc` se ejecuta INMEDIATAMENTE después de que la publicación de ESA
   fila individual tuvo éxito (no al final de todo el lote) — esto minimiza, sin eliminarlo del todo, el
@@ -189,15 +190,58 @@ nuevo por ciclo — el mismo motivo por el que cualquier `BackgroundService` que
 esté registrado (por ejemplo, `AddSharedMessagingKafka`, F3-02) — llamarlo antes de tener un publisher
 concreto deja `OutboxBatchProcessor` sin poder resolver esa dependencia.
 
-## Qué NO resuelve F3-03
+## Reintentos, backoff y límite máximo (F3-07)
+
+Ver `docs/politica-reintentos-eventos.md` para el detalle completo de la política de reintentos
+(clasificación transitorio/permanente, fórmula de backoff, límite máximo, y su equivalente del lado
+consumidor en `KafkaEventConsumer<TEvent>`). Resumen aplicado a `OutboxBatchProcessor`:
+
+1. Un fallo de `IEventPublisher.PublishAsync` se clasifica con `IEventPublishFailureClassifier`
+   (`Shared.Application.Eventing`) — `KafkaEventPublishFailureClassifier` (registrado por
+   `AddSharedMessagingKafka`) distingue un `ProduceException` transitorio (broker caído, timeout de red)
+   de uno permanente (mensaje demasiado grande, no autorizado) usando `Error.IsFatal`/`Error.Code`.
+2. **Transitorio, dentro de `OutboxPublisherOptions.Retry.MaxAttempts`:** se calcula un backoff
+   exponencial con jitter (`EventRetryBackoff.CalculateDelay`, a partir de `OutboxMessage.RetryCount`) y
+   se fija `OutboxMessage.LockedUntilUtc` a ese momento futuro — el mismo campo que ya protegía contra
+   reclamos concurrentes entre réplicas (F3-03) ahora también funciona como "no reclamar antes de" para
+   el backoff, sin necesidad de un campo nuevo.
+3. **Permanente, o transitorio que agotó `MaxAttempts`:** se fija `OutboxMessage.ExhaustedAtUtc` — la
+   fila deja de ser candidata en `ClaimBatchAsync` (nuevo filtro `ExhaustedAtUtc IS NULL`) para siempre,
+   pero **nunca** se marca `ProcessedAtUtc` ni se borra: sigue existiendo, consultable, como punto de
+   extensión explícito para F3-08 (DLQ) o intervención manual — perderla silenciosamente violaría
+   "reinicio no pierde eventos" (F3-03).
+
+`OutboxPublisherOptions.Retry` (tipo `EventRetryPolicyOptions`, `Shared.Application.Eventing`) expone
+`MaxAttempts` (default 10), `BaseDelay` (default 2 s) y `MaxDelay` (default 5 min):
+
+```csharp
+services.AddSharedOutboxPublisher(options =>
+{
+    options.Retry.MaxAttempts = 8;
+    options.Retry.BaseDelay = TimeSpan.FromSeconds(3);
+    options.Retry.MaxDelay = TimeSpan.FromMinutes(10);
+});
+```
+
+Un tipo irresolvible/payload no deserializable (la limitación que F3-03 dejaba documentada como
+"pendiente de F3-07" en la sección anterior) ahora se clasifica siempre como error **permanente** —
+ningún reintento futuro puede cambiar el hecho de que el tipo no existe o el JSON no coincide con él, así
+que se agota en el primer intento en vez de reintentarse indefinidamente.
+
+## Qué NO resuelve F3-07 (ni F3-03)
 
 - **Inbox/consumo** (F3-04): este relay es exclusivamente el lado publicador (Outbox → broker).
 - **Particionamiento definitivo**: cerrado por F3-05 (`IHasPartitionKey`, ver `docs/guia-eventing-contratos.md`) — un `DomainEvent`/`IIntegrationEvent` reconstruido por este relay que implementa `IHasPartitionKey` publica con `Key = PartitionKey`; si no la implementa, sigue siendo `Key = EventId` (heredado de F3-02). Este relay no toma ninguna decisión de partición por su cuenta: solo reconstruye el `IIntegrationEvent` y delega en `IEventPublisher.PublishAsync` (`KafkaEventPublisher`).
-- **Compatibilidad de esquema** (F3-06), **retries con backoff clasificado** (F3-07, hoy el reintento es
-  "en el próximo ciclo de sondeo", sin backoff exponencial ni jitter), **DLQ** (F3-08) ni **aislamiento
-  de poison messages** (F3-09, hoy un tipo irresolvible se reintenta indefinidamente).
+- **Compatibilidad de esquema** (F3-06, ya resuelta por su propia tarea).
+- **DLQ real** (F3-08): F3-07 solo deja `OutboxMessage.ExhaustedAtUtc` como punto de extensión explícito
+  (fila visible, nunca perdida, ya no reclamada) — no implementa ningún enrutamiento a un tópico de
+  mensajes muertos ni ninguna herramienta de reprocesamiento/operador.
+- **Aislamiento de poison messages más allá del límite de reintentos** (F3-09): un mensaje que agota
+  `MaxAttempts` dentro de esta fila deja de bloquear el procesamiento de las demás filas del lote (ya
+  ocurría desde F3-03), pero F3-07 no aísla nada adicional a nivel de tópico/partición.
 - **Observabilidad/métricas dedicadas** (F3-10): el worker solo loguea vía `ILogger` (`LogWarning`/
-  `LogError`), no expone contadores/histogramas propios todavía.
+  `LogError`, incluyendo ahora la clasificación y el resultado del reintento), no expone
+  contadores/histogramas propios todavía.
 - **Reconstrucción de un `IIntegrationEvent` con una forma distinta a la del `DomainEvent` interno**:
   ver la limitación conocida documentada arriba, en la sección del mapeo.
 
@@ -207,8 +251,10 @@ concreto deja `OutboxBatchProcessor` sin poder resolver esa dependencia.
 (SQL Server real vía `SqlServerContainerFixture` + Kafka real vía `KafkaContainerFixture`, F3-02):
 
 - Mensaje nunca intentado → se reclama y publica en el próximo ciclo ("caída antes de publicar").
-- Fallo de publicación → la fila queda sin marcar, con `RetryCount` incrementado y el lock liberado; un
-  ciclo posterior con un publisher que ya no falla la publica y marca con éxito.
+- Fallo de publicación → la fila queda sin marcar, con `RetryCount` incrementado y (F3-07, con
+  `BaseDelay` en cero para mantener el reintento inmediato en este test puntual)
+  `LockedUntilUtc` programado; un ciclo posterior con un publisher que ya no falla la publica y marca
+  con éxito.
 - `DomainEvent` interno (no implementa `IIntegrationEvent`) → se marca como procesado sin llamar nunca
   a `IEventPublisher`.
 - Caída después de publicar, antes de marcar (simulada publicando manualmente al broker real sin marcar
@@ -218,12 +264,31 @@ concreto deja `OutboxBatchProcessor` sin poder resolver esa dependencia.
   backlog concurrentemente → el total publicado es exactamente igual al total sembrado, sin duplicados
   entre instancias (verifica el mecanismo de bloqueo).
 
+`tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherRetryTests.cs` (F3-07, solo SQL
+Server real — no necesita Kafka, el punto es la política de reintentos en sí):
+
+- Error permanente (clasificador de prueba) → se agota en el PRIMER fallo, sin esperar a `MaxAttempts`;
+  un ciclo posterior ya no vuelve a reclamar la fila ni a llamar al publisher.
+- Error transitorio que nunca se recupera → se reintenta hasta `MaxAttempts` (inclusive) y recién ahí
+  queda agotado; nunca se marca `ProcessedAtUtc` (no se pierde).
+- Backoff real (`BaseDelay` distinto de cero) → un ciclo inmediatamente posterior a un fallo NO puede
+  reclamar la fila todavía (el backoff no transcurrió).
+
+`tests/Shared.Application.Tests/Eventing/EventRetryBackoffTests.cs` (F3-07, cálculo puro, sin SQL Server
+ni Kafka): crecimiento exponencial del tope entre intentos sucesivos, tope superior nunca excede
+`MaxDelay`, el jitter siempre cae en `[0, tope]`, y `IsExhausted` compara correctamente contra
+`MaxAttempts`.
+
 ## Referencias
 
-- `src/Shared.Domain/Outbox/OutboxMessage.cs` (`LockedUntilUtc`/`LockedBy`, nuevos en F3-03).
-- `src/Shared.Infrastructure.Persistence/Outbox/OutboxModelConfigurator.cs` (índice compuesto para el claim).
+- `src/Shared.Domain/Outbox/OutboxMessage.cs` (`LockedUntilUtc`/`LockedBy`, F3-03; `ExhaustedAtUtc`, F3-07).
+- `src/Shared.Infrastructure.Persistence/Outbox/OutboxModelConfigurator.cs` (índice compuesto para el claim, incluye `ExhaustedAtUtc` desde F3-07).
 - `src/Shared.Infrastructure.Persistence/Outbox/OutboxBatchProcessor.cs`, `OutboxBatchResult.cs`, `OutboxPublisherOptions.cs`, `OutboxPublisherBackgroundService.cs`, `OutboxPublisherServiceCollectionExtensions.cs`.
-- `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs`.
+- `src/Shared.Application/Eventing/EventRetryPolicyOptions.cs`, `EventRetryBackoff.cs`, `EventPublishFailureKind.cs`, `IEventPublishFailureClassifier.cs`, `DefaultEventPublishFailureClassifier.cs`, `EventProcessingExhaustedException.cs` (F3-07).
+- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventPublishFailureClassifier.cs` (F3-07, clasificación específica de Kafka).
+- `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs`, `OutboxPublisherRetryTests.cs` (F3-07).
+- `tests/Shared.Application.Tests/Eventing/EventRetryBackoffTests.cs` (F3-07).
+- `docs/politica-reintentos-eventos.md` (F3-07, política completa, incluido el lado consumidor).
 - `docs/guia-eventing-contratos.md` (contratos F3-01/adapter F3-02, tabla `DomainEvent` vs `IIntegrationEvent`).
 - `docs/convenciones.md` (regla dura 17, F1-23; regla dura 23, F3-03).
 - `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).

@@ -35,11 +35,13 @@ public static class OutboxModelConfigurator
             // (ProcessedAtUtc nulo) sin recorrer toda la tabla.
             entity.HasIndex(message => message.ProcessedAtUtc);
 
-            // F3-03 (Outbox Publisher): índice compuesto para el claim por lotes —
-            // OutboxBatchProcessor.ClaimBatchAsync filtra "ProcessedAtUtc IS NULL AND (LockedUntilUtc
-            // IS NULL OR LockedUntilUtc < @now)" ordenando por OccurredAtUtc; sin este índice, cada
-            // ciclo de sondeo de cada instancia del worker escanearía toda la tabla.
-            entity.HasIndex(message => new { message.ProcessedAtUtc, message.LockedUntilUtc, message.OccurredAtUtc });
+            // F3-03 (Outbox Publisher) / F3-07 (Retries): índice compuesto para el claim por lotes —
+            // OutboxBatchProcessor.ClaimBatchAsync filtra "ProcessedAtUtc IS NULL AND ExhaustedAtUtc IS
+            // NULL AND (LockedUntilUtc IS NULL OR LockedUntilUtc < @now)" ordenando por OccurredAtUtc;
+            // sin este índice, cada ciclo de sondeo de cada instancia del worker escanearía toda la
+            // tabla. ExhaustedAtUtc se agregó al índice en F3-07: sin él, una fila agotada (que nunca
+            // vuelve a cumplir la condición del WHERE) igual sería evaluada en cada sondeo.
+            entity.HasIndex(message => new { message.ProcessedAtUtc, message.ExhaustedAtUtc, message.LockedUntilUtc, message.OccurredAtUtc });
         });
     }
 }

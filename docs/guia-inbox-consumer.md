@@ -78,16 +78,43 @@ Outbox, que sí trae su propio `OutboxPublisherBackgroundService`): cada evento 
 necesita su propio consumidor/tópico/grupo, por lo que la decisión de "cómo y cuándo correr el loop de
 consumo" queda en el proyecto consumidor.
 
+## Reintentos clasificados y backoff (F3-07)
+
+`KafkaEventConsumer<TEvent>.ConsumeAndHandleOnceAsync` ahora clasifica cualquier excepción que
+`IInboxMessageProcessor.ProcessAsync` deje pasar (`IEventPublishFailureClassifier`,
+`Shared.Application.Eventing`) y, mientras quede margen (`EventRetryPolicyOptions.MaxAttempts`, expuesto
+como `KafkaEventConsumer<TEvent>.RetryOptions`), espera un backoff exponencial con jitter
+(`EventRetryBackoff.CalculateDelay`) ANTES de volver a lanzar la excepción original — así el offset sigue
+sin confirmarse (Kafka reentrega el mismo mensaje) pero sin que el host llamador reintente en un loop
+apretado sin ninguna pausa. Al agotar el margen (o si el error se clasifica como
+`EventPublishFailureKind.Permanent`), lanza `EventProcessingExhaustedException` en vez de la excepción
+original — el punto de extensión explícito que F3-08 (DLQ) necesita.
+
+Ver `docs/politica-reintentos-eventos.md` para el detalle completo. Dos limitaciones reales de diseño de
+este lado (no compartidas por el relay de Outbox, que persiste su estado en `OutboxMessage`):
+
+- **El backoff es bloqueante.** A diferencia del relay de Outbox (que solo programa una marca de tiempo
+  futura sin bloquear nada, consultada recién en el siguiente ciclo de sondeo),
+  `ConsumeAndHandleOnceAsync` no tiene ningún lugar donde "programar" un reintento futuro sin bloquear:
+  no hay loop propio (lo maneja el host que la invoca) y Kafka reentrega el mismo mensaje en la
+  siguiente llamada sin que este consumidor pueda decirle "esperá". La única forma de introducir backoff
+  real es demorar la propia llamada que falló con `Task.Delay` antes de devolver el control — lo que
+  retrasa también el procesamiento de cualquier mensaje siguiente que este consumidor reciba después.
+- **El conteo de intentos es EN MEMORIA, no persistido.** Un reinicio del proceso pierde el conteo y el
+  mensaje vuelve a tener margen completo de reintentos — a diferencia de `OutboxMessage.RetryCount`
+  (persistido en SQL Server), Inbox (F1-24) solo persiste mensajes que terminaron con éxito, nunca
+  intentos fallidos; agregar esa persistencia es un cambio de esquema de Inbox fuera del alcance mínimo
+  de F3-07. El límite máximo de reintentos del lado consumidor es, por lo tanto, una protección "mejor
+  esfuerzo" dentro de la vida de un mismo proceso, no una garantía dura de "nunca más de N intentos
+  totales" como sí lo es del lado del relay de Outbox.
+
 ## Límites conocidos
 
-- **Sin reintentos clasificados ni backoff (F3-07).** Si `ProcessAsync` lanza, la excepción se propaga tal
-  cual a quien llamó `ConsumeAndHandleOnceAsync` — no hay clasificación de error transitorio/permanente
-  ni backoff con jitter todavía. El proyecto consumidor decide cómo reaccionar (por ejemplo, un loop que
-  loguea y continúa con el próximo ciclo de sondeo, igual que `OutboxPublisherBackgroundService` hace con
-  un fallo de ciclo completo).
-- **Sin DLQ ni aislamiento de poison messages (F3-08/F3-09).** Un mensaje cuyo handler falla
-  indefinidamente se reintenta indefinidamente (Kafka nunca avanza el offset) — no hay todavía ninguna
-  cola de mensajes muertos ni límite de reintentos.
+- **Sin DLQ ni aislamiento de poison messages más allá del límite de reintentos (F3-08/F3-09).** Al
+  agotar `MaxAttempts` (o clasificar un error como permanente), `EventProcessingExhaustedException` es
+  hoy equivalente a cualquier otra excepción no manejada: el offset sigue sin confirmarse, así que Kafka
+  sigue reentregando el mismo mensaje — no hay todavía ningún enrutamiento real a una cola de mensajes
+  muertos, solo el tipo de excepción distinguible que F3-08 puede usar para bifurcar el comportamiento.
 - **Concurrencia entre particiones/consumidores del mismo `messageId`.** Documentado ya por
   `InboxMessageProcessor` (F1-24): dos entregas casi simultáneas del mismo mensaje (dos particiones,
   dos instancias del proceso) pueden ejecutar el handler dos veces en paralelo antes de que la primera
@@ -129,14 +156,17 @@ duplicados aceptables del relay de Outbox contra el broker, no la deduplicación
 
 ## Referencias
 
-- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventConsumer.cs` (F3-04: coordinación con Inbox).
+- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventConsumer.cs` (F3-04: coordinación con Inbox; F3-07: reintentos clasificados y backoff).
+- `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventPublishFailureClassifier.cs` (F3-07).
+- `src/Shared.Application/Eventing/EventRetryPolicyOptions.cs`, `EventRetryBackoff.cs`, `EventProcessingExhaustedException.cs` (F3-07).
 - `src/Shared.Application/Inbox/IInboxMessageProcessor.cs`, `InboxMessageProcessor.cs` (F1-24).
 - `src/Shared.Domain/Inbox/IInboxStore.cs`, `InboxMessage.cs` (F1-24).
 - `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxConsumerIntegrationTests.cs`,
   `InboxConsumerCollection.cs` (F3-04).
 - `tests/Shared.Infrastructure.Messaging.Kafka.Tests/InMemoryInboxMessageProcessor.cs` (F3-04, test
   double para pruebas de F3-02 sin SQL Server real).
+- `docs/politica-reintentos-eventos.md` (F3-07, política completa).
 - `docs/guia-eventing-contratos.md` (contratos F3-01, adapter Kafka F3-02, relay de Outbox F3-03).
-- `docs/guia-outbox-publisher.md` (F3-03, patrón de referencia de "scope por unidad de trabajo").
+- `docs/guia-outbox-publisher.md` (F3-03, patrón de referencia de "scope por unidad de trabajo"; F3-07, reintentos del lado publicador).
 - `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox).
 - ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).

@@ -381,8 +381,26 @@ incremento de `SchemaVersion`.
 - No valida compatibilidad contra ningún evento ya publicado en un tópico Kafka real (no hay registro
   de esquema/Schema Registry, F3-02) — la comparación es siempre entre dos tipos .NET del propio
   repositorio, en tiempo de compilación/test.
-- Catálogo de eventos con owner/PII/consumidores registrados (F3-12), retries (F3-07), DLQ (F3-08),
+- Catálogo de eventos con owner/PII/consumidores registrados (F3-12), DLQ (F3-08),
   poison messages (F3-09), observabilidad (F3-10) ni seguridad de transporte (F3-11).
+
+## Reintentos con backoff y límite (F3-07)
+
+Ver `docs/politica-reintentos-eventos.md` para el detalle completo. Resumen: `OutboxBatchProcessor`
+(relay de Outbox, F3-03) y `KafkaEventConsumer<TEvent>` (F3-02/F3-04) ahora clasifican cada fallo con
+`IEventPublishFailureClassifier` (`Shared.Application.Eventing`; `KafkaEventPublishFailureClassifier`
+es la implementación real contra `Confluent.Kafka.ProduceException`) y aplican backoff exponencial con
+jitter (`EventRetryBackoff`) hasta `EventRetryPolicyOptions.MaxAttempts` — al superarlo (o ante un error
+permanente), el relay de Outbox marca `OutboxMessage.ExhaustedAtUtc` (la fila nunca se pierde ni se
+descarta, solo deja de reclamarse) y el consumidor Kafka lanza `EventProcessingExhaustedException` (el
+offset sigue sin confirmarse). Ninguno de los dos implementa DLQ real todavía (F3-08).
+
+### Qué NO resuelve F3-07
+
+- DLQ real (F3-08), aislamiento de poison messages más allá del límite de reintentos (F3-09),
+  observabilidad/métricas dedicadas de reintentos (F3-10).
+- Persistencia del conteo de intentos fallidos del lado consumidor (queda en memoria, no persistido —
+  ver la tabla comparativa en `docs/politica-reintentos-eventos.md`).
 
 ## Referencias
 
@@ -394,7 +412,8 @@ incremento de `SchemaVersion`.
 - `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`, incluida `Integration/KafkaEventPublisherPartitioningIntegrationTests.cs` (F3-05).
 - `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs` (F3-03).
 - `docs/guia-inbox-consumer.md` (F3-04, coordinación Kafka + Inbox), `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxConsumerIntegrationTests.cs`.
-- `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox/particionamiento, F1-23/F1-24/F3-02/F3-03/F3-05).
+- `docs/convenciones.md` (regla dura 17/18/22/23/25, Outbox/Inbox/adapter Kafka/relay de Outbox/particionamiento/reintentos, F1-23/F1-24/F3-02/F3-03/F3-05/F3-07).
+- `docs/politica-reintentos-eventos.md` (F3-07, política completa de reintentos).
 - `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Inbox).
 - `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).
 - `docs/politica-versionado.md`, sección 5 (reglas de compatibilidad forward/backward de eventos de integración, actualizada por F3-06).

@@ -163,3 +163,5 @@ BitCode.Framework.Shared.Domain.Inbox.IInboxStore
 BitCode.Framework.Shared.Domain.Inbox.IInboxStore.FindAsync(string! messageId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Inbox.InboxMessage?>!
 BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Add(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
 BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Discard(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ExhaustedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ExhaustedAtUtc.set -> void

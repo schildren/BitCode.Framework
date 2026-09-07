@@ -72,3 +72,27 @@ BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(BitCo
 BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(System.Collections.Generic.IEnumerable<BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent!>! integrationEvents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>
 BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>.ConsumeAsync(TEvent integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier.DefaultEventPublishFailureClassifier() -> void
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier.Classify(System.Exception! exception) -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.EventProcessingExhaustedException(string! messageId, string! eventType, int attempts, System.Exception! innerException) -> void
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.MessageId.get -> string!
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.EventType.get -> string!
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.Attempts.get -> int
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind.Transient = 0 -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind.Permanent = 1 -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff
+static BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff.CalculateDelay(int attemptNumber, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! options, System.Random? random = null) -> System.TimeSpan
+static BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff.IsExhausted(int attemptsSoFar, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! options) -> bool
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.EventRetryPolicyOptions() -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxAttempts.get -> int
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxAttempts.set -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.BaseDelay.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.BaseDelay.set -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxDelay.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxDelay.set -> void
+BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier
+BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier.Classify(System.Exception! exception) -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind

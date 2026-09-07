@@ -38,6 +38,14 @@ public static class KafkaServiceCollectionExtensions
 
         services.TryAddSingleton<IEventPublisher, KafkaEventPublisher>();
 
+        // F3-07: clasificador de errores específico de Kafka para quien reintente publicaciones (por
+        // ejemplo, OutboxBatchProcessor, Shared.Infrastructure.Persistence) — TryAddSingleton para que,
+        // si AddSharedOutboxPublisher ya registró su clasificador de reserva (DefaultEventPublishFailureClassifier)
+        // ANTES de llamar este método, gane igual el genérico (por eso ambas guías de registro piden
+        // llamar AddSharedMessagingKafka primero); si se llama en el orden documentado, este es el que
+        // efectivamente se resuelve.
+        services.TryAddSingleton<IEventPublishFailureClassifier, KafkaEventPublishFailureClassifier>();
+
         return services;
     }
 }

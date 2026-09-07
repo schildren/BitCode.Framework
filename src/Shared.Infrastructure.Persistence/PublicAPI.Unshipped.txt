@@ -159,10 +159,10 @@ BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecuto
 BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor.ListAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TResult!>!>!
 BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor.SingleOrDefaultAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult?>!
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor
-BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor.OutboxBatchProcessor(Microsoft.EntityFrameworkCore.DbContext! context, BitCode.Framework.Shared.Application.Eventing.IEventPublisher! eventPublisher, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions! options, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor!>! logger) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor.OutboxBatchProcessor(Microsoft.EntityFrameworkCore.DbContext! context, BitCode.Framework.Shared.Application.Eventing.IEventPublisher! eventPublisher, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions! options, BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier! failureClassifier, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor!>! logger) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor.ProcessBatchAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!>!
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult
-BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.OutboxBatchResult(int Claimed, int Published, int SkippedInternal, int Failed) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.OutboxBatchResult(int Claimed, int Published, int SkippedInternal, int Failed, int Exhausted = 0) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Claimed.get -> int
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Claimed.init -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Published.get -> int
@@ -171,7 +171,9 @@ BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Ski
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.SkippedInternal.init -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Failed.get -> int
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Failed.init -> void
-BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Deconstruct(out int Claimed, out int Published, out int SkippedInternal, out int Failed) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Exhausted.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Exhausted.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Deconstruct(out int Claimed, out int Published, out int SkippedInternal, out int Failed, out int Exhausted) -> void
 static readonly BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Empty -> BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Equals(BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? other) -> bool
@@ -190,6 +192,8 @@ BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOption
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.LockDuration.set -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.WorkerId.get -> string!
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.WorkerId.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.Retry.get -> BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.Retry.set -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService.OutboxPublisherBackgroundService(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions! options, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService!>! logger) -> void
 BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherServiceCollectionExtensions
