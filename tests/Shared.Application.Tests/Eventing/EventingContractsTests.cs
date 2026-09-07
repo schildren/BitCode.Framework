@@ -103,6 +103,34 @@ public class EventingContractsTests
     }
 
     [Fact]
+    public void IHasPartitionKey_expone_AggregateId_como_clave_de_particion_cuando_el_orden_es_por_entidad_de_negocio()
+    {
+        var orderId = Guid.NewGuid();
+        IIntegrationEvent evento = new TestOrderCreatedWithAggregateIdPartitionKeyIntegrationEvent(orderId, "Ada Lovelace");
+
+        evento.Should().BeAssignableTo<IHasPartitionKey>("un evento que necesita orden por AggregateId (F3-05) declara la clave de partición implementando esta interfaz opcional");
+        ((IHasPartitionKey)evento).PartitionKey.Should().Be(orderId.ToString());
+    }
+
+    [Fact]
+    public void IHasPartitionKey_expone_TenantId_como_clave_de_particion_cuando_el_orden_es_por_tenant()
+    {
+        var tenantId = Guid.NewGuid();
+        IIntegrationEvent evento = new TestOrderCreatedWithTenantIdPartitionKeyIntegrationEvent(Guid.NewGuid(), tenantId);
+
+        evento.Should().BeAssignableTo<IHasPartitionKey>();
+        ((IHasPartitionKey)evento).PartitionKey.Should().Be(tenantId.ToString());
+    }
+
+    [Fact]
+    public void IIntegrationEvent_sin_IHasPartitionKey_sigue_siendo_un_evento_valido_sin_clave_de_particion_explicita()
+    {
+        IIntegrationEvent evento = new TestOrderCreatedIntegrationEvent(Guid.NewGuid(), "Ada Lovelace");
+
+        evento.Should().NotBeAssignableTo<IHasPartitionKey>("IHasPartitionKey es opcional (F3-05): un evento que no la implementa sigue siendo un IIntegrationEvent válido, sin ninguna garantía de orden entre instancias relacionadas");
+    }
+
+    [Fact]
     public async Task IEventConsumer_expone_ConsumeAsync_tipado_al_evento_concreto()
     {
         var consumer = Substitute.For<IEventConsumer<TestOrderCreatedIntegrationEvent>>();

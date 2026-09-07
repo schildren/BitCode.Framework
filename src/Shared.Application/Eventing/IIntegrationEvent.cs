@@ -30,6 +30,11 @@ namespace BitCode.Framework.Shared.Application.Eventing;
 /// versión de esquema... nunca se infiere la versión del payload por heurística"). La política de
 /// compatibilidad forward/backward concreta sobre este campo es trabajo de F3-06; F3-01 solo reserva
 /// el campo en el contrato.
+///
+/// La clave de partición (F3-05, "AggregateId o TenantId según orden requerido") NO es un campo de esta
+/// interfaz: un evento concreto que necesita declarar orden explícito implementa adicionalmente
+/// <see cref="IHasPartitionKey"/> (interfaz opcional, sin romper este contrato ni ningún consumidor que
+/// no la conozca) — ver <c>docs/guia-eventing-contratos.md</c>, sección "Particionamiento (F3-05)".
 /// </remarks>
 public interface IIntegrationEvent
 {

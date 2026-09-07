@@ -139,7 +139,8 @@ concreta de los contratos de F3-01:
   consumidor de observabilidad (F3-10) los lea sin deserializar el payload completo.
 - **`KafkaEventPublisher : IEventPublisher`**: recibe un `IProducer<string, byte[]>` ya construido
   (compartido, thread-safe) y publica cada evento al tópico resuelto por `EventType`, con `Key` =
-  `EventId` (placeholder razonable hasta que F3-05 defina la clave de partición definitiva).
+  `IHasPartitionKey.PartitionKey` si el evento la implementa, o `EventId` en caso contrario (F3-05, ver
+  sección más abajo).
 - **`KafkaEventConsumer<TEvent> : IDisposable`**: se suscribe al tópico de un `EventType` concreto y,
   por cada mensaje, deserializa a `TEvent` y lo procesa de forma deduplicada vía
   `IInboxMessageProcessor.ProcessAsync` (F1-24/F3-04) — **solo si termina sin excepción** (procesado o
@@ -162,9 +163,10 @@ la clasificación de error transitorio/permanente y el backoff con reintentos es
 
 - Integración con `OutboxMessage` (relay real de Outbox, agregado después por F3-03 — ver sección más
   abajo). La integración con `InboxMessage`/deduplicación real quedó cerrada por F3-04 (ver más abajo).
-- Particionamiento definitivo (F3-05), compatibilidad de esquema (F3-06), retries con backoff (F3-07),
-  DLQ (F3-08), poison messages (F3-09), observabilidad/métricas (F3-10), seguridad de transporte real
-  con SASL/SSL (F3-11) ni catálogo de eventos (F3-12).
+- Particionamiento definitivo, cerrado después por F3-05 (ver sección más abajo). Compatibilidad de
+  esquema (F3-06), retries con backoff (F3-07), DLQ (F3-08), poison messages (F3-09),
+  observabilidad/métricas (F3-10), seguridad de transporte real con SASL/SSL (F3-11) ni catálogo de
+  eventos (F3-12).
 - Habilitar tráfico productivo sobre Kafka: sigue condicionado a una aprobación humana adicional en el
   momento de ese despliegue (ADR `docs/adr/0005-mensajeria-kafka.md`, adenda de F3-02).
 
@@ -205,16 +207,90 @@ scope de DI nuevo por mensaje, del que resuelve tanto `IInboxMessageProcessor` c
 la fila de Inbox y el efecto de negocio se persistan atómicamente). Detalle completo, incluida la guía de
 registro en DI y las pruebas contra SQL Server + Kafka reales: `docs/guia-inbox-consumer.md`.
 
+## Particionamiento (F3-05)
+
+F3-05 cierra el punto de extensión que F3-02 dejó explícitamente pendiente (`Key` del mensaje Kafka):
+agrega `IHasPartitionKey` (`Shared.Application.Eventing`), una interfaz OPCIONAL que un
+`IIntegrationEvent` concreto puede implementar para declarar su clave de partición explícita.
+
+```csharp
+public interface IHasPartitionKey
+{
+    string PartitionKey { get; }
+}
+```
+
+- **Por qué opcional, no un campo de `IIntegrationEvent`:** distintos eventos necesitan distinto
+  criterio de orden (o ninguno). Agregar un campo obligatorio a `IIntegrationEvent` habría sido un
+  cambio de contrato público retroactivo sobre F3-01, rompiendo cualquier evento ya escrito entre F3-01
+  y F3-04. `IHasPartitionKey` es una interfaz adicional: un evento que no la implementa sigue
+  compilando y comportándose exactamente igual que antes de F3-05.
+- **`KafkaEventPublisher.PublishAsync`** (F3-02, actualizado por F3-05): si el `IIntegrationEvent` que
+  recibe implementa `IHasPartitionKey`, usa `PartitionKey` como `Key` del mensaje Kafka. Si no la
+  implementa, sigue usando `EventId` (comportamiento heredado de F3-02, documentado en la firma de
+  `KafkaEventPublisher` como "sin ninguna garantía de orden entre eventos relacionados").
+- **`AggregateId` como `PartitionKey`** — orden por entidad de negocio: cuando eventos del mismo
+  agregado deben procesarse en el orden exacto en que ocurrieron (por ejemplo, `PedidoCreado` antes que
+  `PedidoCancelado` del mismo pedido), sin que importe el orden relativo frente a eventos de OTROS
+  agregados. Se usa el `Id` (como `string`) del `AggregateRoot<TId>` (Shared.Kernel, F1-23) que levantó
+  el `DomainEvent` original.
+
+  ```csharp
+  public sealed record PedidoCreadoIntegrationEvent(Guid PedidoId, string Cliente)
+      : IntegrationEvent, IHasPartitionKey
+  {
+      public override string EventType => "Pedidos.PedidoCreado";
+      public string PartitionKey => PedidoId.ToString();
+  }
+  ```
+
+- **`TenantId` como `PartitionKey`** — orden por tenant: cuando no importa el orden relativo entre
+  agregados distintos, pero sí que ningún evento de un tenant se procese fuera de orden respecto de otro
+  evento del MISMO tenant (por ejemplo, un proyector de reportes por tenant). Se usa
+  `ITenantEntity.TenantId` del origen del evento.
+
+  ```csharp
+  public sealed record PedidoCreadoIntegrationEvent(Guid PedidoId, Guid TenantId, string Cliente)
+      : IntegrationEvent, IHasPartitionKey
+  {
+      public override string EventType => "Pedidos.PedidoCreado";
+      public string PartitionKey => TenantId.ToString();
+  }
+  ```
+
+- **Semántica de orden resultante:** Kafka enruta por hash de `Key` — misma `Key` → misma partición del
+  tópico → un consumidor de esa partición recibe los mensajes en el mismo orden en que se publicaron
+  (orden garantizado). Dos eventos con `PartitionKey` distinta PUEDEN terminar en la misma partición o
+  en particiones distintas (no hay ninguna garantía de orden relativo entre ellos en ningún caso) —
+  exactamente la semántica exigida por la Fase 3: "Orden: solo garantizado dentro de la partición
+  definida".
+- **Elección del criterio (`AggregateId` vs `TenantId`) es del autor del evento concreto**, no una regla
+  única y universal que este framework pueda imponer: F3-05 provee el mecanismo (`IHasPartitionKey`),
+  no la política de qué campo usar para cada evento de negocio.
+- **No resuelto por F3-05:** un esquema de tópicos por tenant/ambiente (sigue siendo
+  `IKafkaTopicNameResolver`, F3-02), la cantidad de particiones de un tópico productivo ni ninguna
+  política de reparticionamiento — quedan fuera del alcance de esta tarea.
+
+Pruebas: `tests/Shared.Infrastructure.Messaging.Kafka.Tests/Integration/KafkaEventPublisherPartitioningIntegrationTests.cs`
+verifica, contra un tópico Kafka real de 3 particiones (`Confluent.Kafka.Admin.AdminClient`, criterio de
+aceptación literal "Orden demostrado por partición"): (1) N eventos con la misma `PartitionKey` llegan a
+un consumidor en el mismo orden exacto en que se publicaron y todos caen en la misma partición; (2)
+eventos con `PartitionKey` distinta pueden repartirse en más de una partición (sin garantía de orden
+relativo entre ellos); (3) un evento que NO implementa `IHasPartitionKey` sigue publicándose con `Key` =
+`EventId`, sin romper la compatibilidad con F3-01 a F3-04. `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`
+cubre la forma del contrato (`IHasPartitionKey` opcional, ejemplo `AggregateId` y ejemplo `TenantId`) sin
+necesitar ningún broker.
+
 ## Referencias
 
-- `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`.
+- `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`, `IHasPartitionKey.cs` (F3-05).
 - `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`, `TestIntegrationEvents.cs`.
-- `src/Shared.Infrastructure.Messaging.Kafka/` (F3-02): `KafkaMessagingOptions.cs`, `KafkaClientConfigFactory.cs`, `IKafkaTopicNameResolver.cs`, `KafkaIntegrationEventSerializer.cs`, `KafkaEventPublisher.cs`, `KafkaEventConsumer.cs`, `KafkaServiceCollectionExtensions.cs`.
+- `src/Shared.Infrastructure.Messaging.Kafka/` (F3-02/F3-05): `KafkaMessagingOptions.cs`, `KafkaClientConfigFactory.cs`, `IKafkaTopicNameResolver.cs`, `KafkaIntegrationEventSerializer.cs`, `KafkaEventPublisher.cs`, `KafkaEventConsumer.cs`, `KafkaServiceCollectionExtensions.cs`.
 - `src/Shared.Infrastructure.Persistence/Outbox/` (F3-03): `OutboxBatchProcessor.cs`, `OutboxBatchResult.cs`, `OutboxPublisherOptions.cs`, `OutboxPublisherBackgroundService.cs`, `OutboxPublisherServiceCollectionExtensions.cs`. Ver `docs/guia-outbox-publisher.md` para el detalle completo.
-- `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`.
+- `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`, incluida `Integration/KafkaEventPublisherPartitioningIntegrationTests.cs` (F3-05).
 - `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxPublisherIntegrationTests.cs` (F3-03).
 - `docs/guia-inbox-consumer.md` (F3-04, coordinación Kafka + Inbox), `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxConsumerIntegrationTests.cs`.
-- `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox, F1-23/F1-24/F3-02/F3-03).
+- `docs/convenciones.md` (regla dura 17/18/22/23, Outbox/Inbox/adapter Kafka/relay de Outbox/particionamiento, F1-23/F1-24/F3-02/F3-03/F3-05).
 - `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Inbox).
 - `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).
 - `docs/politica-versionado.md` (versión de esquema de eventos de integración).

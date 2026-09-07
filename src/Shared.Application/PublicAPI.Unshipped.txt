@@ -1,4 +1,6 @@
 #nullable enable
+BitCode.Framework.Shared.Application.Eventing.IHasPartitionKey
+BitCode.Framework.Shared.Application.Eventing.IHasPartitionKey.PartitionKey.get -> string!
 BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions
 BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>
 BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!

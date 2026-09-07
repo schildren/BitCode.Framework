@@ -69,8 +69,11 @@ public sealed class KafkaEventConsumer<TEvent> : IDisposable
     /// <param name="options">Configuración de conexión/autenticación al broker.</param>
     /// <param name="eventType">
     /// <see cref="IIntegrationEvent.EventType"/> del evento que maneja este consumidor — usado para
-    /// resolver el tópico al que suscribirse (F3-05 define la estrategia definitiva de tópicos/partición)
-    /// y como <c>messageType</c> de trazabilidad ante <see cref="IInboxMessageProcessor.ProcessAsync"/>.
+    /// resolver el tópico al que suscribirse y como <c>messageType</c> de trazabilidad ante
+    /// <see cref="IInboxMessageProcessor.ProcessAsync"/>. La clave de partición dentro de ese tópico
+    /// (AggregateId/TenantId según orden requerido) la define el publicador (F3-05,
+    /// <c>IHasPartitionKey</c>/<c>KafkaEventPublisher</c>) — este consumidor solo se suscribe al tópico
+    /// completo (todas sus particiones) y no participa de esa decisión.
     /// </param>
     /// <param name="scopeFactory">
     /// Fábrica de scopes de DI (F3-04): se crea un scope nuevo por mensaje consumido, del que se

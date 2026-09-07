@@ -14,10 +14,13 @@ namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 /// internos), por lo que se comparte una única instancia por proceso — <c>KafkaEventPublisher</c> no
 /// es dueño de su ciclo de vida ni lo dispone.
 ///
-/// <c>Key</c> del mensaje: por ahora <see cref="IIntegrationEvent.EventId"/> (valor determinístico por
-/// evento, mejor que ninguna key para al menos no perder por completo la posibilidad de correlacionar
-/// reintentos), pero la estrategia definitiva de partición (AggregateId/TenantId según orden requerido)
-/// es F3-05 — no se resuelve en esta tarea.
+/// <c>Key</c> del mensaje (F3-05, <c>IHasPartitionKey</c>): si <see cref="IIntegrationEvent"/> implementa
+/// <see cref="IHasPartitionKey"/>, se usa <see cref="IHasPartitionKey.PartitionKey"/> como <c>Key</c> —
+/// dos eventos con la misma <c>PartitionKey</c> quedan en la misma partición del tópico, así que un
+/// consumidor de esa partición los recibe en el mismo orden en que se publicaron (ver
+/// <c>docs/guia-eventing-contratos.md</c>, sección "Particionamiento (F3-05)"). Si el evento NO
+/// implementa <see cref="IHasPartitionKey"/>, se usa <see cref="IIntegrationEvent.EventId"/> como antes
+/// de F3-05 (placeholder razonable, sin ninguna garantía de orden entre eventos relacionados).
 /// </remarks>
 public sealed class KafkaEventPublisher : IEventPublisher
 {
@@ -55,7 +58,11 @@ public sealed class KafkaEventPublisher : IEventPublisher
 
         var message = new Message<string, byte[]>
         {
-            Key = integrationEvent.EventId.ToString(),
+            // F3-05: partición por PartitionKey explícito cuando el evento lo declara; si no,
+            // fallback a EventId (comportamiento heredado de F3-02, sin garantía de orden).
+            Key = integrationEvent is IHasPartitionKey withPartitionKey
+                ? withPartitionKey.PartitionKey
+                : integrationEvent.EventId.ToString(),
             Value = value,
             Headers = headers,
         };

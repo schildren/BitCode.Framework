@@ -192,7 +192,7 @@ concreto deja `OutboxBatchProcessor` sin poder resolver esa dependencia.
 ## Qué NO resuelve F3-03
 
 - **Inbox/consumo** (F3-04): este relay es exclusivamente el lado publicador (Outbox → broker).
-- **Particionamiento definitivo** (F3-05): sigue siendo `Key = EventId` (heredado de F3-02).
+- **Particionamiento definitivo**: cerrado por F3-05 (`IHasPartitionKey`, ver `docs/guia-eventing-contratos.md`) — un `DomainEvent`/`IIntegrationEvent` reconstruido por este relay que implementa `IHasPartitionKey` publica con `Key = PartitionKey`; si no la implementa, sigue siendo `Key = EventId` (heredado de F3-02). Este relay no toma ninguna decisión de partición por su cuenta: solo reconstruye el `IIntegrationEvent` y delega en `IEventPublisher.PublishAsync` (`KafkaEventPublisher`).
 - **Compatibilidad de esquema** (F3-06), **retries con backoff clasificado** (F3-07, hoy el reintento es
   "en el próximo ciclo de sondeo", sin backoff exponencial ni jitter), **DLQ** (F3-08) ni **aislamiento
   de poison messages** (F3-09, hoy un tipo irresolvible se reintenta indefinidamente).

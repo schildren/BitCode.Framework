@@ -23,3 +23,21 @@ public sealed record TestDeserializedIntegrationEvent(
     string EventType,
     int SchemaVersion,
     Guid OrderId) : IIntegrationEvent;
+
+/// <summary>Evento de integración que implementa <see cref="IHasPartitionKey"/> (F3-05) usando el AggregateId (OrderId) como clave de partición — caso "orden por entidad de negocio".</summary>
+public sealed record TestOrderCreatedWithAggregateIdPartitionKeyIntegrationEvent(Guid OrderId, string CustomerName)
+    : IntegrationEvent, IHasPartitionKey
+{
+    public override string EventType => "Pedidos.PedidoCreado";
+
+    public string PartitionKey => OrderId.ToString();
+}
+
+/// <summary>Evento de integración que implementa <see cref="IHasPartitionKey"/> (F3-05) usando el TenantId como clave de partición — caso "orden por tenant, sin importar el agregado".</summary>
+public sealed record TestOrderCreatedWithTenantIdPartitionKeyIntegrationEvent(Guid OrderId, Guid TenantId)
+    : IntegrationEvent, IHasPartitionKey
+{
+    public override string EventType => "Pedidos.PedidoCreado";
+
+    public string PartitionKey => TenantId.ToString();
+}

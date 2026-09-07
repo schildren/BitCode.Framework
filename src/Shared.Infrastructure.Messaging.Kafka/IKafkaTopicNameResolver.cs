@@ -4,11 +4,12 @@ namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 /// Resuelve el nombre de tópico Kafka a partir de <see cref="BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.EventType"/>.
 /// </summary>
 /// <remarks>
-/// Punto de extensión deliberado para F3-05 ("Particionamiento — definir AggregateId o TenantId según
-/// orden requerido") y para un futuro esquema de tópicos por ambiente/tenant: F3-02 solo resuelve el
-/// criterio de aceptación mínimo ("el nombre de tópico puede derivarse de EventType por ahora"), sin
-/// definir la estrategia de particionamiento ni de multi-tenant por tópico — eso excede el alcance de
-/// esta tarea.
+/// Punto de extensión deliberado para un futuro esquema de tópicos por ambiente/tenant: F3-02 solo
+/// resuelve el criterio de aceptación mínimo ("el nombre de tópico puede derivarse de EventType por
+/// ahora"), sin definir un esquema de tópicos por tenant/ambiente — eso excede el alcance de esta tarea.
+/// La clave de PARTICIÓN dentro de un mismo tópico (AggregateId/TenantId según orden requerido) es F3-05
+/// (<c>IHasPartitionKey</c>, <c>Shared.Application.Eventing</c>) — un concepto distinto de a qué tópico
+/// se enruta un evento, que sigue siendo responsabilidad exclusiva de este resolver.
 /// </remarks>
 public interface IKafkaTopicNameResolver
 {

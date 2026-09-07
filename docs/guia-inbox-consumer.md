@@ -96,8 +96,11 @@ consumo" queda en el proyecto consumidor.
   vez de descartarse silenciosamente — el offset de esa segunda entrega no se confirma automáticamente
   (la excepción se propaga), así que Kafka la reintenta, y ese reintento sí encuentra la fila ya marcada
   como procesada y se descarta correctamente.
-- **Particionamiento (F3-05), compatibilidad de esquema (F3-06), observabilidad/métricas dedicadas
-  (F3-10)** siguen sin resolver, igual que en F3-02/F3-03.
+- **Particionamiento** (F3-05) fue cerrado por el lado publicador (`IHasPartitionKey`,
+  `docs/guia-eventing-contratos.md`); este consumidor no cambia: sigue suscribiéndose al tópico completo
+  (todas sus particiones) y no participa de la decisión de a qué partición fue cada mensaje.
+  **Compatibilidad de esquema (F3-06), observabilidad/métricas dedicadas (F3-10)** siguen sin resolver,
+  igual que en F3-02/F3-03.
 
 ## Pruebas
 
