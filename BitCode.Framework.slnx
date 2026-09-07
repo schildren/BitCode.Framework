@@ -24,6 +24,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/BitCode.Gateway.Tests/BitCode.Gateway.Tests.csproj" />
     <Project Path="tests/Shared.Application.Tests/Shared.Application.Tests.csproj" />
+    <Project Path="tests/Shared.Infrastructure.BackgroundJobs.IntegrationTests/Shared.Infrastructure.BackgroundJobs.IntegrationTests.csproj" />
     <Project Path="tests/Shared.Infrastructure.BackgroundJobs.Tests/Shared.Infrastructure.BackgroundJobs.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Caching.Tests/Shared.Infrastructure.Caching.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Http.Tests/Shared.Infrastructure.Http.Tests.csproj" />

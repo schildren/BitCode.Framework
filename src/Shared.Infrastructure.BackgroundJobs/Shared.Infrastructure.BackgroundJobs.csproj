@@ -4,6 +4,23 @@
   <ItemGroup>
     <PackageReference Include="Quartz" Version="3.13.1" />
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1" />
+    <!-- F4-11 (Quartz HA): serializador JSON first-party de Quartz.NET (mismo autor/licencia
+         Apache-2.0 que el paquete Quartz base ya referenciado) para el AdoJobStore persistente —
+         evita el BinaryFormatter usado por UseBinarySerializer(), deprecado/inseguro en .NET
+         moderno y desaconsejado por el propio proyecto Quartz.NET para nuevos despliegues. -->
+    <PackageReference Include="Quartz.Serialization.SystemTextJson" Version="3.13.1" />
+    <!-- F4-11: driver ADO que Quartz.UseSqlServer(...) necesita en tiempo de ejecución para
+         conectarse al AdoJobStore — Quartz no lo trae como dependencia transitiva (soporta varios
+         motores). Misma versión que ya resuelve EF Core 10.0.11 (Microsoft.EntityFrameworkCore.SqlServer)
+         en el resto del repositorio, para no introducir deriva de versión del driver SQL. -->
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- F4-11: script de creación del esquema QRTZ_* embebido en el ensamblado, para que
+         QuartzSqlServerSchemaInitializer pueda aplicarlo sin depender de una ruta de archivo en
+         disco (portable dentro de un contenedor). -->
+    <EmbeddedResource Include="Schema\quartz-sqlserver-schema.sql" />
   </ItemGroup>
 
 </Project>

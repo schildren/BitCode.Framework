@@ -1,3 +1,21 @@
 #nullable enable
 BitCode.Framework.Shared.Infrastructure.BackgroundJobs.BackgroundJobsServiceCollectionExtensions
-static BitCode.Framework.Shared.Infrastructure.BackgroundJobs.BackgroundJobsServiceCollectionExtensions.AddSharedBackgroundJobs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Quartz.IServiceCollectionQuartzConfigurator!>! configureJobs) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.QuartzHighAvailabilityOptions() -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ClusterCheckinInterval.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ClusterCheckinInterval.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ClusterCheckinMisfireThreshold.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ClusterCheckinMisfireThreshold.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.Clustered.get -> bool
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.Clustered.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ConnectionString.get -> string!
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.ConnectionString.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.MisfireThreshold.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.MisfireThreshold.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.SchedulerName.get -> string?
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.SchedulerName.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.TablePrefix.get -> string!
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions.TablePrefix.set -> void
+BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzSqlServerSchemaInitializer
+static BitCode.Framework.Shared.Infrastructure.BackgroundJobs.BackgroundJobsServiceCollectionExtensions.AddSharedBackgroundJobs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Quartz.IServiceCollectionQuartzConfigurator!>! configureJobs, System.Action<BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzHighAvailabilityOptions!>? configureHighAvailability = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.BackgroundJobs.QuartzSqlServerSchemaInitializer.ApplySchemaIfMissingAsync(string! connectionString, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

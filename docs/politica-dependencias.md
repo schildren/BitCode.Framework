@@ -155,6 +155,42 @@ LOGS, métricas y trazas" (métricas/trazas ya lo hacían desde F3-10):
   `ObservabilityServiceCollectionExtensions`, F3-10) — un host sin collector configurado (desarrollo
   local) no abre ninguna conexión OTLP nueva, sigue escribiendo únicamente a `Console`.
 
+## 5.4. Registro de evaluación — `Quartz.Serialization.SystemTextJson` y `Microsoft.Data.SqlClient` (F4-11)
+
+Dos dependencias agregadas a `src/Shared.Infrastructure.BackgroundJobs` para pasar de `RAMJobStore`
+(en memoria, un único proceso) a `AdoJobStore` persistente sobre SQL Server con clustering (F4-11,
+"Quartz HA"):
+
+- **`Quartz.Serialization.SystemTextJson` 3.13.1** (misma versión exacta que `Quartz`/
+  `Quartz.Extensions.Hosting`, ya referenciados por este mismo proyecto).
+  - **Licencia:** Apache-2.0 (repositorio `quartznet/quartznet`, mismo autor/organización que el
+    paquete `Quartz` base) — categoría "permitida sin excepción" (sección 2), no requiere ADR.
+  - **Mantenimiento:** paquete first-party del propio proyecto Quartz.NET, publicado en el mismo
+    ciclo de versionado que `Quartz`/`Quartz.Extensions.Hosting`.
+  - **Por qué se eligió sobre la alternativa (`UseBinarySerializer()`, ya incluido en `Quartz` sin
+    dependencia adicional):** el serializador binario de Quartz usa `BinaryFormatter`, marcado
+    obsoleto/inseguro por el propio .NET (deserialización insegura de tipos arbitrarios) y removido
+    de .NET moderno para escenarios expuestos a datos no confiables — la propia documentación de
+    Quartz.NET recomienda JSON para proyectos nuevos ("JSON is recommended persistent format to
+    store data in database for greenfield projects"). No hay compatibilidad con datos ya
+    serializados en binario que migrar, porque este es el primer JobStore persistente del framework.
+  - **Seguridad:** `dotnet list package --vulnerable --include-transitive` sobre
+    `Shared.Infrastructure.BackgroundJobs` no reportó vulnerabilidades conocidas.
+  - **Alcance de uso:** solo se activa dentro de
+    `BackgroundJobsServiceCollectionExtensions.AddSharedBackgroundJobs` cuando el consumidor pasa el
+    parámetro opcional `configureHighAvailability` — sin él, el comportamiento (y las dependencias
+    efectivamente cargadas en tiempo de ejecución) no cambia respecto de antes de esta tarea.
+- **`Microsoft.Data.SqlClient` 6.1.6** — misma versión que ya resuelve
+  `Microsoft.EntityFrameworkCore.SqlServer` 10.0.11 en el resto del repositorio (`Shared.Infrastructure.Persistence`),
+  fijada explícitamente para no introducir deriva de versión del driver ADO entre proyectos.
+  - **Licencia:** MIT — categoría "permitida sin excepción".
+  - **Por qué es necesaria:** `Quartz.UseSqlServer(...)` (paquete `Quartz` base) necesita el driver
+    ADO de SQL Server disponible en tiempo de ejecución para abrir la conexión del `AdoJobStore`;
+    Quartz no lo trae como dependencia transitiva (soporta múltiples motores de base de datos).
+  - **Seguridad:** sin vulnerabilidades conocidas reportadas para esta versión al momento de esta
+    tarea (mismo paquete/versión ya evaluado indirectamente vía EF Core SqlServer en el resto del
+    repositorio).
+
 ## 6. Explícitamente fuera de alcance de esta tarea (sección 9 del Plan Maestro)
 
 No se agregan en F0-06, por exceder el alcance de "aplicar una verificación básica en CI" y requerir su propio ADR/evaluación:
