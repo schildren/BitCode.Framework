@@ -27,6 +27,10 @@ public static class KafkaServiceCollectionExtensions
         var options = configuration.GetSection(KafkaMessagingOptions.SectionName).Get<KafkaMessagingOptions>()
             ?? new KafkaMessagingOptions();
 
+        // F3-11: falla en el arranque (no en el primer publish/consume) si la configuración de
+        // seguridad de transporte es inconsistente (ver KafkaMessagingOptionsValidator).
+        KafkaMessagingOptionsValidator.Validate(options);
+
         services.TryAddSingleton(options);
         services.TryAddSingleton<IKafkaTopicNameResolver>(DefaultKafkaTopicNameResolver.Instance);
 

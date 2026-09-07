@@ -8,6 +8,15 @@ namespace BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 /// lugar, para que el productor y el consumidor apliquen siempre la misma configuración de
 /// transporte/autenticación (evita que uno quede con SASL/SSL configurado y el otro no).
 /// </summary>
+/// <remarks>
+/// F3-11: mapea las 4 combinaciones de <see cref="SecurityProtocol"/> que soporta
+/// <c>Confluent.Kafka.ClientConfig</c> (Plaintext, SaslPlaintext, Ssl, SaslSsl) — el valor de
+/// <see cref="KafkaMessagingOptions.SecurityProtocol"/> se traslada siempre tal cual a
+/// <c>ClientConfig.SecurityProtocol</c>, y las credenciales/certificados solo se agregan si están
+/// configurados. No valida consistencia acá (eso es responsabilidad de
+/// <see cref="KafkaMessagingOptionsValidator"/>, invocado antes en <c>AddSharedMessagingKafka</c>) para
+/// mantener esta clase como un mapeo puro sin lógica de negocio.
+/// </remarks>
 public static class KafkaClientConfigFactory
 {
     public static ProducerConfig BuildProducerConfig(KafkaMessagingOptions options)
@@ -59,6 +68,17 @@ public static class KafkaClientConfigFactory
         if (!string.IsNullOrWhiteSpace(options.SslCaLocation))
         {
             config.SslCaLocation = options.SslCaLocation;
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.SslCertificateLocation))
+        {
+            config.SslCertificateLocation = options.SslCertificateLocation;
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.SslKeyLocation))
+        {
+            config.SslKeyLocation = options.SslKeyLocation;
+            config.SslKeyPassword = options.SslKeyPassword;
         }
     }
 }

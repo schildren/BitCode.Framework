@@ -77,3 +77,15 @@ F3-02 y confirmada por el responsable en la sesión de ejecución de la Fase 3. 
   en el momento de ese despliegue.
 - Alternativa RabbitMQ/Azure Service Bus: se mantiene descartada por lo ya expuesto en "Alternativas
   consideradas" — no se reabre la comparación.
+
+## Addendum F3-11 (configuración de seguridad de transporte — no habilita tráfico productivo)
+
+F3-11 completó el mapeo de `KafkaMessagingOptions` hacia `Confluent.Kafka.ClientConfig` para
+SASL/TLS (`KafkaClientConfigFactory`, `KafkaMessagingOptionsValidator`) y documentó la política
+productiva recomendada (`docs/politica-seguridad-kafka.md`: SASL_SSL con SCRAM, un principal por
+bounded context, ACL de mínimo privilegio). Esto es *configuración preparada*, no un cambio de
+alcance de la aprobación de este ADR: sigue sin existir ningún entorno productivo con Kafka real, y
+la verificación de que las ACL efectivamente rechazan accesos cruzados entre tópicos queda como
+parte del runbook operativo del primer despliegue real (ver la sección "Verificación pendiente" de
+`docs/politica-seguridad-kafka.md`), no de un test automatizado de este repositorio. La aprobación
+de "habilitación de tráfico productivo" (sección 13 del Plan Maestro) sigue pendiente, sin cambios.

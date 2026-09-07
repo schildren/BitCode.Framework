@@ -61,3 +61,11 @@ BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventConsumer<TEven
 BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventingDiagnostics
 const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventingDiagnostics.MeterName = "BitCode.Framework.Messaging.Kafka" -> string!
 const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventingDiagnostics.ActivitySourceName = "BitCode.Framework.Messaging.Kafka" -> string!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslCertificateLocation.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslCertificateLocation.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslKeyLocation.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslKeyLocation.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslKeyPassword.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslKeyPassword.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptionsValidator
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptionsValidator.Validate(BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions! options) -> void
