@@ -20,6 +20,25 @@ spec:
     spec:
       # F4-03 (Stateless): sin volúmenes de estado local requeridos, sin
       # affinity a un nodo específico — cualquier pod es reemplazable.
+      # F4-05 (Shutdown): presupuesto de apagado prolijo = preStop sleep (10s, ver
+      # lifecycle.preStop más abajo) + margen real para drenar trabajo en curso antes del SIGKILL final:
+      #   - Requests HTTP en vuelo: ASP.NET Core/Kestrel ya maneja el drenado por defecto al recibir
+      #     SIGTERM (IHostApplicationLifetime.ApplicationStopping), acotado por HostOptions.ShutdownTimeout
+      #     (5s por defecto del host genérico si el proyecto consumidor no lo cambia).
+      #   - Jobs de Quartz en curso: AddSharedBackgroundJobs (Shared.Infrastructure.BackgroundJobs) ya
+      #     registra AddQuartzHostedService con WaitForJobsToComplete=true — pero esa espera también está
+      #     acotada por el mismo HostOptions.ShutdownTimeout del host.
+      #   - OutboxPublisherBackgroundService / loop de KafkaEventConsumer<TEvent> (Fase 3): ya respetan
+      #     el CancellationToken de shutdown fila por fila / mensaje por mensaje (no hay lote a medio
+      #     confirmar que se pierda), pero terminar la fila/mensaje EN CURSO también compite por el mismo
+      #     presupuesto de HostOptions.ShutdownTimeout.
+      # Este Deployment base (sample-api) no registra hoy ningún consumer/Outbox/Quartz (ver
+      # docs/politica-manifiestos-kubernetes.md sección "F4-05"), así que 40s alcanza de sobra para
+      # requests HTTP. Un proyecto real que SÍ registre trabajo en segundo plano de vida más larga debe
+      # (a) subir este valor y (b) subir HostOptions.ShutdownTimeout en su propio Program.cs
+      # (`builder.Host.ConfigureHostOptions(o => o.ShutdownTimeout = ...)`) para que el default de 5s no
+      # corte ese trabajo antes de que este mayor presupuesto del Pod expire — ver la guía referenciada.
+      terminationGracePeriodSeconds: 40
       containers:
         - name: sample-api
           # El tag real se fija por overlay vía kustomization.yaml -> images:
@@ -100,9 +119,23 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
           # -----------------------------------------------------------------
-          # TODO(F4-05): preStop hook / terminationGracePeriodSeconds ajustado
-          # para drenar tráfico y detener consumers correctamente (fila F4-05,
-          # fuera de alcance de F4-02).
+          # F4-05 (Shutdown): drenar tráfico ANTES de que el proceso reciba SIGTERM. La salida de un Pod
+          # del Service (kube-proxy deja de enrutarle tráfico nuevo) y el envío de SIGTERM al proceso son
+          # dos eventos EN PARALELO disparados por el mismo Pod entrando en estado "Terminating" -- sin
+          # este hook, un balanceador/Ingress que todavía no propagó la baja del Endpoint puede seguir
+          # enviando requests nuevos a un proceso que ya dejó de escuchar (o que ya terminó). El hook
+          # retrasa el envío de SIGTERM lo suficiente para que esa propagación ya haya ocurrido.
+          #
+          # `sleep` nativo del kubelet (acción estable desde Kubernetes 1.29, "sleep action" de
+          # lifecycle hooks: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) —
+          # NO `exec` con un comando `sleep` de shell: la imagen "chiseled" (F4-01) no tiene `/bin/sh` ni
+          # ningún binario de coreutils (ver docs/politica-contenedores.md sección 3.2), mismo motivo por
+          # el que los tres probes de arriba son `httpGet` y nunca `exec`. El kubelet ejecuta este sleep
+          # por su cuenta, sin necesitar nada dentro del contenedor.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 10
           resources:
             # Valores base conservadores; cada overlay los sobreescribe con un
             # patch acorde al perfil de carga esperado del ambiente.

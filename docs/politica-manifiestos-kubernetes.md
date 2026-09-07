@@ -1,11 +1,13 @@
 # Manifiestos de despliegue Kubernetes — BitCode.Framework
 
-**Tarea:** F4-02 (Fase 4 — Runtime de alta disponibilidad) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
+**Tarea:** F4-02 (Fase 4 — Runtime de alta disponibilidad) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md);
+actualizado por F4-04 (probes) y F4-05 (shutdown graceful).
 **Fecha:** 2026-09-07
 **Estado:** Aplicado. El criterio de aceptación de la fila F4-02 es "Configuración validada": no hay un
 clúster Kubernetes real disponible en este entorno, así que la validación se hizo con herramientas
 estáticas reales contra los manifiestos generados (evidencia en la sección 5) — igual que F4-01 dejó
-"escaneo sin CVE crítica" confirmado localmente y pendiente de la primera corrida en CI real.
+"escaneo sin CVE crítica" confirmado localmente y pendiente de la primera corrida en CI real. F4-05
+("Sin requests o mensajes perdidos") se documenta en la sección 5-ter.
 
 ---
 
@@ -41,7 +43,7 @@ esa complejidad adicional. Esta decisión no requiere aprobación humana de la s
 k8s/sample-api/
 ├── base/
 │   ├── kustomization.yaml
-│   ├── deployment.yaml       # 1 réplica base, probes F4-04, TODOs explícitos para F4-05/F4-07
+│   ├── deployment.yaml       # 1 réplica base, probes F4-04, shutdown F4-05, TODO explícito para F4-07
 │   ├── service.yaml          # ClusterIP:80 -> containerPort 8080 (http)
 │   ├── configmap.yaml        # Config no sensible (ASPNETCORE_ENVIRONMENT, logging, Secrets:Provider)
 │   └── secret.example.yaml   # PLANTILLA documental, no se aplica ni se referencia desde kustomization.yaml
@@ -102,11 +104,16 @@ de aplicarlo — es lo que se usó para la validación de la sección 5.
   crítica"). `readinessProbe` apunta a `/health/ready`, que sí refleja SQL Server (y Redis si está
   configurado): si falla, el pod sale del `Service` sin reiniciarse. Ver la sección 5 (evidencia F4-04)
   para la prueba real con el contenedor de F4-01 y SQL Server arriba/abajo.
+- `lifecycle.preStop` (F4-05) con la acción `sleep` NATIVA del kubelet (`seconds: 10`, estable desde
+  Kubernetes 1.29) y `terminationGracePeriodSeconds: 40` a nivel de Pod — drena el tráfico antes de que
+  el proceso reciba `SIGTERM`, sin depender de un shell/binario dentro del contenedor (inviable en la
+  imagen "chiseled", ver sección 5-ter). Deliberadamente NO se usa `lifecycle.preStop.exec` (requeriría
+  `/bin/sh` o un binario `sleep`, ninguno presente en la imagen chiseled — mismo motivo por el que los
+  tres probes de arriba son `httpGet`, nunca `exec`).
 
 **Deliberadamente fuera de alcance (tareas futuras del backlog, marcadas con `TODO(F4-0N)` en
 `deployment.yaml`), para no mezclar el alcance de tareas distintas (Plan Maestro sección 3.2):**
 
-- **Shutdown graceful** (`preStop`, `terminationGracePeriodSeconds`) — F4-05.
 - **HPA** (`HorizontalPodAutoscaler`) — F4-06. Los `replicas` fijos actuales (1/2/3 por ambiente) son el
   piso que el HPA de esa tarea tomará como mínimo, no lo reemplazan.
 - **PodDisruptionBudget y `topologySpreadConstraints`** — F4-07.
@@ -203,12 +210,101 @@ dos niveles:
 
 ---
 
+## 5-ter. F4-05 (Shutdown): drenar tráfico y terminar jobs/consumers correctamente
+
+El criterio de aceptación de F4-05 es "Sin requests o mensajes perdidos". El apagado prolijo de un Pod
+tiene dos partes independientes que este `deployment.yaml` cubre juntas:
+
+### a) A nivel de manifiesto (esta tarea)
+
+1. **`lifecycle.preStop.sleep.seconds: 10`** — cuando Kubernetes marca el Pod como `Terminating`, dos
+   cosas ocurren EN PARALELO: (i) el controlador de `Endpoints`/`EndpointSlice` empieza a sacar el Pod
+   del `Service` (propagación no instantánea a kube-proxy/Ingress/balanceador) y (ii) el kubelet ejecuta
+   el hook `preStop` del contenedor. Sin este hook, el kubelet enviaría `SIGTERM` al proceso ANTES de que
+   (i) termine de propagarse, con la ventana real de que un balanceador siga enrutando requests nuevos a
+   un proceso que ya dejó de escuchar. El hook retrasa el envío de `SIGTERM` 10s, dando margen a que esa
+   propagación ya haya ocurrido en la inmensa mayoría de los clústeres reales.
+   - Se usa la acción `sleep` NATIVA del kubelet (`lifecycle.preStop.sleep`, estable desde Kubernetes
+     1.29 — ver [Container Lifecycle Hooks](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/)),
+     no `lifecycle.preStop.exec` con un comando de shell: la imagen "chiseled" (F4-01,
+     `politica-contenedores.md` sección 3.2) no tiene `/bin/sh` ni ningún binario de coreutils, así que
+     un `exec: ["sleep", "10"]` fallaría exactamente igual que un probe `exec` (mismo motivo documentado
+     en la sección 3 de este archivo para los tres probes `httpGet` de F4-04). La acción `sleep` la
+     ejecuta el kubelet por su cuenta, sin invocar nada dentro del contenedor — compatible con la imagen
+     distroless sin ningún cambio a la imagen misma.
+2. **`terminationGracePeriodSeconds: 40`** (nivel Pod) — presupuesto total entre que el kubelet marca el
+   Pod `Terminating` y el `SIGKILL` forzado si el proceso no terminó solo: los 10s de `preStop` más un
+   margen real para que ASP.NET Core drene requests HTTP en vuelo y cualquier `BackgroundService`
+   (Outbox, consumer de Kafka, Quartz) termine la unidad de trabajo en curso tras recibir `SIGTERM`. Ver
+   el comentario en `deployment.yaml` (nivel `spec.template.spec`) para el desglose completo del
+   presupuesto y su relación con `HostOptions.ShutdownTimeout` (punto c).
+
+Validado igual que F4-02/F4-04 (sin clúster real disponible en este entorno): `kubectl kustomize` sobre
+los 3 overlays confirma `lifecycle.preStop.sleep.seconds: 10` y `terminationGracePeriodSeconds: 40` en
+el YAML final, y `kubeconform -strict -kubernetes-version 1.30.0` valida los 3 overlays renderizados sin
+error (`Valid: 4, Invalid: 0, Errors: 0, Skipped: 0` cada uno, incluida la acción `sleep` del hook —
+soportada por el esquema oficial de 1.30 sin necesitar `-ignore-missing-schemas`).
+
+### b) A nivel de código (verificado, sin cambios — Fase 1 y Fase 3 ya lo resolvían)
+
+Inspeccionado antes de tocar nada (Plan Maestro sección 3.2, "descubrimiento antes de implementar"):
+
+- **`OutboxPublisherBackgroundService`** (`Shared.Infrastructure.Persistence/Outbox`, F3-03): el loop
+  respeta `stoppingToken` en los dos únicos puntos de espera (`Task.Delay(options.PollingInterval,
+  stoppingToken)` entre ciclos, y `ThrowIfCancellationRequested()` al inicio de cada fila dentro de
+  `OutboxBatchProcessor.ProcessBatchAsync`) — nunca hay un `while(true)` ni un `Task.Delay` sin token. El
+  `SaveChangesAsync` que marca cada `OutboxMessage.ProcessedAtUtc` ocurre INMEDIATAMENTE después de
+  publicar esa fila (no al final del lote), así que un `SIGTERM` a mitad de un lote deja como máximo una
+  fila sin marcar (se reintenta en el próximo arranque — duplicado aceptable, at-least-once ya
+  documentado) y nunca un lote entero perdido.
+- **`AddSharedBackgroundJobs`** (`Shared.Infrastructure.BackgroundJobs`, F1): ya registra
+  `AddQuartzHostedService(options => options.WaitForJobsToComplete = true)` — Quartz espera a que los
+  jobs en ejecución terminen antes de que `QuartzHostedService.StopAsync` retorne.
+- **`KafkaEventConsumer<TEvent>.ConsumeAndHandleOnceAsync`** (`Shared.Infrastructure.Messaging.Kafka`,
+  F3-02/F3-04): recibe y propaga `cancellationToken` en cada punto de espera relevante (el `Task.Run`
+  que envuelve `_consumer.Consume(timeout)`, el `IInboxMessageProcessor.ProcessAsync`, el
+  `Task.Delay` del backoff de F3-07). El offset solo se confirma DESPUÉS de que el mensaje en curso
+  terminó de procesarse (éxito, duplicado descartado, o aislado a DLQ) — nunca a mitad de un mensaje. No
+  existe un `IHostedService` compartido que hospede este loop (decisión de diseño de F3-04, documentada
+  en `docs/guia-inbox-consumer.md`: cada evento/tópico necesita su propio consumer/group, así que el
+  proyecto consumidor decide cómo y cuándo correr el loop) — el patrón de referencia documentado en esa
+  guía y ejercitado por `samples/Sample.Eventing.Tests/EndToEndEventingReferenceTests.cs` (F3-13) ya usa
+  `while (!stoppingToken.IsCancellationRequested) { await consumer.ConsumeAndHandleOnceAsync(timeout,
+  stoppingToken); }`, que respeta la cancelación correctamente.
+
+### c) Brecha real identificada (no cerrada por diseño — documentada, no oculta)
+
+`Microsoft.Extensions.Hosting.HostOptions.ShutdownTimeout` (5s por defecto del host genérico de .NET) es
+el presupuesto real que acota CUÁNTO esperan `IHostedService.StopAsync` (incluido
+`OutboxPublisherBackgroundService`, `QuartzHostedService`, y cualquier `BackgroundService` que hospede un
+`KafkaEventConsumer<TEvent>`) antes de que el host fuerce el apagado. Ningún proyecto de este repositorio
+lo configura explícitamente hoy — `samples/Sample.Api` (el proyecto que este `deployment.yaml` despliega)
+no registra ni Outbox, ni Quartz, ni ningún `KafkaEventConsumer<TEvent>`, así que el default de 5s nunca
+llega a competir con trabajo en segundo plano real en el pilotaje actual, y los `Program.cs` que sí
+registren esos componentes están fuera del alcance de F4-05 (viven en `samples/`/proyectos consumidores
+futuros, no en `Shared.*`). No se fuerza un valor global mayor en las extensiones de DI compartidas
+(`AddSharedOutboxPublisher`/`AddSharedBackgroundJobs`) porque `HostOptions` es única por proceso: un valor
+"seguro" para un job de 2 minutos sería un default sorpresivo e injustificado para un proyecto que nunca
+registra jobs largos. Queda documentado como responsabilidad explícita del proyecto consumidor (ver el
+comentario en `deployment.yaml` y el punto (a) de esta sección): coordinar
+`builder.Host.ConfigureHostOptions(o => o.ShutdownTimeout = ...)` con `terminationGracePeriodSeconds`
+menos el `preStop.sleep`, para el caso real en que SÍ registre trabajo en segundo plano de vida más larga
+que el default.
+
+---
+
 ## 6. Referencias
 
-- [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — fila F4-02 del backlog (Fase 4).
-- [`politica-contenedores.md`](politica-contenedores.md) — F4-01, la imagen que este paquete despliega.
+- [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — filas F4-02/F4-04/F4-05 del backlog (Fase 4).
+- [`politica-contenedores.md`](politica-contenedores.md) — F4-01, la imagen que este paquete despliega
+  (imagen "chiseled", por qué `lifecycle.preStop` de F4-05 usa la acción `sleep` nativa, no `exec`).
 - [`guia-health-checks.md`](guia-health-checks.md) — F1-25, semántica de `/health/live` y `/health/ready`
   que consumen los probes de F4-04.
+- [`guia-inbox-consumer.md`](guia-inbox-consumer.md) — F3-04, patrón de referencia del loop de
+  `KafkaEventConsumer<TEvent>` que respeta `stoppingToken` (verificado sin cambios en F4-05, sección
+  5-ter de este documento).
+- [`guia-outbox-publisher.md`](guia-outbox-publisher.md) — F3-03, `OutboxPublisherBackgroundService`
+  (verificado sin cambios en F4-05, sección 5-ter de este documento).
 - [`adr/0007-gateway-yarp.md`](adr/0007-gateway-yarp.md) — por qué el `Service` es `ClusterIP` sin
   exposición externa todavía (F4-08 la agrega).
 - [`adr/0014-secretos-proveedor-vault-propuesto.md`](adr/0014-secretos-proveedor-vault-propuesto.md) /
