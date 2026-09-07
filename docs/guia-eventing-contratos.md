@@ -112,10 +112,69 @@ una vez por evento — la deduplicación real la da el Inbox (F1-24/F3-04), no e
   de ADR `docs/adr/0005-mensajeria-kafka.md` (Plan Maestro, sección 13) — F3-01 no la requiere porque
   no introduce ningún broker, solo contratos .NET.
 
+## Adapter Kafka (F3-02)
+
+ADR `docs/adr/0005-mensajeria-kafka.md` pasó a `Accepted` el 2026-09-06 (aprobación humana explícita,
+sección 13 del Plan Maestro, alcance: desarrollo/CI/pruebas de integración con broker real no
+productivo). F3-02 agrega `src/Shared.Infrastructure.Messaging.Kafka`, la primera implementación
+concreta de los contratos de F3-01:
+
+- **`KafkaMessagingOptions`** (sección de configuración `"Messaging:Kafka"`): `BootstrapServers`,
+  `ClientId`, `ConsumerGroupId`, y el punto de extensión de autenticación/transporte
+  (`SecurityProtocol`, por defecto `Plaintext`; `SaslMechanism`/`SaslUsername`/`SaslPassword`/
+  `SslCaLocation`) — SASL/SSL productivo es F3-11, no implementado ni validado por esta tarea (el
+  único modo probado contra un broker real es `Plaintext`, vía `KafkaContainerFixture`).
+- **`KafkaClientConfigFactory`**: traduce `KafkaMessagingOptions` a `ProducerConfig`/`ConsumerConfig`
+  de `Confluent.Kafka` en un único lugar, para que productor y consumidor compartan siempre la misma
+  configuración de transporte. El `ConsumerConfig` fuerza `EnableAutoCommit = false` — ver más abajo.
+- **`IKafkaTopicNameResolver`**/`DefaultKafkaTopicNameResolver`: resuelve el nombre de tópico a partir
+  de `IIntegrationEvent.EventType` (por ahora, tal cual, con caracteres no válidos reemplazados por
+  `_`). Punto de extensión explícito para F3-05 (particionamiento/estrategia de tópicos por
+  tenant/ambiente) — F3-02 no lo resuelve más allá de este mínimo.
+- **`KafkaIntegrationEventSerializer`**: serializa el evento a JSON del tipo .NET concreto
+  (`JsonSerializer.SerializeToUtf8Bytes(evento, evento.GetType())`, mismo criterio que
+  `OutboxSaveChangesInterceptor` para `DomainEvent`) como `Value` del mensaje, y repite
+  `EventType`/`SchemaVersion`/`EventId`/`OccurredOnUtc` como headers Kafka (`bitcode-event-type`,
+  `bitcode-schema-version`, `bitcode-event-id`, `bitcode-occurred-on-utc`) para que un futuro
+  consumidor de observabilidad (F3-10) los lea sin deserializar el payload completo.
+- **`KafkaEventPublisher : IEventPublisher`**: recibe un `IProducer<string, byte[]>` ya construido
+  (compartido, thread-safe) y publica cada evento al tópico resuelto por `EventType`, con `Key` =
+  `EventId` (placeholder razonable hasta que F3-05 defina la clave de partición definitiva).
+- **`KafkaEventConsumer<TEvent> : IDisposable`**: se suscribe al tópico de un `EventType` concreto y,
+  por cada mensaje, deserializa a `TEvent`, invoca `IEventConsumer<TEvent>.ConsumeAsync` y **solo si
+  termina sin excepción** confirma el offset (`Commit`) — la aproximación más cercana disponible en
+  esta tarea, sin Inbox real todavía, a la semántica exigida de Fase 3 ("confirmación únicamente
+  después de persistir el efecto o Inbox"). Si `ConsumeAsync` lanza, el offset no se confirma: Kafka
+  reentrega el mismo mensaje (at-least-once). No coordina con `IInboxMessageProcessor` — esa
+  integración es F3-04.
+- **`AddSharedMessagingKafka(configuration)`**: registra `IEventPublisher` → `KafkaEventPublisher` y el
+  `IProducer<string, byte[]>` compartido. No registra ningún `KafkaEventConsumer<TEvent>` (cada
+  bounded context lo instancia explícitamente, atado a su propio `IEventConsumer<TEvent>`).
+
+Pruebas: `tests/Shared.Infrastructure.Messaging.Kafka.Tests/Integration/KafkaEventPublisherConsumerIntegrationTests.cs`
+verifica el round-trip productor→consumidor contra un broker Kafka real (`KafkaContainerFixture`,
+`Shared.Testing`, imagen `confluentinc/cp-kafka:6.1.9` — ver `docs/matriz-soporte.md`).
+`KafkaEventPublisherBrokerUnavailableTests` cubre, sin Testcontainers, que `PublishAsync` falla con la
+excepción del cliente de Kafka (no la absorbe en silencio) cuando el broker configurado no responde —
+la clasificación de error transitorio/permanente y el backoff con reintentos es F3-07, no esta tarea.
+
+## Qué NO resuelve F3-02
+
+- Integración con `OutboxMessage`/`InboxMessage` (relay real de Outbox F3-03, consumer de Inbox F3-04).
+- Particionamiento definitivo (F3-05), compatibilidad de esquema (F3-06), retries con backoff (F3-07),
+  DLQ (F3-08), poison messages (F3-09), observabilidad/métricas (F3-10), seguridad de transporte real
+  con SASL/SSL (F3-11) ni catálogo de eventos (F3-12).
+- Habilitar tráfico productivo sobre Kafka: sigue condicionado a una aprobación humana adicional en el
+  momento de ese despliegue (ADR `docs/adr/0005-mensajeria-kafka.md`, adenda de F3-02).
+
 ## Referencias
 
 - `src/Shared.Application/Eventing/IIntegrationEvent.cs`, `IntegrationEvent.cs`, `IEventPublisher.cs`, `IEventConsumer.cs`.
 - `tests/Shared.Application.Tests/Eventing/EventingContractsTests.cs`, `TestIntegrationEvents.cs`.
-- `docs/convenciones.md` (regla dura 17/18, Outbox/Inbox, F1-23/F1-24).
+- `src/Shared.Infrastructure.Messaging.Kafka/` (F3-02): `KafkaMessagingOptions.cs`, `KafkaClientConfigFactory.cs`, `IKafkaTopicNameResolver.cs`, `KafkaIntegrationEventSerializer.cs`, `KafkaEventPublisher.cs`, `KafkaEventConsumer.cs`, `KafkaServiceCollectionExtensions.cs`.
+- `src/Shared.Testing/KafkaContainerFixture.cs` y `tests/Shared.Infrastructure.Messaging.Kafka.Tests/`.
+- `docs/convenciones.md` (regla dura 17/18/22, Outbox/Inbox/adapter Kafka, F1-23/F1-24/F3-02).
+- `docs/matriz-soporte.md` (imagen de Kafka usada en test, brechas de SASL/SSL/Outbox-Inbox).
+- `docs/politica-dependencias.md` (evaluación de `Confluent.Kafka`/`Testcontainers.Kafka`).
 - `docs/politica-versionado.md` (versión de esquema de eventos de integración).
-- ADR `docs/adr/0005-mensajeria-kafka.md` (todavía `Proposed`).
+- ADR `docs/adr/0005-mensajeria-kafka.md` (`Accepted` desde F3-02).

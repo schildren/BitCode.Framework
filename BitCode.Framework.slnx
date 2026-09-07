@@ -9,6 +9,7 @@
     <Project Path="src/Shared.Infrastructure.BackgroundJobs/Shared.Infrastructure.BackgroundJobs.csproj" />
     <Project Path="src/Shared.Infrastructure.Caching/Shared.Infrastructure.Caching.csproj" />
     <Project Path="src/Shared.Infrastructure.Http/Shared.Infrastructure.Http.csproj" />
+    <Project Path="src/Shared.Infrastructure.Messaging.Kafka/Shared.Infrastructure.Messaging.Kafka.csproj" />
     <Project Path="src/Shared.Infrastructure.Observability/Shared.Infrastructure.Observability.csproj" />
     <Project Path="src/Shared.Infrastructure.Persistence/Shared.Infrastructure.Persistence.csproj" />
     <Project Path="src/Shared.Infrastructure.Security/Shared.Infrastructure.Security.csproj" />
@@ -22,6 +23,7 @@
     <Project Path="tests/Shared.Infrastructure.BackgroundJobs.Tests/Shared.Infrastructure.BackgroundJobs.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Caching.Tests/Shared.Infrastructure.Caching.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Http.Tests/Shared.Infrastructure.Http.Tests.csproj" />
+    <Project Path="tests/Shared.Infrastructure.Messaging.Kafka.Tests/Shared.Infrastructure.Messaging.Kafka.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Observability.Tests/Shared.Infrastructure.Observability.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Persistence.Tests/Shared.Infrastructure.Persistence.Tests.csproj" />
     <Project Path="tests/Shared.Infrastructure.Security.Tests/Shared.Infrastructure.Security.Tests.csproj" />

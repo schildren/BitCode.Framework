@@ -1,0 +1,46 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.DefaultKafkaTopicNameResolver
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.DefaultKafkaTopicNameResolver.DefaultKafkaTopicNameResolver() -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.DefaultKafkaTopicNameResolver.ResolveTopicName(string! eventType) -> string!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.IKafkaTopicNameResolver
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.IKafkaTopicNameResolver.ResolveTopicName(string! eventType) -> string!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaClientConfigFactory
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventConsumer<TEvent>
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventConsumer<TEvent>.ConsumeAndHandleOnceAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventConsumer<TEvent>.Dispose() -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventConsumer<TEvent>.KafkaEventConsumer(BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions! options, string! eventType, BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent!>! handler, string? consumerGroupIdOverride = null, BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.IKafkaTopicNameResolver? topicNameResolver = null) -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventPublisher
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventPublisher.KafkaEventPublisher(Confluent.Kafka.IProducer<string!, byte[]!>! producer, BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.IKafkaTopicNameResolver? topicNameResolver = null) -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventPublisher.PublishAsync(BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent! integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaEventPublisher.PublishAsync(System.Collections.Generic.IEnumerable<BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent!>! integrationEvents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.BootstrapServers.get -> string!
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.BootstrapServers.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.ClientId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.ClientId.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.ConsumerGroupId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.ConsumerGroupId.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.KafkaMessagingOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslMechanism.get -> Confluent.Kafka.SaslMechanism?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslMechanism.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslPassword.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslPassword.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslUsername.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SaslUsername.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SecurityProtocol.get -> Confluent.Kafka.SecurityProtocol
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SecurityProtocol.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslCaLocation.get -> string?
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SslCaLocation.set -> void
+BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaServiceCollectionExtensions
+const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.EventIdHeader = "bitcode-event-id" -> string!
+const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.EventTypeHeader = "bitcode-event-type" -> string!
+const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.OccurredOnUtcHeader = "bitcode-occurred-on-utc" -> string!
+const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.SchemaVersionHeader = "bitcode-schema-version" -> string!
+const BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions.SectionName = "Messaging:Kafka" -> string!
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaClientConfigFactory.BuildConsumerConfig(BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions! options, string? consumerGroupIdOverride = null) -> Confluent.Kafka.ConsumerConfig!
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaClientConfigFactory.BuildProducerConfig(BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaMessagingOptions! options) -> Confluent.Kafka.ProducerConfig!
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.Deserialize<TEvent>(byte[]! value) -> TEvent
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaIntegrationEventSerializer.Serialize(BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent! integrationEvent) -> (byte[]! Value, Confluent.Kafka.Headers! Headers)
+static BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.KafkaServiceCollectionExtensions.AddSharedMessagingKafka(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static readonly BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.DefaultKafkaTopicNameResolver.Instance -> BitCode.Framework.Shared.Infrastructure.Messaging.Kafka.DefaultKafkaTopicNameResolver!

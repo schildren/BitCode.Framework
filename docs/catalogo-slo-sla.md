@@ -22,7 +22,7 @@ BitCode.Framework hoy no tiene un servicio de producción propio desplegado (es 
 
 1. **API síncrona de negocio** (ej. `Sample.Api`, endpoints REST sobre `Shared.Infrastructure.Web`).
 2. **Trabajos en background / scheduler** (Quartz, `Shared.Infrastructure.BackgroundJobs`) — sin persistencia/clustering todavía (ver `docs/mapa-capacidades.md` fila 12), por lo que su SLO de disponibilidad hoy depende de la disponibilidad del proceso único que lo hospeda.
-3. **Integración por eventos (Kafka)** — perfil **planeado**, no existe en runtime hoy (ADR 0005, `Proposed`). Se incluye con SLI/SLO propuestos para no dejarlo huérfano cuando se implemente en Fase 3, marcado explícitamente como "sin datos reales, solo objetivo de diseño".
+3. **Integración por eventos (Kafka)** — perfil **planeado**, sin datos productivos reales todavía (ADR 0005, `Accepted`; adapter agregado en F3-02, sin observabilidad de métricas hasta F3-10). Se incluye con SLI/SLO propuestos para no dejarlo huérfano, marcado explícitamente como "sin datos reales, solo objetivo de diseño".
 4. **Cache distribuido (HybridCache + Redis/Valkey)** — perfil de infraestructura transversal, no un servicio expuesto directamente, pero con SLI propios porque su degradación afecta a los otros perfiles.
 5. **Persistencia (SQL Server)** — perfil de infraestructura transversal, mismo motivo que el cache.
 
@@ -96,9 +96,9 @@ BitCode.Framework hoy no tiene un servicio de producción propio desplegado (es 
 |---|---|---|---|---|
 | Latencia de entrega (productor → consumidor) | Tiempo entre publicación del evento y su procesamiento exitoso por el consumidor | `p95(consumer_processed_at - producer_published_at)`, correlacionado por `traceId`/`eventId` (a definir en el contrato de eventos, F0-05/Fase 3) | ≤ 5 s p95 (objetivo aspiracional, coherente con Eventual Consistency, sección 2.1 del Plan Maestro) | Equipo de plataforma / mensajería (rol a definir en Fase 3) |
 | Tasa de eventos perdidos/no entregados | Proporción de eventos publicados en el Outbox que nunca llegan a ser confirmados por ningún consumidor dentro de una ventana razonable | `count(events_outbox_unconfirmed_after_window) / count(events_outbox_published)` | 0 % (at-least-once, con reintentos e idempotencia en el consumidor — nunca exactly-once de extremo a extremo, prohibido por la sección 3.2 del Plan Maestro) | Equipo de plataforma / mensajería |
-| Throughput de eventos | Eventos publicados/consumidos por segundo | `rate(events_published_total[1m])` / `rate(events_consumed_total[1m])` | Sin valor de referencia — no existe implementación (ADR 0005 `Proposed`) | Equipo de plataforma / mensajería |
+| Throughput de eventos | Eventos publicados/consumidos por segundo | `rate(events_published_total[1m])` / `rate(events_consumed_total[1m])` | Sin valor de referencia — sin métricas expuestas todavía (F3-10, pendiente) | Equipo de plataforma / mensajería |
 
-**Advertencia explícita:** esta sección no tiene ningún dato medido real. Se incluye únicamente para que el catálogo no deje "huérfano" un perfil que el propio Plan Maestro define como central (Fase 3 — Plataforma de eventos) y para fijar la métrica de referencia que Fase 3 deberá calcular con datos reales al implementar Kafka.
+**Advertencia explícita:** esta sección no tiene ningún dato medido real. Se incluye únicamente para que el catálogo no deje "huérfano" un perfil que el propio Plan Maestro define como central (Fase 3 — Plataforma de eventos) y para fijar la métrica de referencia que Fase 3 deberá calcular con datos reales una vez exista observabilidad (F3-10). El ADR 0005 pasó a `Accepted` y F3-02 ya agregó el adapter Kafka (`Shared.Infrastructure.Messaging.Kafka`, probado contra un broker real de Testcontainers, ver `docs/matriz-soporte.md`), pero sin instrumentación de métricas ni tráfico productivo — esta tabla sigue siendo "sin datos reales, solo objetivo de diseño" hasta F3-10.
 
 ---
 

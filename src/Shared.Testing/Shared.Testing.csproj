@@ -11,6 +11,8 @@
          dedicado en el ecosistema .NET); referencia explícita al paquete base en vez de depender de
          que quede disponible transitivamente por Testcontainers.Keycloak/.MsSql/.Redis. -->
     <PackageReference Include="Testcontainers" Version="3.10.0" />
+    <!-- F3-02: fixture de Kafka para pruebas de integración con broker real (KafkaContainerFixture). -->
+    <PackageReference Include="Testcontainers.Kafka" Version="3.10.0" />
     <PackageReference Include="Testcontainers.Keycloak" Version="3.10.0" />
     <PackageReference Include="Testcontainers.MsSql" Version="3.10.0" />
     <PackageReference Include="Testcontainers.Redis" Version="3.10.0" />

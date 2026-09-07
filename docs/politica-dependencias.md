@@ -101,6 +101,21 @@ Ninguna de estas es Critical. Bloquear el pipeline hoy por severidad High/Modera
 
 ---
 
+## 5.1. Registro de evaluación — `Confluent.Kafka` (F3-02)
+
+Primera dependencia nueva agregada al repositorio desde que existe este documento; se deja constancia
+del análisis exigido por la sección 3.2 del Plan Maestro ("no introducir una dependencia sin revisar
+licencia, mantenimiento, seguridad y compatibilidad"):
+
+- **Paquete:** `Confluent.Kafka` 2.15.0 (`src/Shared.Infrastructure.Messaging.Kafka`).
+- **Licencia:** Apache-2.0 — categoría "permitida sin excepción" (sección 2), no requiere ADR de excepción.
+- **Mantenimiento:** publicado y mantenido activamente por Confluent Inc.; es el cliente oficial de Kafka para .NET (wrapper de `librdkafka`), sin alternativa con adopción comparable en el ecosistema .NET.
+- **Seguridad:** `dotnet list package --vulnerable --include-transitive` (job `dependency-scan`) no reportó ninguna vulnerabilidad conocida para `Confluent.Kafka` 2.15.0 ni sus transitivas al momento de esta tarea.
+- **Compatibilidad:** biblioteca `netstandard2.0`/`net6.0`/`net8.0`, compatible con el TFM único del repo (`net10.0`); sin conflicto de versión detectado en la restauración/build de la solución completa.
+- **Alcance de uso:** solo `src/Shared.Infrastructure.Messaging.Kafka` la referencia; `Shared.Application` (contratos de F3-01) sigue sin depender de ningún paquete de broker, según su propio criterio de aceptación.
+
+También se agregó `Testcontainers.Kafka` 3.10.0 (MIT, misma familia y versión que `Testcontainers`/`Testcontainers.MsSql`/`Testcontainers.Redis` ya usados en `Shared.Testing`) — mismo criterio de licencia/mantenimiento/compatibilidad ya aplicado a esas dependencias, sin evaluación adicional necesaria más allá de fijar la misma versión mayor.
+
 ## 6. Explícitamente fuera de alcance de esta tarea (sección 9 del Plan Maestro)
 
 No se agregan en F0-06, por exceder el alcance de "aplicar una verificación básica en CI" y requerir su propio ADR/evaluación:
