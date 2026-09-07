@@ -552,12 +552,37 @@ Cada request, comando, job y evento propagará cuando aplique:
 
 #### Gate de salida
 
-- [ ] La pérdida de un pod no produce interrupción observable.
-- [ ] La pérdida de un nodo no interrumpe el servicio.
-- [ ] El sistema escala horizontalmente con eficiencia objetivo.
-- [ ] Los despliegues son zero-downtime.
-- [ ] Logs, métricas y trazas están correlacionados.
-- [ ] Los jobs críticos son persistentes e idempotentes.
+- [ ] La pérdida de un pod no produce interrupción observable.[^f4-gate-1]
+- [ ] La pérdida de un nodo no interrumpe el servicio.[^f4-gate-2]
+- [ ] El sistema escala horizontalmente con eficiencia objetivo.[^f4-gate-3]
+- [ ] Los despliegues son zero-downtime.[^f4-gate-4]
+- [x] Logs, métricas y trazas están correlacionados.[^f4-gate-5]
+- [x] Los jobs críticos son persistentes e idempotentes.[^f4-gate-6]
+
+[^f4-gate-1]: Evidencia real parcial (`docs/informe-capacity-tests-f4-14.md`, sección 1.1): con
+    tráfico repartido entre réplicas reales, perder una instancia confina el impacto a la fracción de
+    tráfico de esa instancia (0 fallos medidos en las réplicas supervivientes) — pero no se demostró
+    "sin interrupción observable" en sentido literal contra un `Service`/Gateway real ni contra el
+    drenado gracioso completo de un clúster real. Sin marcar hasta esa evidencia.
+[^f4-gate-2]: Requiere `kubectl drain` contra un clúster Kubernetes multi-nodo real, no disponible en
+    este entorno (mismo gap que F4-07 dejó explícito). Runbook exacto en
+    `docs/informe-capacity-tests-f4-14.md` sección 6.1.
+[^f4-gate-3]: Evidencia real de que escala (más instancias → más throughput con 0 % de errores,
+    `docs/informe-capacity-tests-f4-14.md` sección 1.7), pero no se midió la eficiencia ≥ 75 % formal
+    de la sección 8.1 contra el cluster de referencia (que no existe, ver `docs/entorno-referencia.md`)
+    ni se usó un HPA real reaccionando a métricas (runbook en la sección 6.2 del informe).
+[^f4-gate-4]: F4-13 declaró y validó sintácticamente `RollingUpdate` (`maxSurge: 1`,
+    `maxUnavailable: 0`); la comprobación en ejecución real con tráfico continuo contra un clúster real
+    sigue pendiente (runbook en `docs/informe-capacity-tests-f4-14.md` sección 6.3).
+[^f4-gate-5]: Demostrado en ejecución real por F3-10/F4-10 (OTel Collector real + `samples/Sample.Api`
+    real) — no depende de un clúster Kubernetes real, ver `docs/guia-otel-collector.md` y
+    `docs/guia-observabilidad-eventos.md`.
+[^f4-gate-6]: Demostrado en ejecución real por F4-11 (`AdoJobStore` clusterizado, dos schedulers
+    Quartz.NET reales sobre el mismo SQL Server, sin duplicar el disparo) y confirmado de nuevo en
+    F4-14 (`docs/informe-capacity-tests-f4-14.md` sección 1.2). El recovery real ante la muerte del
+    nodo que ejecuta un job a mitad de la ejecución sigue sin verificarse con dos procesos de sistema
+    operativo reales (gap heredado de F4-11, documentado, no bloqueante para este ítem del gate porque
+    "persistente e idempotente" ya tiene evidencia real de coordinación).
 
 #### Hito
 

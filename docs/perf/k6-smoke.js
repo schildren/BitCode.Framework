@@ -6,9 +6,17 @@
 //
 // Ejercita los mismos dos endpoints usados en la aproximación por curl, para mantener
 // comparabilidad narrativa (no numérica: la metodología cambió por completo):
-//   - GET  /productos/{id}   (lectura vía ObtenerProductoQuery)
-//   - POST /productos        (escritura vía CrearProductoCommand, con TransactionBehavior,
-//                              FluentValidation e IAuditedEntity)
+//   - GET  /api/v1/productos/{id}   (lectura vía ObtenerProductoQuery)
+//   - POST /api/v1/productos        (escritura vía CrearProductoCommand, con TransactionBehavior,
+//                                     FluentValidation e IAuditedEntity)
+//
+// F4-14 (Fase 4, Capacity tests): las rutas se actualizaron a /api/v1/... porque F1-27 (versionado
+// de API por segmento de ruta) se introdujo DESPUÉS de que este script se escribiera para F0-10 --
+// sin este ajuste, setup() falla con 404 contra el Sample.Api actual (verificado en esta tarea). No
+// cambia nada de la metodología de carga en sí, solo el path. También se agregó el header
+// Idempotency-Key (obligatorio para CrearProductoCommand desde F1-22, no exigido cuando este script
+// se escribió originalmente) con un valor aleatorio distinto por request -- sin eso, cada POST
+// fallaría con 400 "Idempotency.KeyRequired" en vez de medir el costo real del comando.
 //
 // Carga modesta y realista para una laptop de desarrollo (no un entorno de referencia dedicado,
 // ver docs/entorno-referencia.md): pocos VUs, duración corta. No es un test de estrés ni busca el
@@ -24,6 +32,14 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Trend, Counter } from 'k6/metrics';
+
+// k6 no trae un generador de UUID nativo en el core -- un identificador único por request
+// (timestamp de alta resolución + dos valores aleatorios) alcanza para el propósito real (una
+// Idempotency-Key DISTINTA por request, para no medir el camino de "reintento deduplicado" en vez
+// del camino de creación).
+function uniqueIdempotencyKey(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:5269';
 
@@ -64,9 +80,9 @@ const postDuration = new Trend('post_producto_duration', true);
 // válido contra el cual medir GET /productos/{id} (en vez de medir solo el costo de un 404).
 export function setup() {
   const res = http.post(
-    `${BASE_URL}/productos`,
+    `${BASE_URL}/api/v1/productos`,
     JSON.stringify({ nombre: 'k6-smoke-seed', precio: 10 }),
-    { headers: { 'Content-Type': 'application/json' } },
+    { headers: { 'Content-Type': 'application/json', 'Idempotency-Key': uniqueIdempotencyKey('k6-setup') } },
   );
 
   if (res.status !== 201) {
@@ -80,7 +96,7 @@ export function setup() {
 }
 
 export function getProducto(data) {
-  const res = http.get(`${BASE_URL}/productos/${data.productoId}`, {
+  const res = http.get(`${BASE_URL}/api/v1/productos/${data.productoId}`, {
     tags: { name: 'get_producto' },
   });
   const ok = check(res, { 'GET /productos/{id} → 200': (r) => r.status === 200 });
@@ -91,8 +107,8 @@ export function getProducto(data) {
 
 export function postProducto() {
   const payload = JSON.stringify({ nombre: 'k6-smoke', precio: 19.99 });
-  const res = http.post(`${BASE_URL}/productos`, payload, {
-    headers: { 'Content-Type': 'application/json' },
+  const res = http.post(`${BASE_URL}/api/v1/productos`, payload, {
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': uniqueIdempotencyKey('k6-post') },
     tags: { name: 'post_producto' },
   });
   const ok = check(res, { 'POST /productos → 201': (r) => r.status === 201 });
