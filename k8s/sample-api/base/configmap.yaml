@@ -28,3 +28,12 @@ data:
   # ObservabilityServiceCollectionExtensions/SerilogHostBuilderExtensions).
   OpenTelemetry__ServiceName: "Sample.Api"
   OpenTelemetry__OtlpEndpoint: "http://otel-collector.bitcode-observability.svc.cluster.local:4317"
+  # F4-12: feature flags on/off, sección "FeatureFlags" (AddSharedFeatureFlags). Cada clave es un flag
+  # lógico -- "FeatureFlags__NuevoFlujoDePagos: \"true\"" habilitaría un flag llamado "NuevoFlujoDePagos".
+  # Sin flags declarados acá (caso por defecto), IFeatureFlagProvider.IsEnabled devuelve siempre el
+  # defaultValue que pase el llamador. IMPORTANTE: este ConfigMap se monta como variables de entorno
+  # (envFrom, ver deployment.yaml) -- Kubernetes no actualiza el entorno de un pod ya corriendo, así que
+  # un cambio acá (kubectl apply) NO se recarga en caliente, necesita "kubectl rollout restart" igual que
+  # cualquier otra clave de este ConfigMap. La auditoría del cambio de valor (IAuditWriter) sí queda
+  # cableada para cuando el proceso arranca con el valor nuevo. Ver
+  # docs/politica-configuracion-y-feature-flags.md.

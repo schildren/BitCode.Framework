@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Application;
 using BitCode.Framework.Shared.Infrastructure.Observability;
 using BitCode.Framework.Shared.Infrastructure.Persistence;
+using BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags;
 using BitCode.Framework.Shared.Infrastructure.Web;
 using BitCode.Framework.Shared.Infrastructure.Web.HealthChecks;
 using BitCode.Framework.Shared.Infrastructure.Web.Modularity;
@@ -70,6 +71,19 @@ public class InfrastructureModule : IWebFrameworkModule
         // siguen generando pero no se exportan a ningún lado (ver
         // ObservabilityServiceCollectionExtensions).
         services.AddSharedObservability(configuration);
+
+        // F4-12: feature flags simples on/off (sin segmentación/rollout -- ese alcance más rico queda
+        // reservado para el módulo "Feature Management" de Fase 6), leídos de la sección "FeatureFlags"
+        // de configuración externalizada (ConfigMap, mismo patrón que el resto de la configuración desde
+        // F4-02) y cada transición de valor auditada vía la infraestructura de auditoría de Fase 2
+        // (IAuditWriter). El mecanismo soporta recarga en caliente (IOptionsMonitor + reloadOnChange, sin
+        // reiniciar el proceso) si el proveedor de configuración subyacente la dispara -- el ConfigMap de
+        // ESTE proyecto (k8s/sample-api/base/configmap.yaml) se monta como variables de entorno
+        // (envFrom), que Kubernetes NO actualiza en un pod ya corriendo: un cambio de flag hoy requiere
+        // igual que cualquier otra clave de este ConfigMap un "kubectl rollout restart" (o un operador de
+        // reload de ConfigMaps). Ver docs/politica-configuracion-y-feature-flags.md, sección "Límite real
+        // del hot-reload con el ConfigMap actual".
+        services.AddSharedFeatureFlags(configuration);
     }
 
     public void ConfigureApplication(WebApplication app)

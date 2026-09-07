@@ -791,3 +791,21 @@ BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterRepr
 BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor.OutboxDeadLetterReprocessor(Microsoft.EntityFrameworkCore.DbContext! context, BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter! auditWriter, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor!>! logger) -> void
 BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.OutboxDeadLetterReprocessor.ReprocessAsync(BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessResult!>!>!
 static BitCode.Framework.Shared.Infrastructure.Security.DeadLetter.DeadLetterReprocessorServiceCollectionExtensions.AddSharedDeadLetterReprocessing(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.ConfigurationFeatureFlagProvider
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.ConfigurationFeatureFlagProvider.ConfigurationFeatureFlagProvider(Microsoft.Extensions.Options.IOptionsMonitor<BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsOptions!>! optionsMonitor) -> void
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.ConfigurationFeatureFlagProvider.IsEnabled(string! flagName, bool defaultValue = false) -> bool
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService
+const BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.AuditAction = "featureflags.changed" -> string!
+const BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.AuditResourceType = "feature-flag" -> string!
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.Dispose() -> void
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.FeatureFlagChangeAuditingService(Microsoft.Extensions.Options.IOptionsMonitor<BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsOptions!>! optionsMonitor, BitCode.Framework.Shared.Infrastructure.Security.Audit.IAuditWriter! auditWriter, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService!>! logger) -> void
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+const BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagChangeAuditingService.SystemActorId = "system.featureflags.config-reload" -> string!
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsOptions
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsOptions.FeatureFlagsOptions() -> void
+const BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsOptions.SectionName = "FeatureFlags" -> string!
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.IFeatureFlagProvider
+BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.IFeatureFlagProvider.IsEnabled(string! flagName, bool defaultValue = false) -> bool
+static BitCode.Framework.Shared.Infrastructure.Security.FeatureFlags.FeatureFlagsServiceCollectionExtensions.AddSharedFeatureFlags(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
