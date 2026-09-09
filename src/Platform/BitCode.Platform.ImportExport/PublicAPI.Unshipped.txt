@@ -1,0 +1,241 @@
+#nullable enable
+BitCode.Framework.Platform.ImportExport.Actors.IImportExportActorContext
+BitCode.Framework.Platform.ImportExport.Actors.IImportExportActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.ImportExport.Actors.IImportExportActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.ImportExport.Actors.IImportExportActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore
+BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore.AppendAsync(string! blobKey, string! contenido, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore.DeleteAsync(string! blobKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore.OpenReadAsync(string! blobKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore.UploadAsync(string! blobKey, System.IO.Stream! content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Almacenamiento.ImportExportFileStoreOptions
+BitCode.Framework.Platform.ImportExport.Almacenamiento.ImportExportFileStoreOptions.ImportExportFileStoreOptions() -> void
+BitCode.Framework.Platform.ImportExport.Almacenamiento.ImportExportFileStoreOptions.RootPath.get -> string!
+BitCode.Framework.Platform.ImportExport.Almacenamiento.ImportExportFileStoreOptions.RootPath.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ActualizarTotalConocido(int filasTotales) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ArchivoResultadoBlobKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.CreatedBy.get -> string?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.CreatedBy.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.Estado.get -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ExportJob(System.Guid id, string! tipoExportacion, string? filtroJson, string! archivoResultadoBlobKey, System.Guid? iniciadoPorUserId) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.FilasConError.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.FilasExportadas.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.FilasTotales.get -> int?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.FiltroJson.get -> string?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.FinalizadoAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.IniciadoPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.IniciarProcesamiento() -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.MarcarCompletado(System.DateTime atUtc) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.MarcarFallido(string! error, System.DateTime atUtc) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ModifiedBy.get -> string?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.ModifiedBy.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.RegistrarProgresoChunk(int filasExportadasEnChunk, int erroresEnChunk, int nuevoOffset) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.TenantId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.TenantId.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.TipoExportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob.UltimoOffsetExportado.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.ExportJobError(System.Guid id, System.Guid exportJobId, int numeroFila, string! mensajeError) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.ExportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.MensajeError.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.NumeroFila.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.TenantId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError.TenantId.set -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado.Completado = 2 -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado.CompletadoConErrores = 3 -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado.EnProgreso = 1 -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado.Fallido = 4 -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado.Pendiente = 0 -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobEstado
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.<Clone>$() -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string!>!>! Filas, out bool HayMasFilas, out int? TotalFilasConocido) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.Equals(BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult? other) -> bool
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.ExportPageResult(System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string!>!>! Filas, bool HayMasFilas, int? TotalFilasConocido) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.Filas.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<string!>!>!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.Filas.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.HayMasFilas.get -> bool
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.HayMasFilas.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.TotalFilasConocido.get -> int?
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.TotalFilasConocido.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.Deconstruct(out System.Guid ExportJobId, out string! TipoExportacion, out int FilasExportadas, out int FilasConError) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.Equals(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.ExportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.ExportJobId.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.ExportacionCompletadaIntegrationEvent(System.Guid ExportJobId, string! TipoExportacion, int FilasExportadas, int FilasConError) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.FilasConError.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.FilasConError.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.FilasExportadas.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.FilasExportadas.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.TipoExportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.TipoExportacion.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.Deconstruct(out System.Guid ExportJobId, out string! TipoExportacion, out string! ErrorMensaje) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.Equals(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ErrorMensaje.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ErrorMensaje.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ExportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ExportJobId.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ExportacionFallidaIntegrationEvent(System.Guid ExportJobId, string! TipoExportacion, string! ErrorMensaje) -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.TipoExportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.TipoExportacion.init -> void
+BitCode.Framework.Platform.ImportExport.Exportacion.IExportDataSource
+BitCode.Framework.Platform.ImportExport.Exportacion.IExportDataSource.Columnas.get -> System.Collections.Generic.IReadOnlyList<string!>!
+BitCode.Framework.Platform.ImportExport.Exportacion.IExportDataSource.ObtenerPaginaAsync(System.Guid tenantId, string? filtroJson, int offset, int tamanoLote, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult!>!
+BitCode.Framework.Platform.ImportExport.Exportacion.IExportDataSource.TipoExportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext.ExportJobErrors.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.ImportExport.Exportacion.ExportJobError!>!
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext.ExportJobs.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.ImportExport.Exportacion.ExportJob!>!
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext.ImportExportDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.ImportExport.ImportExportDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext.ImportJobErrors.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError!>!
+BitCode.Framework.Platform.ImportExport.ImportExportDbContext.ImportJobs.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.ImportExport.Importacion.ImportJob!>!
+BitCode.Framework.Platform.ImportExport.ImportExportEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.ImportExport.ImportExportOptions
+BitCode.Framework.Platform.ImportExport.ImportExportOptions.ImportExportOptions() -> void
+BitCode.Framework.Platform.ImportExport.ImportExportOptions.TamanoLoteFilas.get -> int
+BitCode.Framework.Platform.ImportExport.ImportExportOptions.TamanoLoteFilas.set -> void
+BitCode.Framework.Platform.ImportExport.ImportExportPermissions
+BitCode.Framework.Platform.ImportExport.ImportExportServiceCollectionExtensions
+BitCode.Framework.Platform.ImportExport.Importacion.IImportRowHandler
+BitCode.Framework.Platform.ImportExport.Importacion.IImportRowHandler.ColumnasRequeridas.get -> System.Collections.Generic.IReadOnlyList<string!>!
+BitCode.Framework.Platform.ImportExport.Importacion.IImportRowHandler.ProcesarFilaAsync(System.Guid tenantId, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! fila, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result!>!
+BitCode.Framework.Platform.ImportExport.Importacion.IImportRowHandler.TipoImportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ArchivoBlobKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.CreatedBy.get -> string?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.CreatedBy.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.Estado.get -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.FilasConError.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.FilasProcesadas.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.FilasTotales.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.FinalizadoAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ImportJob(System.Guid id, string! tipoImportacion, string! archivoBlobKey, string! nombreArchivoOriginal, int filasTotales, System.Guid? iniciadoPorUserId) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.IniciadoPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.IniciarProcesamiento() -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.MarcarCompletado(System.DateTime atUtc) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.MarcarFallido(string! error, System.DateTime atUtc) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ModifiedBy.get -> string?
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.ModifiedBy.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.NombreArchivoOriginal.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.RegistrarProgresoChunk(int filasEnChunk, int erroresEnChunk, int nuevoCheckpoint) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.TenantId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.TenantId.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.TipoImportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJob.UltimaFilaCheckpoint.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.ContenidoFilaCrudo.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.ImportJobError(System.Guid id, System.Guid importJobId, int numeroFila, string! mensajeError, string! contenidoFilaCrudo) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.ImportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.MensajeError.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.NumeroFila.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.TenantId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobError.TenantId.set -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado.Completado = 2 -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado.CompletadoConErrores = 3 -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado.EnProgreso = 1 -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado.Fallido = 4 -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado.Pendiente = 0 -> BitCode.Framework.Platform.ImportExport.Importacion.ImportJobEstado
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.Deconstruct(out System.Guid ImportJobId, out string! TipoImportacion, out int FilasTotales, out int FilasProcesadas, out int FilasConError) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.Equals(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasConError.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasConError.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasProcesadas.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasProcesadas.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasTotales.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.FilasTotales.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.ImportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.ImportJobId.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.ImportacionCompletadaIntegrationEvent(System.Guid ImportJobId, string! TipoImportacion, int FilasTotales, int FilasProcesadas, int FilasConError) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.TipoImportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.TipoImportacion.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.Deconstruct(out System.Guid ImportJobId, out string! TipoImportacion, out string! ErrorMensaje) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.Equals(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ErrorMensaje.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ErrorMensaje.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ImportJobId.get -> System.Guid
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ImportJobId.init -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ImportacionFallidaIntegrationEvent(System.Guid ImportJobId, string! TipoImportacion, string! ErrorMensaje) -> void
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.TipoImportacion.get -> string!
+BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.TipoImportacion.init -> void
+BitCode.Framework.Platform.ImportExport.Procesamiento.ExportBatchProcessorJob
+BitCode.Framework.Platform.ImportExport.Procesamiento.ExportBatchProcessorJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Procesamiento.ExportBatchProcessorJob.ExportBatchProcessorJob(BitCode.Framework.Platform.ImportExport.ImportExportDbContext! dbContext, BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore! fileStore, System.Collections.Generic.IEnumerable<BitCode.Framework.Platform.ImportExport.Exportacion.IExportDataSource!>! dataSources, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Platform.ImportExport.ImportExportOptions!>! options) -> void
+BitCode.Framework.Platform.ImportExport.Procesamiento.ExportBatchProcessorJob.ProcesarPendientesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Procesamiento.ImportBatchProcessorJob
+BitCode.Framework.Platform.ImportExport.Procesamiento.ImportBatchProcessorJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.ImportExport.Procesamiento.ImportBatchProcessorJob.ImportBatchProcessorJob(BitCode.Framework.Platform.ImportExport.ImportExportDbContext! dbContext, BitCode.Framework.Platform.ImportExport.Almacenamiento.IImportExportFileStore! fileStore, System.Collections.Generic.IEnumerable<BitCode.Framework.Platform.ImportExport.Importacion.IImportRowHandler!>! rowHandlers, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Platform.ImportExport.ImportExportOptions!>! options) -> void
+BitCode.Framework.Platform.ImportExport.Procesamiento.ImportBatchProcessorJob.ProcesarPendientesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+const BitCode.Framework.Platform.ImportExport.ImportExportPermissions.ExportacionesIniciar = "importexport.exportaciones.iniciar" -> string!
+const BitCode.Framework.Platform.ImportExport.ImportExportPermissions.ExportacionesVer = "importexport.exportaciones.ver" -> string!
+const BitCode.Framework.Platform.ImportExport.ImportExportPermissions.ImportacionesIniciar = "importexport.importaciones.iniciar" -> string!
+const BitCode.Framework.Platform.ImportExport.ImportExportPermissions.ImportacionesVer = "importexport.importaciones.ver" -> string!
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.GetHashCode() -> int
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.ToString() -> string!
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent!
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent!
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent!
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent!
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.ToString() -> string!
+override sealed BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.operator !=(BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult.operator ==(BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportPageResult? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.operator !=(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent.operator ==(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionCompletadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.operator !=(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent.operator ==(BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Exportacion.ExportacionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.ImportExportEndpointRouteBuilderExtensions.MapImportExportEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.ImportExport.ImportExportServiceCollectionExtensions.AddSharedImportExport(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Platform.ImportExport.ImportExportOptions!>? configureOptions = null, System.Action<BitCode.Framework.Platform.ImportExport.Almacenamiento.ImportExportFileStoreOptions!>? configureFileStore = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.operator !=(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent.operator ==(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Importacion.ImportacionCompletadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.operator !=(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent.operator ==(BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.ImportExport.Importacion.ImportacionFallidaIntegrationEvent? right) -> bool
