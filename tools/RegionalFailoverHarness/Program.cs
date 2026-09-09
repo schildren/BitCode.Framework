@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -25,7 +26,7 @@ namespace BitCode.Framework.Tools.RegionalFailoverHarness;
 /// propietario" de <c>failover</c>.
 /// <code>
 ///   RegionalFailoverHarness.exe init       &lt;mapFile&gt; &lt;tenantId&gt; &lt;ownerRegion&gt;
-///   RegionalFailoverHarness.exe node       &lt;mapFile&gt; &lt;regionId&gt; &lt;port&gt; [replicationStateFile]
+///   RegionalFailoverHarness.exe node       &lt;mapFile&gt; &lt;regionId&gt; &lt;port&gt; [replicationStateFile] [ledgerFile]
 ///   RegionalFailoverHarness.exe resync-set &lt;replicationStateFile&gt; &lt;tenantId&gt; &lt;lagSeconds&gt;
 ///   RegionalFailoverHarness.exe failover   &lt;mapFile&gt; &lt;auditLog&gt; &lt;tenantId&gt; &lt;candidateRegion&gt;
 ///                                          [--health-url &lt;url&gt;] [--threshold &lt;n&gt;]
@@ -35,12 +36,26 @@ namespace BitCode.Framework.Tools.RegionalFailoverHarness;
 ///                                          [--resync-interval-seconds &lt;s&gt;] [--lock-hold-seconds &lt;s&gt;]
 ///                                          [--confirm]
 ///   RegionalFailoverHarness.exe status     &lt;mapFile&gt; &lt;auditLog&gt;
+///   RegionalFailoverHarness.exe replicate  &lt;sourceLedger&gt; &lt;destLedger&gt; &lt;delaySeconds&gt;
+///   RegionalFailoverHarness.exe ledger-diff &lt;ledgerA&gt; &lt;ledgerB&gt;
 /// </code>
+/// Los dos últimos comandos son de F5-12 (DR drills): <c>replicate</c> simula, con procesos de SO
+/// reales, el mismo fenómeno que F5-04 (log shipping)/F5-05 (mirror Kafka cross-cluster) miden con
+/// infraestructura real (SQL Server/Kafka vía Testcontainers) -- una cola de escrituras confirmadas
+/// en el origen que tarda <c>delaySeconds</c> reales en aparecer en el destino -- para poder medir un
+/// RPO real (segundos de escritura efectivamente perdidos) en un simulacro end-to-end que combina
+/// <c>failover</c> + <c>failback</c> sin depender de esa topología. <c>ledger-diff</c> calcula ese RPO
+/// real comparando los dos ledgers en el instante de la caída. Ver <c>docs/dr-drill-fase5.md</c>.
 /// </remarks>
 internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
+        // F5-12: la consola de Windows por defecto no es UTF-8 -- sin esto, los acentos de los
+        // mensajes (ya existentes desde F5-10/F5-11) se ven corruptos al correr el drill end-to-end
+        // y redirigir la salida a un log de texto.
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+
         if (args.Length < 1)
         {
             PrintUsage();
@@ -54,7 +69,12 @@ internal static class Program
                 return 0;
 
             case "node" when args.Length >= 4:
-                await RunNodeAsync(args[1], args[2], int.Parse(args[3]), args.Length >= 5 ? args[4] : null);
+                await RunNodeAsync(
+                    args[1],
+                    args[2],
+                    int.Parse(args[3]),
+                    args.Length >= 5 ? args[4] : null,
+                    args.Length >= 6 ? args[5] : null);
                 return 0;
 
             case "resync-set" when args.Length >= 4:
@@ -71,6 +91,14 @@ internal static class Program
                 PrintStatus(args[1], args[2]);
                 return 0;
 
+            case "replicate" when args.Length >= 4:
+                await RunReplicateAsync(args[1], args[2], double.Parse(args[3]));
+                return 0;
+
+            case "ledger-diff" when args.Length >= 3:
+                PrintLedgerDiff(args[1], args[2]);
+                return 0;
+
             default:
                 PrintUsage();
                 return 1;
@@ -81,7 +109,7 @@ internal static class Program
     {
         Console.WriteLine("Uso:");
         Console.WriteLine("  RegionalFailoverHarness init       <mapFile> <tenantId> <ownerRegion>");
-        Console.WriteLine("  RegionalFailoverHarness node       <mapFile> <regionId> <port> [replicationStateFile]");
+        Console.WriteLine("  RegionalFailoverHarness node       <mapFile> <regionId> <port> [replicationStateFile] [ledgerFile]");
         Console.WriteLine("  RegionalFailoverHarness resync-set <replicationStateFile> <tenantId> <lagSeconds>");
         Console.WriteLine("  RegionalFailoverHarness failover   <mapFile> <auditLog> <tenantId> <candidateRegion>");
         Console.WriteLine("                                     [--health-url <url>] [--threshold <n>]");
@@ -91,6 +119,8 @@ internal static class Program
         Console.WriteLine("                                     [--resync-interval-seconds <s>] [--lock-hold-seconds <s>]");
         Console.WriteLine("                                     [--confirm]");
         Console.WriteLine("  RegionalFailoverHarness status     <mapFile> <auditLog>");
+        Console.WriteLine("  RegionalFailoverHarness replicate  <sourceLedger> <destLedger> <delaySeconds>");
+        Console.WriteLine("  RegionalFailoverHarness ledger-diff <ledgerA> <ledgerB>");
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -120,7 +150,7 @@ internal static class Program
     // archivo se refleja SIN reiniciar este proceso, igual que ocurriría con un ConfigMap real.
     // ---------------------------------------------------------------------------------------------
 
-    private static async Task RunNodeAsync(string mapFile, string regionId, int port, string? replicationStateFile)
+    private static async Task RunNodeAsync(string mapFile, string regionId, int port, string? replicationStateFile, string? ledgerFile)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
@@ -166,6 +196,12 @@ internal static class Program
 
         app.MapGet("/write/{tenantId}", (string tenantId, HttpContext context) =>
         {
+            // F5-12 (DR drill): número de secuencia opcional que el CLIENTE del drill asigna a cada
+            // intento de escritura (?seq=N). Es el propio drill, no el servidor, quien lleva la cuenta
+            // de qué escribió y cuándo -- así el ledger es la evidencia de lo que el CLIENTE observó
+            // como confirmado, exactamente el dato que un simulacro de RPO necesita.
+            var seqValue = context.Request.Query["seq"].ToString();
+            var hasSeq = long.TryParse(seqValue, out var seq);
             // F5-11: ventana explícita de no-doble-escritor. Mientras el lock está activo, TODAS las
             // regiones (la propietaria vigente y la candidata en resincronización) rechazan la
             // escritura -- nunca hay ambigüedad entre "dos propietarias" ni una ventana en la que una
@@ -199,12 +235,25 @@ internal static class Program
                     statusCode: StatusCodes.Status421MisdirectedRequest);
             }
 
+            var acceptedAtUtc = DateTime.UtcNow;
+
+            if (ledgerFile is not null && hasSeq)
+            {
+                // F5-12: cada escritura ACEPTADA por la región propietaria es un "evento confirmado"
+                // -- el equivalente, a efectos de este drill, de un commit real en SQL/Kafka. El
+                // comando "replicate" copia estas líneas hacia el ledger de la otra región con un
+                // retraso real (async), y "ledger-diff" mide cuántas de estas líneas seguían sin
+                // replicar en el instante de una caída real -- eso es el RPO medido del simulacro.
+                AppendLedgerEntry(ledgerFile, seq, acceptedAtUtc, tenantId, currentRegion.Value);
+            }
+
             app.Logger.LogInformation(
-                "[{Region}] Write ACEPTADO para tenant {TenantId} (pid={Pid}).",
+                "[{Region}] Write ACEPTADO para tenant {TenantId} (pid={Pid}, seq={Seq}).",
                 currentRegion.Value,
                 tenantId,
-                pid);
-            return Results.Ok(new { status = "accepted", region = currentRegion.Value, pid });
+                pid,
+                hasSeq ? seq : -1);
+            return Results.Ok(new { status = "accepted", region = currentRegion.Value, pid, seq = hasSeq ? seq : (long?)null, timestampUtc = acceptedAtUtc.ToString("O") });
         });
 
         app.Logger.LogInformation(
@@ -642,6 +691,175 @@ internal static class Program
 
         File.AppendAllText(auditLog, entry.ToJsonString() + Environment.NewLine);
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // F5-12 (DR drills): ledger + replicate + ledger-diff -- el mecanismo de medición REAL de RPO
+    // que usa el simulacro end-to-end (docs/dr-drill-fase5.md). El ledger de una región es la lista,
+    // en el orden real en que ocurrieron (append-only, con timestamp real de servidor), de las
+    // escrituras que esa región aceptó como propietaria. "replicate" simula, con un delay real de
+    // reloj de pared (no un reloj virtual), el mismo fenómeno asíncrono que F5-04 (log shipping) y
+    // F5-05 (mirror Kafka) miden con infraestructura real -- una cola de escrituras confirmadas en el
+    // origen que tarda un tiempo real en aparecer en el destino. Si el proceso "replicate" se mata en
+    // el mismo instante que el nodo de la región caída (mismo "apagón" simulado), lo que no llegó a
+    // copiarse todavía es, por construcción, exactamente lo que un desastre real perdería -- eso es
+    // lo que "ledger-diff" cuantifica.
+    // ---------------------------------------------------------------------------------------------
+
+    private static readonly System.Threading.SemaphoreSlim LedgerAppendLock = new(1, 1);
+
+    private static void AppendLedgerEntry(string ledgerFile, long seq, DateTime timestampUtc, string tenantId, string region)
+    {
+        var entry = new JsonObject
+        {
+            ["seq"] = seq,
+            ["timestampUtc"] = timestampUtc.ToString("O"),
+            ["tenantId"] = tenantId,
+            ["region"] = region,
+        };
+
+        // Un único proceso "node" atiende sus propias escrituras de forma esencialmente secuencial
+        // para este drill (curl secuencial desde el script orquestador) -- un lock simple in-process
+        // alcanza para que dos respuestas concurrentes no corrompan la línea (no se requiere el mismo
+        // nivel de atomicidad cross-proceso que el mapa de ownership, porque solo el propio proceso
+        // dueño de esta región escribe en su ledger).
+        LedgerAppendLock.Wait();
+        try
+        {
+            File.AppendAllText(ledgerFile, entry.ToJsonString() + Environment.NewLine);
+        }
+        finally
+        {
+            LedgerAppendLock.Release();
+        }
+    }
+
+    private static async Task RunReplicateAsync(string sourceLedger, string destLedger, double delaySeconds)
+    {
+        Console.WriteLine($"replicate: '{sourceLedger}' -> '{destLedger}' con retraso real de {delaySeconds}s (Ctrl+C/taskkill para simular la caída del enlace de replicación).");
+
+        var copiedSeqs = new HashSet<long>();
+
+        if (File.Exists(destLedger))
+        {
+            foreach (var line in File.ReadAllLines(destLedger))
+            {
+                if (JsonNode.Parse(line) is JsonObject obj && obj["seq"]?.GetValue<long>() is { } seq)
+                {
+                    copiedSeqs.Add(seq);
+                }
+            }
+        }
+
+        while (true)
+        {
+            if (File.Exists(sourceLedger))
+            {
+                string[] lines;
+                try
+                {
+                    lines = File.ReadAllLines(sourceLedger);
+                }
+                catch (IOException)
+                {
+                    // El origen puede estar siendo escrito por el nodo justo en este instante --
+                    // se reintenta en el próximo ciclo del loop, nunca se aborta el proceso.
+                    lines = Array.Empty<string>();
+                }
+
+                foreach (var line in lines)
+                {
+                    if (JsonNode.Parse(line) is not JsonObject obj)
+                    {
+                        continue;
+                    }
+
+                    var seq = obj["seq"]!.GetValue<long>();
+                    if (copiedSeqs.Contains(seq))
+                    {
+                        continue;
+                    }
+
+                    var writtenAtUtc = DateTime.Parse(obj["timestampUtc"]!.GetValue<string>()).ToUniversalTime();
+                    var elapsed = DateTime.UtcNow - writtenAtUtc;
+
+                    if (elapsed.TotalSeconds >= delaySeconds)
+                    {
+                        File.AppendAllText(destLedger, line + Environment.NewLine);
+                        copiedSeqs.Add(seq);
+                        Console.WriteLine($"replicate: seq={seq} replicado tras {elapsed.TotalSeconds:F2}s reales de retraso.");
+                    }
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    private static void PrintLedgerDiff(string ledgerA, string ledgerB)
+    {
+        var entriesA = ReadLedger(ledgerA);
+        var entriesB = ReadLedger(ledgerB);
+        var seqsB = entriesB.Select(e => e.Seq).ToHashSet();
+
+        var lost = entriesA.Where(e => !seqsB.Contains(e.Seq)).OrderBy(e => e.Seq).ToList();
+        var lastReplicated = entriesB.OrderByDescending(e => e.Seq).FirstOrDefault();
+        var lastWritten = entriesA.OrderByDescending(e => e.Seq).FirstOrDefault();
+
+        double? rpoSeconds = null;
+        if (lastWritten is not null)
+        {
+            var referenceTimestamp = lastReplicated?.TimestampUtc ?? lost.OrderBy(e => e.Seq).FirstOrDefault()?.TimestampUtc;
+            if (referenceTimestamp is not null)
+            {
+                rpoSeconds = (lastWritten.TimestampUtc - referenceTimestamp.Value).TotalSeconds;
+            }
+        }
+
+        var report = new JsonObject
+        {
+            ["ledgerA"] = ledgerA,
+            ["ledgerB"] = ledgerB,
+            ["totalWrittenA"] = entriesA.Count,
+            ["totalReplicatedB"] = entriesB.Count,
+            ["lostCount"] = lost.Count,
+            ["lostSeqs"] = new JsonArray(lost.Select(e => (JsonNode)e.Seq).ToArray()),
+            ["lastReplicatedSeq"] = lastReplicated?.Seq,
+            ["lastReplicatedTimestampUtc"] = lastReplicated?.TimestampUtc.ToString("O"),
+            ["lastWrittenSeq"] = lastWritten?.Seq,
+            ["lastWrittenTimestampUtc"] = lastWritten?.TimestampUtc.ToString("O"),
+            ["rpoSecondsMeasured"] = rpoSeconds,
+        };
+
+        Console.WriteLine(report.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static List<LedgerEntry> ReadLedger(string ledgerFile)
+    {
+        if (!File.Exists(ledgerFile))
+        {
+            return new List<LedgerEntry>();
+        }
+
+        var result = new List<LedgerEntry>();
+        foreach (var line in File.ReadAllLines(ledgerFile))
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            if (JsonNode.Parse(line) is JsonObject obj)
+            {
+                result.Add(new LedgerEntry(
+                    obj["seq"]!.GetValue<long>(),
+                    DateTime.Parse(obj["timestampUtc"]!.GetValue<string>()).ToUniversalTime()));
+            }
+        }
+
+        return result;
+    }
+
+    private sealed record LedgerEntry(long Seq, DateTime TimestampUtc);
 
     private static void PrintStatus(string mapFile, string auditLog)
     {
