@@ -23,6 +23,7 @@
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/QuartzHaRecoveryHarness/QuartzHaRecoveryHarness.csproj" />
+    <Project Path="tools/RegionalFailoverHarness/RegionalFailoverHarness.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/BitCode.Gateway.Tests/BitCode.Gateway.Tests.csproj" />
