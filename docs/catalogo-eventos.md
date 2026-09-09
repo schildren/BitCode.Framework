@@ -1,26 +1,29 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 6 — Workflow, agrega
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 8 — Notifications, agrega
+`Notifications.NotificacionEnviada` y `Notifications.NotificacionFallida`, y suma Notifications como
+consumidor conocido adicional de `Workflow.TareaAsignada`; ver la sección "Eventos productivos
+registrados" más abajo). Actualizado previamente el mismo día (Fase 6, módulo 6 — Workflow, agrega
 `Workflow.WorkflowVersionPublicada`, `Workflow.WorkflowInstanciaIniciada`,
 `Workflow.WorkflowInstanciaFinalizada`, `Workflow.TareaAsignada`, `Workflow.TareaAprobada` y
-`Workflow.TareaRechazada`; ver la sección "Eventos productivos registrados" más abajo). Actualizado
-previamente el mismo día (Fase 6, módulo 5 — Documents, agrega `Documents.DocumentoSubido`,
-`Documents.DocumentoVersionCreada` y `Documents.DocumentoEscaneado`). Actualizado previamente el mismo día
-(Fase 6, módulo 4 — Feature Management, agrega `FeatureManagement.FeatureFlagActivado`,
-`FeatureManagement.FeatureFlagDesactivado` y `FeatureManagement.RolloutIniciado`). Actualizado previamente
-el mismo día (Fase 6, módulo 3 — Catalogs and Parameters, agrega `Catalogos.CatalogoVersionPublicada` y
-`Catalogos.ParametroVigenciaCreada`). Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 —
-Organization, primer registro productivo real).
-**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras diecisiete filas productivas reales
+`Workflow.TareaRechazada`). Actualizado previamente el mismo día (Fase 6, módulo 5 — Documents, agrega
+`Documents.DocumentoSubido`, `Documents.DocumentoVersionCreada` y `Documents.DocumentoEscaneado`).
+Actualizado previamente el mismo día (Fase 6, módulo 4 — Feature Management, agrega
+`FeatureManagement.FeatureFlagActivado`, `FeatureManagement.FeatureFlagDesactivado` y
+`FeatureManagement.RolloutIniciado`). Actualizado previamente el mismo día (Fase 6, módulo 3 — Catalogs
+and Parameters, agrega `Catalogos.CatalogoVersionPublicada` y `Catalogos.ParametroVigenciaCreada`).
+Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 — Organization, primer registro productivo real).
+**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras diecinueve filas productivas reales
 (`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`,
 `Catalogos.CatalogoVersionPublicada`, `Catalogos.ParametroVigenciaCreada`,
 `FeatureManagement.FeatureFlagActivado`, `FeatureManagement.FeatureFlagDesactivado`,
 `FeatureManagement.RolloutIniciado`, `Documents.DocumentoSubido`, `Documents.DocumentoVersionCreada`,
 `Documents.DocumentoEscaneado`, `Workflow.WorkflowVersionPublicada`,
 `Workflow.WorkflowInstanciaIniciada`, `Workflow.WorkflowInstanciaFinalizada`, `Workflow.TareaAsignada`,
-`Workflow.TareaAprobada`, `Workflow.TareaRechazada`) -- ver la sección "Por qué el catálogo está vacío hoy"
-para el contexto histórico de por qué el catálogo empezó vacío en F3-12.
+`Workflow.TareaAprobada`, `Workflow.TareaRechazada`, `Notifications.NotificacionEnviada`,
+`Notifications.NotificacionFallida`) -- ver la sección "Por qué el catálogo está vacío hoy" para el
+contexto histórico de por qué el catálogo empezó vacío en F3-12.
 
 Este documento es el registro único de todo `IIntegrationEvent` (`Shared.Application.Eventing`, F3-01)
 que un bounded context publica o consume en producción: quién es su dueño, qué versión de esquema
@@ -143,9 +146,11 @@ sí estampa con el `TenantId` correcto de forma explícita.
 | `Workflow.WorkflowVersionPublicada` | `WorkflowVersionPublicadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Definiciones/WorkflowVersionPublicadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | `(ninguno conocido aún)` — un consumidor típico sería Task Inbox (Fase 6, módulo 7, depende explícitamente de Workflow) | No — el payload solo transporta identificadores (`WorkflowVersionId`/`WorkflowDefinitionId`) y el número de versión | `Workflow.WorkflowVersionPublicada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `WorkflowDefinitionId` (`IHasPartitionKey`) — todas las publicaciones del mismo workflow quedan en la misma partición | 2026-09-09 |
 | `Workflow.WorkflowInstanciaIniciada` | `WorkflowInstanciaIniciadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/WorkflowInstanciaIniciadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | `(ninguno conocido aún)` | No — el payload solo transporta identificadores (`WorkflowInstanceId`/`WorkflowDefinitionId`/`WorkflowVersionId`/`IniciadoPorUserId`); `IniciadoPorUserId` es un identificador de usuario del sistema, no un dato personal directo (nombre/documento/email) | `Workflow.WorkflowInstanciaIniciada` | `WorkflowInstanceId` (`IHasPartitionKey`) — todos los eventos de la misma instancia quedan en la misma partición | 2026-09-09 |
 | `Workflow.WorkflowInstanciaFinalizada` | `WorkflowInstanciaFinalizadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/WorkflowInstanciaFinalizadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | `(ninguno conocido aún)` | No — solo identificadores | `Workflow.WorkflowInstanciaFinalizada` | `WorkflowInstanceId` (`IHasPartitionKey`) | 2026-09-09 |
-| `Workflow.TareaAsignada` | `TareaAsignadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/TareaAsignadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | Task Inbox (Fase 6, módulo 7, `TareaAsignadaIntegrationEventConsumer`) — construye/actualiza su propio read-model de bandeja; un consumidor típico adicional sería Notifications (Fase 6, módulo 8) para avisarle al nuevo asignado | No — `AsignadoAUserId` es un identificador de usuario, no un dato personal directo | `Workflow.TareaAsignada` | `WorkflowInstanceId` (`IHasPartitionKey`) — todas las (re)asignaciones de tareas de una misma instancia quedan en la misma partición | 2026-09-09 |
+| `Workflow.TareaAsignada` | `TareaAsignadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/TareaAsignadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | Task Inbox (Fase 6, módulo 7, `TareaAsignadaIntegrationEventConsumer`) — construye/actualiza su propio read-model de bandeja; Notifications (Fase 6, módulo 8, `TareaAsignadaNotificationEventConsumer`) — dispara una notificación InApp de ejemplo al nuevo asignado, ver `docs/guia-notifications.md` | No — `AsignadoAUserId` es un identificador de usuario, no un dato personal directo | `Workflow.TareaAsignada` | `WorkflowInstanceId` (`IHasPartitionKey`) — todas las (re)asignaciones de tareas de una misma instancia quedan en la misma partición | 2026-09-09 |
 | `Workflow.TareaAprobada` | `TareaAprobadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/TareaAprobadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | Task Inbox (Fase 6, módulo 7, `TareaAprobadaIntegrationEventConsumer`) | No — solo identificadores (`WorkflowTaskId`/`WorkflowInstanceId`/`ResueltaPorUserId`) | `Workflow.TareaAprobada` | `WorkflowInstanceId` (`IHasPartitionKey`) | 2026-09-09 |
 | `Workflow.TareaRechazada` | `TareaRechazadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/TareaRechazadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | Task Inbox (Fase 6, módulo 7, `TareaRechazadaIntegrationEventConsumer`) | No — solo identificadores | `Workflow.TareaRechazada` | `WorkflowInstanceId` (`IHasPartitionKey`) | 2026-09-09 |
+| `Notifications.NotificacionEnviada` | `NotificacionEnviadaIntegrationEvent` — `src/Platform/BitCode.Platform.Notifications` (`Envio/NotificacionEnviadaIntegrationEvent.cs`) | 1 (vigente) | Notifications (Fase 6, módulo 8) | `(ninguno conocido aún)` — un consumidor típico sería un módulo de auditoría/reporting externo que quiera reflejar el historial de notificaciones sin consultar este bounded context directamente | No — el payload transporta identificadores (`NotificationId`/`DestinatarioUserId`) y el código lógico de la plantilla/canal, sin ningún dato personal directo | `Notifications.NotificacionEnviada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `NotificationId` (`IHasPartitionKey`) | 2026-09-09 |
+| `Notifications.NotificacionFallida` | `NotificacionFallidaIntegrationEvent` — `src/Platform/BitCode.Platform.Notifications` (`Envio/NotificacionFallidaIntegrationEvent.cs`) | 1 (vigente) | Notifications (Fase 6, módulo 8) | `(ninguno conocido aún)` — un consumidor típico sería un canal de alerta operacional (por ejemplo, un dashboard de Fase 6, módulo 12) | No — mismos identificadores que `Notifications.NotificacionEnviada`, más el mensaje de error del último intento (`UltimoErrorMensaje`), que es un detalle técnico del canal (por ejemplo, un código SMTP), no un dato personal | `Notifications.NotificacionFallida` | `NotificationId` (`IHasPartitionKey`) | 2026-09-09 |
 
 ## Proceso obligatorio de mantenimiento
 

@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Notifications: Fase 6, módulo 8 del Plan Maestro BitCode: plantillas, canales, preferencias,
+      retry y tracking de notificaciones -infraestructura genérica reutilizable por cualquier bounded
+      context que publique un evento de integración (dependencia declarada por el Plan Maestro: Events,
+      no un módulo de negocio puntual). Un ejemplo de referencia consume `Workflow.TareaAsignada` (Fase 6,
+      módulo 6) para avisarle al nuevo asignado por el canal InApp -ver `docs/guia-notifications.md`
+      para el detalle honesto de qué tan "real" es cada canal y qué separa este mecanismo genérico del
+      ejemplo concreto que lo ejercita.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <!-- Dependencia declarada por el Plan Maestro (Fase 6, módulo 8: "Dependencias: Events") -NO se
+         referencia ningún ensamblado de mensajería concreto (Kafka, F3-02) desde esta librería: el
+         mecanismo de Inbox/IEventConsumer<T> ya es agnóstico de broker (Shared.Application.Eventing),
+         igual que Task Inbox (Fase 6, módulo 7). -->
+    <!-- Referencia a BitCode.Platform.Workflow SOLO para reutilizar su evento de integración PÚBLICO
+         TareaAsignadaIntegrationEvent como EJEMPLO DE REFERENCIA de "cómo enganchar un consumidor nuevo"
+         (ver Eventos/TareaAsignadaNotificationEventConsumer.cs) -nunca referencia WorkflowDbContext ni
+         ningún comando/query interno de Workflow. El mecanismo genérico de este módulo (plantillas,
+         canales, preferencias, retry, tracking) NO depende de Workflow: cualquier otro bounded context
+         puede engancharse agregando su propio IEventConsumer<TEvent> + plantilla, sin tocar esta
+         referencia ni el core de Notifications. Ver docs/guia-notifications.md, sección "Cómo se dispara
+         una notificación". -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
+  </ItemGroup>
+
+</Project>

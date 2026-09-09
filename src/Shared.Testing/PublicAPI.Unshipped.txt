@@ -1,4 +1,11 @@
 #nullable enable
+BitCode.Framework.Shared.Testing.SmtpContainerFixture
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.SmtpContainerFixture() -> void
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.SmtpHost.get -> string!
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.SmtpPort.get -> int
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.InitializeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.DisposeAsync() -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Testing.SmtpContainerFixture.GetReceivedMessagesRawJsonAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
 BitCode.Framework.Shared.Testing.EventSchemaCompatibilityChecker
 BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult
 BitCode.Framework.Shared.Testing.EventSchemaCompatibilityResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Violations) -> void
