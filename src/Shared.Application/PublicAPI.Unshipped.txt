@@ -32,6 +32,12 @@ BitCode.Framework.Shared.Application.Messaging.ICommand<TResponse>
 BitCode.Framework.Shared.Application.Messaging.IIdempotentCommand
 BitCode.Framework.Shared.Application.Messaging.IQuery<TResponse>
 BitCode.Framework.Shared.Application.Messaging.ITransactionalCommand
+BitCode.Framework.Shared.Application.Messaging.IRegionalCommand
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>.RegionalOwnershipBehavior(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext, BitCode.Framework.Shared.Domain.MultiTenancy.IRegionalOwnershipResolver! ownershipResolver, BitCode.Framework.Shared.Domain.MultiTenancy.ICurrentRegionProvider! currentRegionProvider, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse!>!>! logger) -> void
+BitCode.Framework.Shared.Application.Regions.RegionalOwnershipErrors
+static BitCode.Framework.Shared.Application.Regions.RegionalOwnershipErrors.WrongRegion(System.Guid tenantId, string! ownerRegion, string! currentRegion) -> BitCode.Framework.Shared.Kernel.Error!
 BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
 BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Processed = 0 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
 BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Discarded = 1 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome

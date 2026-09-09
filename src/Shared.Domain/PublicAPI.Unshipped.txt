@@ -165,3 +165,22 @@ BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Add(BitCode.Framework.Shared.D
 BitCode.Framework.Shared.Domain.Inbox.IInboxStore.Discard(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ExhaustedAtUtc.get -> System.DateTime?
 BitCode.Framework.Shared.Domain.Outbox.OutboxMessage.ExhaustedAtUtc.set -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.RegionId() -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.RegionId(string! Value) -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Value.get -> string!
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Value.init -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Deconstruct(out string! Value) -> void
+BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Equals(BitCode.Framework.Shared.Domain.MultiTenancy.RegionId other) -> bool
+~override BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Equals(object obj) -> bool
+override BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.GetHashCode() -> int
+override BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.ToString() -> string!
+static BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.operator ==(BitCode.Framework.Shared.Domain.MultiTenancy.RegionId left, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId right) -> bool
+static BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.operator !=(BitCode.Framework.Shared.Domain.MultiTenancy.RegionId left, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId right) -> bool
+static readonly BitCode.Framework.Shared.Domain.MultiTenancy.RegionId.Primary -> BitCode.Framework.Shared.Domain.MultiTenancy.RegionId
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantRegionMapStore
+BitCode.Framework.Shared.Domain.MultiTenancy.ITenantRegionMapStore.TryGetOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId?>!
+BitCode.Framework.Shared.Domain.MultiTenancy.IRegionalOwnershipResolver
+BitCode.Framework.Shared.Domain.MultiTenancy.IRegionalOwnershipResolver.ResolveOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId>!
+BitCode.Framework.Shared.Domain.MultiTenancy.ICurrentRegionProvider
+BitCode.Framework.Shared.Domain.MultiTenancy.ICurrentRegionProvider.CurrentRegion.get -> BitCode.Framework.Shared.Domain.MultiTenancy.RegionId

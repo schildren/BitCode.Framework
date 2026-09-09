@@ -25,6 +25,14 @@ public record TestIdempotentCommand(string Name) : ICommand<string>, IIdempotent
 
 public record TestIdempotentCommandWithoutValue(string Name) : ICommand, IIdempotentCommand;
 
+public record TestRegionalCommand(string Name) : ICommand<string>, IRegionalCommand;
+
+public class TestRegionalCommandHandler : IRequestHandler<TestRegionalCommand, Result<string>>
+{
+    public Task<Result<string>> Handle(TestRegionalCommand request, CancellationToken cancellationToken) =>
+        Task.FromResult(Result.Success($"Hola, {request.Name}"));
+}
+
 public class TestQueryHandler : IRequestHandler<TestQuery, Result<string>>
 {
     public Task<Result<string>> Handle(TestQuery request, CancellationToken cancellationToken) =>

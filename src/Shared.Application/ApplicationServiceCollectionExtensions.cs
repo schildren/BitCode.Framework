@@ -16,18 +16,21 @@ public static class ApplicationServiceCollectionExtensions
 {
     /// <summary>
     /// Registra MediatR (handlers descubiertos por assembly), los validadores de FluentValidation,
-    /// el pipeline de behaviors en el orden Logging -> Validation -> Transaction -> Idempotency ->
-    /// Handler, y Mapster (config global + IMapper). Un DTO declara su mapeo implementando
-    /// Mapster.IRegister (o Mapster.IMapFrom&lt;TSource&gt; para el caso simple de propiedades
-    /// homónimas); ambos son descubiertos automáticamente por TypeAdapterConfig.Scan sobre los
-    /// assemblies indicados. TransactionBehavior solo se ejecuta para requests que implementan
+    /// el pipeline de behaviors en el orden Logging -> Validation -> RegionalOwnership -> Transaction
+    /// -> Idempotency -> Handler, y Mapster (config global + IMapper). Un DTO declara su mapeo
+    /// implementando Mapster.IRegister (o Mapster.IMapFrom&lt;TSource&gt; para el caso simple de
+    /// propiedades homónimas); ambos son descubiertos automáticamente por TypeAdapterConfig.Scan sobre
+    /// los assemblies indicados. TransactionBehavior solo se ejecuta para requests que implementan
     /// IBaseCommand (ICommand); las queries pasan por Logging y Validation únicamente. Dentro de
     /// TransactionBehavior, solo los comandos que implementan ITransactionalCommand abren una
     /// transacción explícita con rollback coordinado; un ICommand simple persiste sus cambios vía
-    /// SaveChangesAsync sin transacción explícita. IdempotencyBehavior (F1-22) solo se ejecuta para
-    /// comandos IIdempotentCommand, y corre DENTRO del alcance de TransactionBehavior para que el
-    /// registro de idempotencia quede en el mismo SaveChangesAsync/transacción que el efecto del
-    /// comando (ver el remarks de IdempotencyBehavior).
+    /// SaveChangesAsync sin transacción explícita. RegionalOwnershipBehavior (F5-02) solo se ejecuta
+    /// para comandos IRegionalCommand, y corre ANTES de TransactionBehavior/IdempotencyBehavior para
+    /// rechazar una escritura fuera de la región propietaria del tenant sin abrir ninguna transacción
+    /// ni tocar ningún store de idempotencia (ver el remarks de RegionalOwnershipBehavior).
+    /// IdempotencyBehavior (F1-22) solo se ejecuta para comandos IIdempotentCommand, y corre DENTRO
+    /// del alcance de TransactionBehavior para que el registro de idempotencia quede en el mismo
+    /// SaveChangesAsync/transacción que el efecto del comando (ver el remarks de IdempotencyBehavior).
     /// </summary>
     public static IServiceCollection AddSharedApplication(
         this IServiceCollection services,
@@ -66,6 +69,7 @@ public static class ApplicationServiceCollectionExtensions
             config.RegisterServicesFromAssemblies(assemblies);
             config.AddOpenBehavior(typeof(LoggingBehavior<,>));
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            config.AddOpenBehavior(typeof(RegionalOwnershipBehavior<,>));
             config.AddOpenBehavior(typeof(TransactionBehavior<,>));
             config.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
         });

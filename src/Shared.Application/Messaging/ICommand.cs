@@ -38,3 +38,25 @@ public interface ITransactionalCommand : IBaseCommand;
 /// <c>docs/convenciones.md</c> (regla dura 4) para el contrato completo.
 /// </remarks>
 public interface IIdempotentCommand : IBaseCommand;
+
+/// <summary>
+/// Marca un comando cuya ejecución debe ocurrir en la región propietaria de escritura (single-writer)
+/// del tenant actual (F5-02, Fase 5 — Disaster Recovery y multi-región), siguiendo la decisión
+/// arquitectónica rectora del Plan Maestro (sección 2): "Multi-región: cómputo activo/activo y un
+/// único propietario de escritura por agregado o bounded context".
+/// </summary>
+/// <remarks>
+/// F5-02: <c>RegionalOwnershipBehavior</c> (registrado por <c>AddSharedApplication</c>) le da
+/// comportamiento real a este marcador. En un despliegue de una sola región/instancia sin multi-
+/// tenancy habilitada, o sin <c>TenantId</c> resuelto para el request actual, el behavior no rechaza
+/// nada — cero cambio de comportamiento para el caso común. En un despliegue multi-región (varias
+/// instancias, cada una configurada con su propio <c>ICurrentRegionProvider</c>,
+/// Shared.Infrastructure.Persistence), un comando <see cref="IRegionalCommand"/> ejecutado en una
+/// instancia cuya región no coincide con la región propietaria del tenant (resuelta vía
+/// <c>IRegionalOwnershipResolver</c>) se rechaza (<c>RegionalOwnershipErrors.WrongRegion</c>) sin
+/// ejecutar el handler ni abrir ninguna transacción. Reservado para comandos que mutan un agregado o
+/// bounded context cuyo perfil DR exige un único escritor válido (p. ej. perfiles Gold/Platinum del
+/// BIA de Fase 5, ver <c>docs/bia-fase5.md</c>); un comando de solo lectura nunca debe implementar
+/// esta interfaz — usar <c>IQuery</c> en su lugar (regla dura de <c>docs/convenciones.md</c>).
+/// </remarks>
+public interface IRegionalCommand : IBaseCommand;
