@@ -1,0 +1,43 @@
+#nullable enable
+BitCode.Framework.Platform.TaskInbox.Actors.ITaskInboxActorContext
+BitCode.Framework.Platform.TaskInbox.Actors.ITaskInboxActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado.Aprobada = 1 -> BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado.Pendiente = 0 -> BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado.Rechazada = 2 -> BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.AplicarAprobacion(System.Guid resueltaPorUserId, System.DateTime resueltaAtUtc) -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.AplicarAsignacion(System.Guid asignadoAUserId, System.DateTime asignadaAtUtc) -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.AplicarRechazo(System.Guid resueltaPorUserId, System.DateTime resueltaAtUtc) -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.AsignadaAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.AsignadoAUserId.get -> System.Guid
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.CreatedBy.get -> string?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.CreatedBy.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.Estado.get -> BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.LeidoAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.MarcarComoLeida(System.Guid actorUserId) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ModifiedBy.get -> string?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ModifiedBy.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ResueltaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.ResueltaPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.RowVersion.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.TaskInboxItem(System.Guid workflowTaskId, System.Guid workflowInstanceId, System.Guid asignadoAUserId, System.DateTime asignadaAtUtc) -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.TenantId.get -> System.Guid
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.TenantId.set -> void
+BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.WorkflowInstanceId.get -> System.Guid
+BitCode.Framework.Platform.TaskInbox.TaskInboxDbContext
+BitCode.Framework.Platform.TaskInbox.TaskInboxDbContext.TaskInboxDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.TaskInbox.TaskInboxDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.TaskInbox.TaskInboxDbContext.TaskInboxItems.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem!>!
+BitCode.Framework.Platform.TaskInbox.TaskInboxEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.TaskInbox.TaskInboxPermissions
+BitCode.Framework.Platform.TaskInbox.TaskInboxServiceCollectionExtensions
+const BitCode.Framework.Platform.TaskInbox.TaskInboxPermissions.BandejaMarcarLeida = "taskinbox.bandeja.marcarleida" -> string!
+const BitCode.Framework.Platform.TaskInbox.TaskInboxPermissions.BandejaVer = "taskinbox.bandeja.ver" -> string!
+static BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem.CrearYaResuelta(System.Guid workflowTaskId, System.Guid workflowInstanceId, BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxEstado estado, System.Guid resueltaPorUserId, System.DateTime resueltaAtUtc) -> BitCode.Framework.Platform.TaskInbox.Bandeja.TaskInboxItem!
+static BitCode.Framework.Platform.TaskInbox.TaskInboxEndpointRouteBuilderExtensions.MapTaskInboxEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.TaskInbox.TaskInboxServiceCollectionExtensions.AddSharedTaskInbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
