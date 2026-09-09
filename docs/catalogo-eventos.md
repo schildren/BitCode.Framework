@@ -1,10 +1,12 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 8 — Notifications, agrega
-`Notifications.NotificacionEnviada` y `Notifications.NotificacionFallida`, y suma Notifications como
-consumidor conocido adicional de `Workflow.TareaAsignada`; ver la sección "Eventos productivos
-registrados" más abajo). Actualizado previamente el mismo día (Fase 6, módulo 6 — Workflow, agrega
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 9 — Integration Hub, agrega
+`IntegrationHub.SolicitudEnviada` y `IntegrationHub.SolicitudFallida`; ver la sección "Eventos
+productivos registrados" más abajo). Actualizado previamente el mismo día (Fase 6, módulo 8 —
+Notifications, agrega `Notifications.NotificacionEnviada` y `Notifications.NotificacionFallida`, y suma
+Notifications como consumidor conocido adicional de `Workflow.TareaAsignada`). Actualizado previamente
+el mismo día (Fase 6, módulo 6 — Workflow, agrega
 `Workflow.WorkflowVersionPublicada`, `Workflow.WorkflowInstanciaIniciada`,
 `Workflow.WorkflowInstanciaFinalizada`, `Workflow.TareaAsignada`, `Workflow.TareaAprobada` y
 `Workflow.TareaRechazada`). Actualizado previamente el mismo día (Fase 6, módulo 5 — Documents, agrega
@@ -14,7 +16,7 @@ Actualizado previamente el mismo día (Fase 6, módulo 4 — Feature Management,
 `FeatureManagement.RolloutIniciado`). Actualizado previamente el mismo día (Fase 6, módulo 3 — Catalogs
 and Parameters, agrega `Catalogos.CatalogoVersionPublicada` y `Catalogos.ParametroVigenciaCreada`).
 Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 — Organization, primer registro productivo real).
-**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras diecinueve filas productivas reales
+**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras veintiuna filas productivas reales
 (`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`,
 `Catalogos.CatalogoVersionPublicada`, `Catalogos.ParametroVigenciaCreada`,
 `FeatureManagement.FeatureFlagActivado`, `FeatureManagement.FeatureFlagDesactivado`,
@@ -22,7 +24,8 @@ Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 — Organization, prime
 `Documents.DocumentoEscaneado`, `Workflow.WorkflowVersionPublicada`,
 `Workflow.WorkflowInstanciaIniciada`, `Workflow.WorkflowInstanciaFinalizada`, `Workflow.TareaAsignada`,
 `Workflow.TareaAprobada`, `Workflow.TareaRechazada`, `Notifications.NotificacionEnviada`,
-`Notifications.NotificacionFallida`) -- ver la sección "Por qué el catálogo está vacío hoy" para el
+`Notifications.NotificacionFallida`, `IntegrationHub.SolicitudEnviada`,
+`IntegrationHub.SolicitudFallida`) -- ver la sección "Por qué el catálogo está vacío hoy" para el
 contexto histórico de por qué el catálogo empezó vacío en F3-12.
 
 Este documento es el registro único de todo `IIntegrationEvent` (`Shared.Application.Eventing`, F3-01)
@@ -130,6 +133,21 @@ sección "Pendientes". Nota específica de este módulo: los eventos que levanta
 (ningún tenant "actual" que asumir), a diferencia de las filas de `WorkflowHistorial` que el propio job
 sí estampa con el `TenantId` correcto de forma explícita.
 
+Integration Hub (Fase 6, módulo 9) agrega las dos filas siguientes, mismo criterio: `IntegrationRequest`
+es un `AggregateRoot<Guid>` propio del módulo, así que sus operaciones de negocio
+(`RegistrarEnvioExitoso`/`RegistrarEnvioFallidoPermanente` vía `MarcarFallidaDefinitivamente`) levantan
+estos eventos vía `RaiseDomainEvent`, persistidos atómicamente en `IntegrationHubDbContext` por el mismo
+mecanismo de Outbox. Tampoco publicados hoy contra un broker productivo real
+(`samples/Sample.IntegrationHub.Api` no registra `AddSharedKafkaEventing`), ver
+`docs/guia-integration-hub.md`, sección "Pendientes". Mismo hueco heredado de `TenantId` que Workflow/
+Notifications, pero más extendido acá: a diferencia de esos módulos (donde el job cross-tenant es solo un
+camino ENTRE VARIOS que levanta el evento), en Integration Hub el diseño de "colas" hace que
+`IntegrationOutboundProcessorJob` sea el ÚNICO camino que levanta `IntegrationHub.SolicitudEnviada`/
+`SolicitudFallida` — ninguna `IntegrationRequest` se envía síncronamente al encolar. Como ese job no
+tiene `HttpContext` del que resolver un tenant "actual", AMBOS eventos quedan siempre con
+`TenantId = Guid.Empty` en `OutboxMessage` en este módulo — las filas de `IntegrationRequestLog` que el
+propio job escribe sí llevan el `TenantId` correcto, estampado explícitamente desde la solicitud leída.
+
 | Nombre lógico (`EventType`) | Tipo .NET / proyecto | `SchemaVersion` | Owner | Consumidores conocidos | PII | Tópico Kafka | `PartitionKey` | Alta / última modificación |
 |---|---|---|---|---|---|---|---|---|
 | `Organizacion.EmpresaCreada` | `EmpresaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `RazonSocial`/`Identificador` son datos de la persona jurídica (empresa), no de una persona física; no hay identificador directo de individuo en el payload | `Organizacion.EmpresaCreada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `EmpresaId` (`IHasPartitionKey`) — todos los eventos de una misma empresa quedan en la misma partición | 2026-09-08 |
@@ -151,6 +169,8 @@ sí estampa con el `TenantId` correcto de forma explícita.
 | `Workflow.TareaRechazada` | `TareaRechazadaIntegrationEvent` — `src/Platform/BitCode.Platform.Workflow` (`Instancias/TareaRechazadaIntegrationEvent.cs`) | 1 (vigente) | Workflow (Fase 6, módulo 6) | Task Inbox (Fase 6, módulo 7, `TareaRechazadaIntegrationEventConsumer`) | No — solo identificadores | `Workflow.TareaRechazada` | `WorkflowInstanceId` (`IHasPartitionKey`) | 2026-09-09 |
 | `Notifications.NotificacionEnviada` | `NotificacionEnviadaIntegrationEvent` — `src/Platform/BitCode.Platform.Notifications` (`Envio/NotificacionEnviadaIntegrationEvent.cs`) | 1 (vigente) | Notifications (Fase 6, módulo 8) | `(ninguno conocido aún)` — un consumidor típico sería un módulo de auditoría/reporting externo que quiera reflejar el historial de notificaciones sin consultar este bounded context directamente | No — el payload transporta identificadores (`NotificationId`/`DestinatarioUserId`) y el código lógico de la plantilla/canal, sin ningún dato personal directo | `Notifications.NotificacionEnviada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `NotificationId` (`IHasPartitionKey`) | 2026-09-09 |
 | `Notifications.NotificacionFallida` | `NotificacionFallidaIntegrationEvent` — `src/Platform/BitCode.Platform.Notifications` (`Envio/NotificacionFallidaIntegrationEvent.cs`) | 1 (vigente) | Notifications (Fase 6, módulo 8) | `(ninguno conocido aún)` — un consumidor típico sería un canal de alerta operacional (por ejemplo, un dashboard de Fase 6, módulo 12) | No — mismos identificadores que `Notifications.NotificacionEnviada`, más el mensaje de error del último intento (`UltimoErrorMensaje`), que es un detalle técnico del canal (por ejemplo, un código SMTP), no un dato personal | `Notifications.NotificacionFallida` | `NotificationId` (`IHasPartitionKey`) | 2026-09-09 |
+| `IntegrationHub.SolicitudEnviada` | `SolicitudIntegracionEnviadaIntegrationEvent` — `src/Platform/BitCode.Platform.IntegrationHub` (`Solicitudes/SolicitudIntegracionEnviadaIntegrationEvent.cs`) | 1 (vigente) | Integration Hub (Fase 6, módulo 9) | `(ninguno conocido aún)` — un consumidor típico sería un módulo de auditoría/reporting externo que quiera reflejar el estado de las integraciones sin consultar este bounded context directamente | No — el payload solo transporta identificadores (`IntegrationRequestId`/`ConnectorId`) y el código lógico del conector, sin ningún dato personal | `IntegrationHub.SolicitudEnviada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `IntegrationRequestId` (`IHasPartitionKey`) | 2026-09-09 |
+| `IntegrationHub.SolicitudFallida` | `SolicitudIntegracionFallidaIntegrationEvent` — `src/Platform/BitCode.Platform.IntegrationHub` (`Solicitudes/SolicitudIntegracionFallidaIntegrationEvent.cs`) | 1 (vigente) | Integration Hub (Fase 6, módulo 9) | `(ninguno conocido aún)` — un consumidor típico sería un canal de alerta operacional (por ejemplo, un dashboard de Fase 6, módulo 12) | Depende del conector — el payload incluye `UltimoErrorMensaje` como `string` libre; si el conector externo devuelve un mensaje de error que ecoa datos de negocio sensibles del payload enviado, un consumidor real debe reclasificar esta fila explícitamente. Para el caso de referencia (mensajes de error HTTP/SMTP genéricos) no hay PII | `IntegrationHub.SolicitudFallida` | `IntegrationRequestId` (`IHasPartitionKey`) | 2026-09-09 |
 
 ## Proceso obligatorio de mantenimiento
 

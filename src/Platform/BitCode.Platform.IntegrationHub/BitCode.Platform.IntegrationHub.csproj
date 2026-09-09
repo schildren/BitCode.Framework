@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Integration Hub: Fase 6, módulo 9 del Plan Maestro BitCode: conectores, mapping,
+      credenciales, colas y monitoreo (dependencia declarada: Events y Resilience). Un único conector HTTP
+      saliente genérico y configurable (URL, método, autenticación) -NO un adapter productivo hacia un
+      sistema comercial concreto (SAP, Salesforce, etc.), ver `docs/guia-integration-hub.md` para el
+      detalle honesto de qué tan "real" es cada pieza y qué queda a cargo de un consumidor productivo.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <!-- Dependencia declarada por el Plan Maestro (Fase 6, módulo 9: "Dependencias: Events y Resilience").
+         "Events" -no se referencia ningún broker concreto (Kafka, F3-02): igual que Notifications/Task
+         Inbox, este módulo publica sus propios eventos de integración a través del mecanismo agnóstico de
+         Outbox (Shared.Infrastructure.Persistence), y podría consumir eventos de otros módulos con
+         IEventConsumer<T> (Shared.Application.Eventing) si algún día lo necesitara -hoy no consume
+         ninguno, ver docs/guia-integration-hub.md, sección "Por qué no hay un consumidor de ejemplo".
+         "Resilience" -se referencia Shared.Infrastructure.Http para reutilizar la pipeline de resiliencia
+         HTTP saliente estándar del framework (F1-26: timeout, retry, circuit breaker, bulkhead) en vez de
+         reimplementarla. -->
+    <ProjectReference Include="..\..\Shared.Infrastructure.Http\Shared.Infrastructure.Http.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
+  </ItemGroup>
+
+</Project>
