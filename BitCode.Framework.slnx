@@ -8,6 +8,8 @@
     <Project Path="samples/Sample.Organization.Api.Tests/Sample.Organization.Api.Tests.csproj" />
     <Project Path="samples/Sample.Catalogs.Api/Sample.Catalogs.Api.csproj" />
     <Project Path="samples/Sample.Catalogs.Api.Tests/Sample.Catalogs.Api.Tests.csproj" />
+    <Project Path="samples/Sample.FeatureManagement.Api/Sample.FeatureManagement.Api.csproj" />
+    <Project Path="samples/Sample.FeatureManagement.Api.Tests/Sample.FeatureManagement.Api.Tests.csproj" />
     <Project Path="samples/Sample.Eventing.Tests/Sample.Eventing.Tests.csproj" />
     <Project Path="samples/Sample.Eventing/Sample.Eventing.csproj" />
   </Folder>
@@ -16,6 +18,7 @@
     <Project Path="src/Platform/BitCode.Platform.Identity/BitCode.Platform.Identity.csproj" />
     <Project Path="src/Platform/BitCode.Platform.Organization/BitCode.Platform.Organization.csproj" />
     <Project Path="src/Platform/BitCode.Platform.Catalogs/BitCode.Platform.Catalogs.csproj" />
+    <Project Path="src/Platform/BitCode.Platform.FeatureManagement/BitCode.Platform.FeatureManagement.csproj" />
     <Project Path="src/Shared.Application/Shared.Application.csproj" />
     <Project Path="src/Shared.Domain/Shared.Domain.csproj" />
     <Project Path="src/Shared.Infrastructure.BackgroundJobs/Shared.Infrastructure.BackgroundJobs.csproj" />

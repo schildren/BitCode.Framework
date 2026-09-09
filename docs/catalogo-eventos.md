@@ -1,14 +1,18 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 3 — Catalogs and Parameters, agrega
-`Catalogos.CatalogoVersionPublicada` y `Catalogos.ParametroVigenciaCreada`; ver la sección "Eventos
-productivos registrados" más abajo). Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 —
-Organization, primer registro productivo real).
-**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras cinco filas productivas reales
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 4 — Feature Management, agrega
+`FeatureManagement.FeatureFlagActivado`, `FeatureManagement.FeatureFlagDesactivado` y
+`FeatureManagement.RolloutIniciado`; ver la sección "Eventos productivos registrados" más abajo).
+Actualizado previamente el mismo día (Fase 6, módulo 3 — Catalogs and Parameters, agrega
+`Catalogos.CatalogoVersionPublicada` y `Catalogos.ParametroVigenciaCreada`). Actualizado previamente el
+2026-09-08 (Fase 6, módulo 2 — Organization, primer registro productivo real).
+**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras ocho filas productivas reales
 (`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`,
-`Catalogos.CatalogoVersionPublicada`, `Catalogos.ParametroVigenciaCreada`) -- ver la sección "Por qué el
-catálogo está vacío hoy" para el contexto histórico de por qué el catálogo empezó vacío en F3-12.
+`Catalogos.CatalogoVersionPublicada`, `Catalogos.ParametroVigenciaCreada`,
+`FeatureManagement.FeatureFlagActivado`, `FeatureManagement.FeatureFlagDesactivado`,
+`FeatureManagement.RolloutIniciado`) -- ver la sección "Por qué el catálogo está vacío hoy" para el
+contexto histórico de por qué el catálogo empezó vacío en F3-12.
 
 Este documento es el registro único de todo `IIntegrationEvent` (`Shared.Application.Eventing`, F3-01)
 que un bounded context publica o consume en producción: quién es su dueño, qué versión de esquema
@@ -96,6 +100,13 @@ operaciones de negocio (`Publicar`/el constructor de alta respectivamente) levan
 Tampoco publicados hoy contra un broker productivo real (`samples/Sample.Catalogs.Api` no registra
 `AddSharedKafkaEventing`), ver `docs/guia-catalogs.md`, sección "Pendientes".
 
+Feature Management (Fase 6, módulo 4) agrega las tres filas siguientes, mismo criterio: `FeatureFlag` y
+`Rollout` son `AggregateRoot<Guid>` propios del módulo, así que sus operaciones de negocio
+(`Activar`/`Desactivar`/el constructor de alta respectivamente) levantan estos eventos vía
+`RaiseDomainEvent`, persistidos atómicamente en `FeatureManagementDbContext` por el mismo mecanismo de
+Outbox. Tampoco publicados hoy contra un broker productivo real (`samples/Sample.FeatureManagement.Api`
+no registra `AddSharedKafkaEventing`), ver `docs/guia-feature-management.md`, sección "Pendientes".
+
 | Nombre lógico (`EventType`) | Tipo .NET / proyecto | `SchemaVersion` | Owner | Consumidores conocidos | PII | Tópico Kafka | `PartitionKey` | Alta / última modificación |
 |---|---|---|---|---|---|---|---|---|
 | `Organizacion.EmpresaCreada` | `EmpresaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `RazonSocial`/`Identificador` son datos de la persona jurídica (empresa), no de una persona física; no hay identificador directo de individuo en el payload | `Organizacion.EmpresaCreada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `EmpresaId` (`IHasPartitionKey`) — todos los eventos de una misma empresa quedan en la misma partición | 2026-09-08 |
@@ -103,6 +114,9 @@ Tampoco publicados hoy contra un broker productivo real (`samples/Sample.Catalog
 | `Organizacion.SucursalCreada` | `SucursalCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Sucursales/SucursalCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `Nombre`/`Direccion` son datos de un establecimiento comercial, no de una persona física | `Organizacion.SucursalCreada` | `SucursalId` (`IHasPartitionKey`) | 2026-09-08 |
 | `Catalogos.CatalogoVersionPublicada` | `CatalogoVersionPublicadaIntegrationEvent` — `src/Platform/BitCode.Platform.Catalogs` (`Catalogos/CatalogoVersionPublicadaIntegrationEvent.cs`) | 1 (vigente) | Catalogs and Parameters (Fase 6, módulo 3) | `(ninguno conocido aún)` — un consumidor típico sería un módulo que cachea los ítems de un catálogo y necesita invalidar su copia al publicarse una versión nueva | No — el payload solo transporta identificadores (`CatalogoVersionId`/`CatalogoId`), número de versión y fechas de vigencia, sin ningún dato de persona física | `Catalogos.CatalogoVersionPublicada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `CatalogoId` (`IHasPartitionKey`) — todos los eventos de publicación de un mismo catálogo quedan en la misma partición | 2026-09-09 |
 | `Catalogos.ParametroVigenciaCreada` | `ParametroVigenciaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Catalogs` (`Parametros/ParametroVigenciaCreadaIntegrationEvent.cs`) | 1 (vigente) | Catalogs and Parameters (Fase 6, módulo 3) | `(ninguno conocido aún)` — un consumidor típico sería un módulo que cachea el valor vigente de un parámetro y necesita invalidarlo al darse de alta una vigencia nueva | Depende del parámetro — el payload incluye `Valor` como `string` libre; si un consumidor real modela un parámetro cuyo valor es un dato personal (poco frecuente, pero posible), debe reclasificar esta fila explícitamente. Para los parámetros de ejemplo del módulo (tasas, límites) no hay PII | `Catalogos.ParametroVigenciaCreada` | `ParametroId` (`IHasPartitionKey`) — todas las vigencias de un mismo parámetro quedan en la misma partición | 2026-09-09 |
+| `FeatureManagement.FeatureFlagActivado` | `FeatureFlagActivadoIntegrationEvent` — `src/Platform/BitCode.Platform.FeatureManagement` (`Flags/FeatureFlagActivadoIntegrationEvent.cs`) | 1 (vigente) | Feature Management (Fase 6, módulo 4) | `(ninguno conocido aún)` — un consumidor típico sería un módulo cliente que cachea el estado de un flag y necesita invalidar su copia al activarse | No — el payload solo transporta `FeatureFlagId` y `Nombre` (identificador lógico de una capacidad de negocio, no de una persona física) | `FeatureManagement.FeatureFlagActivado` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `FeatureFlagId` (`IHasPartitionKey`) — todos los eventos de un mismo flag (activaciones/desactivaciones sucesivas) quedan en la misma partición | 2026-09-09 |
+| `FeatureManagement.FeatureFlagDesactivado` | `FeatureFlagDesactivadoIntegrationEvent` — `src/Platform/BitCode.Platform.FeatureManagement` (`Flags/FeatureFlagDesactivadoIntegrationEvent.cs`) | 1 (vigente) | Feature Management (Fase 6, módulo 4) | `(ninguno conocido aún)` | No | `FeatureManagement.FeatureFlagDesactivado` | `FeatureFlagId` (`IHasPartitionKey`) | 2026-09-09 |
+| `FeatureManagement.RolloutIniciado` | `RolloutIniciadoIntegrationEvent` — `src/Platform/BitCode.Platform.FeatureManagement` (`Rollouts/RolloutIniciadoIntegrationEvent.cs`) | 1 (vigente) | Feature Management (Fase 6, módulo 4) | `(ninguno conocido aún)` — un consumidor típico sería un panel de observabilidad de rollouts en curso | No — el payload solo transporta identificadores (`RolloutId`/`FeatureFlagId`/`SegmentoId`) | `FeatureManagement.RolloutIniciado` | `FeatureFlagId` (`IHasPartitionKey`) — todos los rollouts del mismo flag quedan en la misma partición | 2026-09-09 |
 
 ## Proceso obligatorio de mantenimiento
 
