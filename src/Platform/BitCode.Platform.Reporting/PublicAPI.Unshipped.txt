@@ -1,0 +1,37 @@
+#nullable enable
+BitCode.Framework.Platform.Reporting.ReportingDbContext
+BitCode.Framework.Platform.Reporting.ReportingDbContext.ReporteWorkflowInstancias.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia!>!
+BitCode.Framework.Platform.Reporting.ReportingDbContext.ReportingDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Reporting.ReportingDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Reporting.ReportingEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Reporting.ReportingPermissions
+BitCode.Framework.Platform.Reporting.ReportingServiceCollectionExtensions
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.AplicarFinalizacion(System.Guid estadoFinalId, System.DateTime finalizadaAtUtc) -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.AplicarInicio(System.DateTime iniciadaAtUtc) -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.CreatedBy.get -> string?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.CreatedBy.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.DuracionSegundos.get -> int?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.Estado.get -> BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.EstadoFinalId.get -> System.Guid?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.FinalizadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.IniciadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.ModifiedBy.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.ReporteWorkflowInstancia(System.Guid workflowInstanceId, System.Guid workflowDefinitionId) -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.RowVersion.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.TenantId.set -> void
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.WorkflowDefinitionId.get -> System.Guid
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado.EnCurso = 0 -> BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado
+BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado.Finalizada = 1 -> BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstanciaEstado
+const BitCode.Framework.Platform.Reporting.ReportingPermissions.WorkflowInstanciasExportar = "reporting.workflowinstancias.exportar" -> string!
+const BitCode.Framework.Platform.Reporting.ReportingPermissions.WorkflowInstanciasVer = "reporting.workflowinstancias.ver" -> string!
+static BitCode.Framework.Platform.Reporting.ReportingEndpointRouteBuilderExtensions.MapReportingEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Reporting.ReportingServiceCollectionExtensions.AddSharedReporting(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia.CrearYaFinalizada(System.Guid workflowInstanceId, System.Guid workflowDefinitionId, System.Guid estadoFinalId, System.DateTime finalizadaAtUtc) -> BitCode.Framework.Platform.Reporting.WorkflowInstancias.ReporteWorkflowInstancia!

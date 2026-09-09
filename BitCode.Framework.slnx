@@ -22,6 +22,8 @@
     <Project Path="samples/Sample.IntegrationHub.Api.Tests/Sample.IntegrationHub.Api.Tests.csproj" />
     <Project Path="samples/Sample.ImportExport.Api/Sample.ImportExport.Api.csproj" />
     <Project Path="samples/Sample.ImportExport.Api.Tests/Sample.ImportExport.Api.Tests.csproj" />
+    <Project Path="samples/Sample.Reporting.Api/Sample.Reporting.Api.csproj" />
+    <Project Path="samples/Sample.Reporting.Api.Tests/Sample.Reporting.Api.Tests.csproj" />
     <Project Path="samples/Sample.Eventing.Tests/Sample.Eventing.Tests.csproj" />
     <Project Path="samples/Sample.Eventing/Sample.Eventing.csproj" />
   </Folder>
@@ -37,6 +39,7 @@
     <Project Path="src/Platform/BitCode.Platform.Notifications/BitCode.Platform.Notifications.csproj" />
     <Project Path="src/Platform/BitCode.Platform.IntegrationHub/BitCode.Platform.IntegrationHub.csproj" />
     <Project Path="src/Platform/BitCode.Platform.ImportExport/BitCode.Platform.ImportExport.csproj" />
+    <Project Path="src/Platform/BitCode.Platform.Reporting/BitCode.Platform.Reporting.csproj" />
     <Project Path="src/Shared.Application/Shared.Application.csproj" />
     <Project Path="src/Shared.Domain/Shared.Domain.csproj" />
     <Project Path="src/Shared.Infrastructure.BackgroundJobs/Shared.Infrastructure.BackgroundJobs.csproj" />
