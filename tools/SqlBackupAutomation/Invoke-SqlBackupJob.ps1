@@ -33,6 +33,11 @@
 .PARAMETER BackupType
     Tipo de operacion a ejecutar: Full, Differential, Log o Retention.
 
+.PARAMETER CertificateName
+    (F5-09, obligatorio para Full/Differential/Log) Nombre del certificado de servidor creado por
+    Enable-BackupEncryption.sql, usado para cifrar el backup en reposo (ver
+    docs/backups-inmutables-fase5.md seccion 2). No aplica a -BackupType Retention.
+
 .PARAMETER RetentionDays
     Dias de retencion a aplicar cuando -BackupType es Retention (ver
     docs/politica-backups-fase5.md seccion 3 para los valores recomendados por perfil DR).
@@ -56,9 +61,11 @@
     (F5-09) Dias de bloqueo WORM de la copia en la boveda. Requerido cuando -Immutable.
 
 .EXAMPLE
-    # Full semanal (perfil Gold)
+    # Full semanal (perfil Gold), cifrado (F5-09) con el certificado provisionado por
+    # Enable-BackupEncryption.sql, y ademas copiado a boveda WORM (F5-09/F5-07)
     ./Invoke-SqlBackupJob.ps1 -SqlInstance "sql-primary" -Database "AppDb" `
-        -BackupRoot "D:\Backups\AppDb" -BackupType Full
+        -BackupRoot "D:\Backups\AppDb" -BackupType Full -CertificateName "AppDbBackupCert" `
+        -Immutable -VaultRoot "E:\BackupVault\AppDb" -ImmutabilityDays 90
 
 .EXAMPLE
     # Limpieza de retencion de backups de log (perfil Gold: 7 dias, ver politica seccion 3)
@@ -79,6 +86,9 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('Full', 'Differential', 'Log', 'Retention')]
     [string] $BackupType,
+
+    [Parameter(Mandatory = $false)]
+    [string] $CertificateName,
 
     [Parameter(Mandatory = $false)]
     [int] $RetentionDays,
@@ -135,14 +145,19 @@ function Invoke-SqlCmdScript {
     }
 }
 
+if ($BackupType -in @('Full', 'Differential', 'Log') -and [string]::IsNullOrWhiteSpace($CertificateName)) {
+    throw "-CertificateName es obligatorio para -BackupType $BackupType (F5-09: los backups deben cifrarse en reposo, ver docs/backups-inmutables-fase5.md seccion 2 y Enable-BackupEncryption.sql)."
+}
+
 switch ($BackupType) {
     'Full' {
         $folder = Join-Path $BackupRoot 'Full'
         New-Item -ItemType Directory -Path $folder -Force | Out-Null
         $backupPath = Join-Path $folder "$($Database)_full_$timestamp.bak"
         Invoke-SqlCmdScript -ScriptPath (Join-Path $scriptRoot 'Full-Backup.sql') -Variables @{
-            DatabaseName = $Database
-            BackupPath   = $backupPath
+            DatabaseName    = $Database
+            BackupPath      = $backupPath
+            CertificateName = $CertificateName
         }
         Write-Output "Full backup completado: $backupPath"
         Protect-GeneratedBackup -BackupPath $backupPath
@@ -152,8 +167,9 @@ switch ($BackupType) {
         New-Item -ItemType Directory -Path $folder -Force | Out-Null
         $backupPath = Join-Path $folder "$($Database)_diff_$timestamp.bak"
         Invoke-SqlCmdScript -ScriptPath (Join-Path $scriptRoot 'Differential-Backup.sql') -Variables @{
-            DatabaseName = $Database
-            BackupPath   = $backupPath
+            DatabaseName    = $Database
+            BackupPath      = $backupPath
+            CertificateName = $CertificateName
         }
         Write-Output "Differential backup completado: $backupPath"
         Protect-GeneratedBackup -BackupPath $backupPath
@@ -163,8 +179,9 @@ switch ($BackupType) {
         New-Item -ItemType Directory -Path $folder -Force | Out-Null
         $backupPath = Join-Path $folder "$($Database)_log_$timestamp.trn"
         Invoke-SqlCmdScript -ScriptPath (Join-Path $scriptRoot 'Log-Backup.sql') -Variables @{
-            DatabaseName = $Database
-            BackupPath   = $backupPath
+            DatabaseName    = $Database
+            BackupPath      = $backupPath
+            CertificateName = $CertificateName
         }
         Write-Output "Log backup completado: $backupPath"
         Protect-GeneratedBackup -BackupPath $backupPath

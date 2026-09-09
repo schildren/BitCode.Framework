@@ -33,6 +33,9 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "BackupRestoreDemo";
     private const string BackupDirectory = "/tmp/sqlbackups";
+    private const string CertificateName = "BitCodeBackupTestCert";
+    private const string MasterKeyPassword = "M4sterKey!Test#2026";
+    private const string PrivateKeyPassword = "PrivKey!Test#2026";
 
     private readonly MsSqlContainer _source = new MsSqlBuilder().Build();
     private readonly MsSqlContainer _destination = new MsSqlBuilder().Build();
@@ -91,7 +94,20 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
                 "Payload NVARCHAR(50) NOT NULL)");
         }
 
-        // 2) Lote A, antes del FULL.
+        // 2) F5-09: aprovisiona el certificado de cifrado de backups en el ORIGEN, con el mismo
+        //    script real (Enable-BackupEncryption.sql) que usaría un operador humano — la prueba
+        //    no reimplementa la lógica de creación de master key/certificado.
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Enable-BackupEncryption.sql",
+            new Dictionary<string, string>
+            {
+                ["MasterKeyPassword"] = MasterKeyPassword,
+                ["CertificateName"] = CertificateName,
+            });
+
+        // 3) Lote A, antes del FULL.
         await InsertBatchAsync(sourceDbConnectionString, "full", 1, 5);
 
         var fullBackupPath = $"{BackupDirectory}/full.bak";
@@ -103,9 +119,10 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
             {
                 ["DatabaseName"] = DatabaseName,
                 ["BackupPath"] = fullBackupPath,
+                ["CertificateName"] = CertificateName,
             });
 
-        // 3) Lote B, antes del DIFFERENTIAL.
+        // 4) Lote B, antes del DIFFERENTIAL.
         await InsertBatchAsync(sourceDbConnectionString, "diff", 6, 10);
 
         var differentialBackupPath = $"{BackupDirectory}/differential.bak";
@@ -117,9 +134,10 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
             {
                 ["DatabaseName"] = DatabaseName,
                 ["BackupPath"] = differentialBackupPath,
+                ["CertificateName"] = CertificateName,
             });
 
-        // 4) Lote C, antes del LOG.
+        // 5) Lote C, antes del LOG.
         await InsertBatchAsync(sourceDbConnectionString, "log", 11, 15);
 
         var logBackupPath = $"{BackupDirectory}/log.trn";
@@ -131,21 +149,75 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
             {
                 ["DatabaseName"] = DatabaseName,
                 ["BackupPath"] = logBackupPath,
+                ["CertificateName"] = CertificateName,
             });
+
+        // Evidencia real de F5-09 (cifrado): msdb.dbo.backupset.encryptor_type refleja lo que SQL
+        // Server realmente escribió en el header del backup (NULL si el backup NO está cifrado,
+        // 'CERTIFICATE' cuando se cifró con SERVER CERTIFICATE como en Full-Backup.sql) — no una
+        // suposición basada en el texto del script enviado.
+        await using (var sourceMasterForEvidence = new SqlConnection(sourceMasterConnectionString))
+        {
+            await sourceMasterForEvidence.OpenAsync();
+            await using var command = sourceMasterForEvidence.CreateCommand();
+            command.CommandText =
+                "SELECT COUNT(*) FROM msdb.dbo.backupset WHERE database_name = @db AND encryptor_type = 'CERTIFICATE'";
+            command.Parameters.AddWithValue("@db", DatabaseName);
+            var encryptedBackupCount = (int)(await command.ExecuteScalarAsync())!;
+            encryptedBackupCount.Should().Be(3, "los tres backups (full, differential, log) deben quedar marcados por SQL Server como cifrados con certificado de servidor (F5-09)");
+        }
 
         // Huella del estado en el ORIGEN en el momento exacto del último backup de log tomado
         // (todo lo insertado hasta acá — lotes A + B + C — debe reconstruirse en el destino).
         var (expectedCount, expectedChecksum) = await ComputeFingerprintAsync(sourceDbConnectionString);
         expectedCount.Should().Be(15, "los tres lotes (full, differential, log) ya están confirmados en el origen");
 
-        // 5) Copia real de los tres archivos de backup del origen al destino (dos sistemas de
+        // 6) Copia real de los tres archivos de backup del origen al destino (dos sistemas de
         //    archivos distintos, exactamente como cruzaría una red o un storage compartido entre
         //    servidores/regiones reales).
         await CopyFileBetweenContainersAsync(_source, _destination, fullBackupPath);
         await CopyFileBetweenContainersAsync(_source, _destination, differentialBackupPath);
         await CopyFileBetweenContainersAsync(_source, _destination, logBackupPath);
 
-        // 6) Cadena de restauración real: full WITH NORECOVERY -> differential WITH DIFFERENTIAL,
+        // 7) F5-09 (DR entre servidores): el DESTINO no tiene el certificado de cifrado — sin
+        //    importarlo primero (mismo procedimiento real de
+        //    Export-BackupEncryptionCertificate.sql / Import-BackupEncryptionCertificate.sql),
+        //    RESTORE de un backup cifrado falla por diseño (ver también el test dedicado
+        //    RestoreEncryptedBackup_WithoutCertificate_FailsWithCertificateError, que aísla esta
+        //    propiedad). Aquí se realiza el flujo completo y legítimo de DR: exportar en origen e
+        //    importar en destino antes de restaurar.
+        const string certificateFilePath = $"{BackupDirectory}/backup-cert.cer";
+        const string privateKeyFilePath = $"{BackupDirectory}/backup-cert.pvk";
+
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Export-BackupEncryptionCertificate.sql",
+            new Dictionary<string, string>
+            {
+                ["CertificateName"] = CertificateName,
+                ["CertificateFilePath"] = certificateFilePath,
+                ["PrivateKeyFilePath"] = privateKeyFilePath,
+                ["PrivateKeyPassword"] = PrivateKeyPassword,
+            });
+
+        await CopyFileBetweenContainersAsync(_source, _destination, certificateFilePath);
+        await CopyFileBetweenContainersAsync(_source, _destination, privateKeyFilePath);
+
+        await RunSqlScriptAsync(
+            _destination,
+            destinationMasterConnectionString,
+            "Import-BackupEncryptionCertificate.sql",
+            new Dictionary<string, string>
+            {
+                ["MasterKeyPassword"] = MasterKeyPassword,
+                ["CertificateName"] = CertificateName,
+                ["CertificateFilePath"] = certificateFilePath,
+                ["PrivateKeyFilePath"] = privateKeyFilePath,
+                ["PrivateKeyPassword"] = PrivateKeyPassword,
+            });
+
+        // 8) Cadena de restauración real: full WITH NORECOVERY -> differential WITH DIFFERENTIAL,
         //    NORECOVERY -> log WITH RECOVERY (deja la base en línea al final de la cadena).
         await using (var destinationMaster = new SqlConnection(destinationMasterConnectionString))
         {
@@ -228,6 +300,70 @@ public sealed class SqlBackupRestoreIntegrationTests : IAsyncLifetime
 
         remainingFiles.Should().NotContain("old.bak", "el backup fuera de la ventana de retención debe eliminarse");
         remainingFiles.Should().Contain("recent.bak", "el backup dentro de la ventana de retención debe conservarse");
+    }
+
+    /// <summary>
+    /// F5-09 ("cifrado"): evidencia real, aislada, de que un backup cifrado con
+    /// <c>ENCRYPTION (... SERVER CERTIFICATE = ...)</c> (ver <c>Full-Backup.sql</c>) NO puede
+    /// restaurarse en un servidor que no tiene el certificado (ni su clave privada) — sin esto, el
+    /// "cifrado" del backup sería cosmético (cualquier servidor podría restaurarlo igual). El
+    /// destino de esta prueba deliberadamente NO ejecuta
+    /// <c>Import-BackupEncryptionCertificate.sql</c> (a diferencia del test principal de este
+    /// archivo, que sí completa el flujo legítimo de DR).
+    /// </summary>
+    [Fact]
+    public async Task RestoreEncryptedBackup_WithoutCertificate_FailsWithCertificateError()
+    {
+        var sourceMasterConnectionString = BuildConnectionString(_source, "master");
+        var destinationMasterConnectionString = BuildConnectionString(_destination, "master");
+
+        await using (var sourceMaster = new SqlConnection(sourceMasterConnectionString))
+        {
+            await sourceMaster.OpenAsync();
+            await ExecuteNonQueryAsync(sourceMaster, $"CREATE DATABASE [{DatabaseName}]");
+        }
+
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Enable-BackupEncryption.sql",
+            new Dictionary<string, string>
+            {
+                ["MasterKeyPassword"] = MasterKeyPassword,
+                ["CertificateName"] = CertificateName,
+            });
+
+        var fullBackupPath = $"{BackupDirectory}/full-nocred.bak";
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Full-Backup.sql",
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = fullBackupPath,
+                ["CertificateName"] = CertificateName,
+            });
+
+        await CopyFileBetweenContainersAsync(_source, _destination, fullBackupPath);
+
+        await using var destinationMaster = new SqlConnection(destinationMasterConnectionString);
+        await destinationMaster.OpenAsync();
+
+        // El destino NO tiene el certificado (no se ejecutó Import-BackupEncryptionCertificate.sql)
+        // — RESTORE de un backup cifrado debe fallar por diseño de SQL Server.
+        var exception = await Record.ExceptionAsync(() => ExecuteNonQueryAsync(
+            destinationMaster,
+            $"RESTORE DATABASE [{DatabaseName}] FROM DISK = N'{fullBackupPath}' WITH RECOVERY, REPLACE"));
+
+        _output.WriteLine($"Excepción real al intentar restaurar sin el certificado de cifrado: {exception}");
+
+        exception.Should().NotBeNull(
+            "un servidor sin el certificado de cifrado del backup no debe poder restaurarlo — de lo contrario el cifrado en reposo (F5-09) no ofrece ninguna protección real");
+        var mentionsMissingKeyMaterial = new[] { "certificate", "certificado", "asymmetric key", "clave asimétrica" }
+            .Any(fragment => exception!.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+        mentionsMissingKeyMaterial.Should().BeTrue(
+            $"el motor debe rechazar la restauración explícitamente por falta del certificado/clave, no por otra causa. Mensaje real: {exception!.Message}");
     }
 
     private static async Task InsertBatchAsync(string connectionString, string label, int from, int to)

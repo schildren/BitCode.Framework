@@ -35,6 +35,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "PitrDemo";
     private const string BackupDirectory = "/tmp/sqlbackups-pitr";
+    // F5-09: desde que Full-Backup.sql/Differential-Backup.sql/Log-Backup.sql exigen cifrado
+    // (ver docs/backups-inmutables-fase5.md sección 2), esta prueba de F5-08 también debe
+    // aprovisionar y transferir el certificado — igual que SqlBackupRestoreIntegrationTests (F5-07).
+    private const string CertificateName = "BitCodePitrTestCert";
+    private const string MasterKeyPassword = "M4sterKey!Pitr#2026";
+    private const string PrivateKeyPassword = "PrivKey!Pitr#2026";
 
     private readonly MsSqlContainer _source = new MsSqlBuilder().Build();
     private readonly MsSqlContainer _destination = new MsSqlBuilder().Build();
@@ -94,6 +100,18 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
                 "Payload NVARCHAR(50) NOT NULL)");
         }
 
+        // 1.1) F5-09: aprovisiona el certificado de cifrado de backups en el origen (mismo script
+        //      real que SqlBackupRestoreIntegrationTests de F5-07).
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Enable-BackupEncryption.sql",
+            new Dictionary<string, string>
+            {
+                ["MasterKeyPassword"] = MasterKeyPassword,
+                ["CertificateName"] = CertificateName,
+            });
+
         // 2) Lote previo al FULL.
         await InsertBatchAsync(sourceDbConnectionString, "antes-full", 1, 2);
 
@@ -102,7 +120,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
             _source,
             sourceMasterConnectionString,
             "Full-Backup.sql",
-            new Dictionary<string, string> { ["DatabaseName"] = DatabaseName, ["BackupPath"] = fullBackupPath });
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = fullBackupPath,
+                ["CertificateName"] = CertificateName,
+            });
 
         // 3) Lote previo al DIFFERENTIAL.
         await InsertBatchAsync(sourceDbConnectionString, "antes-diff", 3, 4);
@@ -112,7 +135,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
             _source,
             sourceMasterConnectionString,
             "Differential-Backup.sql",
-            new Dictionary<string, string> { ["DatabaseName"] = DatabaseName, ["BackupPath"] = differentialBackupPath });
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = differentialBackupPath,
+                ["CertificateName"] = CertificateName,
+            });
 
         // 4) TRANSACCIÓN DE NEGOCIO CONOCIDA #1 ("pedido-1"): debe SOBREVIVIR al PITR.
         await InsertBatchAsync(sourceDbConnectionString, "pedido-1", 5, 6);
@@ -128,7 +156,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
             _source,
             sourceMasterConnectionString,
             "Log-Backup.sql",
-            new Dictionary<string, string> { ["DatabaseName"] = DatabaseName, ["BackupPath"] = logBackup1Path });
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = logBackup1Path,
+                ["CertificateName"] = CertificateName,
+            });
 
         // 5) TRANSACCIÓN DE NEGOCIO CONOCIDA #2 ("pedido-2"): debe QUEDAR EXCLUIDA del PITR — es
         // el "borrado/corrupción lógica posterior al punto de recuperación deseado" que un PITR
@@ -143,7 +176,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
             _source,
             sourceMasterConnectionString,
             "Log-Backup.sql",
-            new Dictionary<string, string> { ["DatabaseName"] = DatabaseName, ["BackupPath"] = logBackup2Path });
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = logBackup2Path,
+                ["CertificateName"] = CertificateName,
+            });
 
         // 6) TRANSACCIÓN DE NEGOCIO POSTERIOR ("pedido-3") + tercer backup de log: existe, pero el
         // runbook NUNCA debe necesitar aplicarlo para llegar al STOPAT elegido (queda más adelante
@@ -155,7 +193,12 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
             _source,
             sourceMasterConnectionString,
             "Log-Backup.sql",
-            new Dictionary<string, string> { ["DatabaseName"] = DatabaseName, ["BackupPath"] = logBackup3Path });
+            new Dictionary<string, string>
+            {
+                ["DatabaseName"] = DatabaseName,
+                ["BackupPath"] = logBackup3Path,
+                ["CertificateName"] = CertificateName,
+            });
 
         // El STOPAT elegido es el punto medio EXACTO entre el commit de "pedido-1" (debe
         // sobrevivir) y el de "pedido-2" (debe excluirse) — el escenario literal del criterio de
@@ -173,6 +216,41 @@ public sealed class SqlPointInTimeRestoreIntegrationTests : IAsyncLifetime
         await CopyFileBetweenContainersAsync(_source, _destination, differentialBackupPath);
         await CopyFileBetweenContainersAsync(_source, _destination, logBackup1Path);
         await CopyFileBetweenContainersAsync(_source, _destination, logBackup2Path);
+
+        // 7.1) F5-09 (DR entre servidores): el destino necesita el certificado de cifrado
+        //      (con su clave privada) para poder restaurar los backups cifrados generados en el
+        //      origen — mismo procedimiento real de Export-/Import-BackupEncryptionCertificate.sql
+        //      que SqlBackupRestoreIntegrationTests (F5-07/F5-09).
+        var certificateFilePath = $"{BackupDirectory}/backup-cert.cer";
+        var privateKeyFilePath = $"{BackupDirectory}/backup-cert.pvk";
+
+        await RunSqlScriptAsync(
+            _source,
+            sourceMasterConnectionString,
+            "Export-BackupEncryptionCertificate.sql",
+            new Dictionary<string, string>
+            {
+                ["CertificateName"] = CertificateName,
+                ["CertificateFilePath"] = certificateFilePath,
+                ["PrivateKeyFilePath"] = privateKeyFilePath,
+                ["PrivateKeyPassword"] = PrivateKeyPassword,
+            });
+
+        await CopyFileBetweenContainersAsync(_source, _destination, certificateFilePath);
+        await CopyFileBetweenContainersAsync(_source, _destination, privateKeyFilePath);
+
+        await RunSqlScriptAsync(
+            _destination,
+            destinationMasterConnectionString,
+            "Import-BackupEncryptionCertificate.sql",
+            new Dictionary<string, string>
+            {
+                ["MasterKeyPassword"] = MasterKeyPassword,
+                ["CertificateName"] = CertificateName,
+                ["CertificateFilePath"] = certificateFilePath,
+                ["PrivateKeyFilePath"] = privateKeyFilePath,
+                ["PrivateKeyPassword"] = PrivateKeyPassword,
+            });
 
         // 8) Secuencia real de restore, cronometrada de punta a punta: full WITH NORECOVERY ->
         // differential WITH NORECOVERY -> log1 WITH NORECOVERY (íntegro, queda antes del STOPAT

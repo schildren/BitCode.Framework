@@ -5,7 +5,7 @@
 **Depende de:** F5-01 ([`docs/bia-fase5.md`](bia-fase5.md) — perfiles DR por componente), F5-04 ([`docs/replicacion-sql-fase5.md`](replicacion-sql-fase5.md) — topología de replicación SQL, con la que esta política es complementaria, no sustituta).
 **Estado:** Política y jobs definidos y versionados. Restauración validada con una prueba real de ciclo completo full → differential → log → restore (ver sección 5).
 
-**Alcance:** esta política cubre `Shared.Infrastructure.Persistence` (SQL Server, la persistencia predeterminada del framework, ver `docs/bia-fase5.md` fila 4). No cubre backups de Kafka (F5-05, `docs/replicacion-kafka-fase5.md`) ni de Redis/cache (F5-06, `docs/cache-regional-fase5.md`, que ya documenta que el cache es reconstruible y no requiere backup). Tampoco cubre inmutabilidad/WORM de los backups (F5-09, tarea posterior) — esta tarea automatiza la generación de los backups y demuestra que la cadena de restauración reconstruye los datos correctamente; el runbook operado de point-in-time restore (`RESTORE ... WITH STOPAT`) sobre esta misma cadena ya está resuelto en `docs/runbook-pitr-fase5.md` (F5-08).
+**Alcance:** esta política cubre `Shared.Infrastructure.Persistence` (SQL Server, la persistencia predeterminada del framework, ver `docs/bia-fase5.md` fila 4). No cubre backups de Kafka (F5-05, `docs/replicacion-kafka-fase5.md`) ni de Redis/cache (F5-06, `docs/cache-regional-fase5.md`, que ya documenta que el cache es reconstruible y no requiere backup). El runbook operado de point-in-time restore (`RESTORE ... WITH STOPAT`) sobre esta misma cadena está resuelto en `docs/runbook-pitr-fase5.md` (F5-08). El aislamiento, cifrado en reposo y protección WORM contra borrado de los backups está resuelto en `docs/backups-inmutables-fase5.md` (F5-09) — `Full-Backup.sql`/`Differential-Backup.sql`/`Log-Backup.sql` exigen desde esa tarea un certificado de cifrado (`CertificateName`).
 
 ---
 
@@ -47,7 +47,7 @@ La retención se alinea con la criticidad del perfil (a mayor perfil, mayor rete
 
 La limpieza de retención se ejecuta **por tipo de backup y por extensión de archivo** (`.bak` para full/differential, `.trn` para log), nunca en bloque, para no borrar accidentalmente un `full` reciente junto con un `log` antiguo — ver `Retention-Cleanup.sql` en la sección 4.
 
-**Nota — inmutabilidad (F5-09):** esta política define únicamente la retención lógica (cuánto tiempo se conservan y cuándo se limpian); el aislamiento, cifrado y protección WORM contra borrado (incluso accidental o malicioso) es objeto de F5-09, tarea posterior explícitamente listada en el backlog. Hoy los backups se limpian por antigüedad sin protección adicional contra borrado prematuro — brecha conocida y explícita, no encubierta.
+**Nota — inmutabilidad (F5-09):** esta política define la retención lógica de la carpeta operativa (cuánto tiempo se conservan y cuándo se limpian con `Retention-Cleanup.sql`); el aislamiento, cifrado y protección WORM contra borrado (incluso accidental o malicioso) de una copia adicional en bóveda están resueltos en `docs/backups-inmutables-fase5.md` (F5-09). `Retention-Cleanup.sql` sigue operando solo sobre la carpeta operativa, nunca sobre la bóveda WORM — son carpetas distintas por diseño (ver F5-09 sección 1).
 
 ---
 
@@ -61,7 +61,9 @@ Los scripts viven en [`tools/SqlBackupAutomation/`](../tools/SqlBackupAutomation
 | `Differential-Backup.sql` | `BACKUP DATABASE ... WITH DIFFERENTIAL, INIT, COMPRESSION, CHECKSUM`. Mismas variables. |
 | `Log-Backup.sql` | `BACKUP LOG ... WITH INIT, COMPRESSION, CHECKSUM`. Mismas variables. |
 | `Retention-Cleanup.sql` | Calcula la fecha de corte (`GETDATE() - <días>`) en una variable local y ejecuta `EXEC master.dbo.xp_delete_file 0, N'<carpeta>', N'<extensión>', @cutoffDate` — borra únicamente archivos de la extensión indicada, más antiguos que la fecha de corte. Variables sqlcmd: `BackupFolder`, `Extension`, `RetentionDays`. |
-| `Invoke-SqlBackupJob.ps1` | Orquestador PowerShell (Windows y PowerShell 7+/pwsh en Linux) que invoca los cuatro scripts anteriores vía `sqlcmd`, con nombres de archivo con timestamp (`<db>_full_yyyyMMddHHmmss.bak`, etc.), según los parámetros de perfil (full/differential/log/retención) de la sección 2 y 3. |
+| `Invoke-SqlBackupJob.ps1` | Orquestador PowerShell (Windows y PowerShell 7+/pwsh en Linux) que invoca los cuatro scripts anteriores vía `sqlcmd`, con nombres de archivo con timestamp (`<db>_full_yyyyMMddHHmmss.bak`, etc.), según los parámetros de perfil (full/differential/log/retención) de la sección 2 y 3. Desde F5-09, exige `-CertificateName` para Full/Differential/Log (backups cifrados obligatorios) y admite `-Immutable -VaultRoot -ImmutabilityDays` para proteger cada backup generado con WORM — ver `docs/backups-inmutables-fase5.md`. |
+| `Enable-/Export-/Import-BackupEncryptionCertificate.sql` | (F5-09) Aprovisionan, exportan e importan el certificado de cifrado de backups entre servidores (necesario para restaurar en un servidor distinto al que generó el backup). Ver `docs/backups-inmutables-fase5.md` sección 2. |
+| `Protect-/Unlock-BackupImmutability.ps1` | (F5-09) Aplican y liberan el candado WORM (aislamiento en bóveda + ACL Deny + ReadOnly) sobre una copia de un backup ya generado. Ver `docs/backups-inmutables-fase5.md` sección 3. |
 
 ### 4.1 Por qué scripts T-SQL + PowerShell versionados, y no un Quartz job en C#
 
@@ -140,7 +142,7 @@ Antes de fijar la implementación de `Retention-Cleanup.sql`, se detectó y corr
 ## 6. Pendientes explícitos (fuera de alcance de F5-07)
 
 - **F5-08 (PITR):** ~~construir el runbook operado de point-in-time restore (`RESTORE ... WITH STOPAT`) sobre la misma cadena de backups que esta tarea automatiza, y medir el tiempo real de ejecución.~~ Resuelto — ver `docs/runbook-pitr-fase5.md`.
-- **F5-09 (Backups inmutables):** aplicar aislamiento, cifrado en reposo y protección WORM (immutabilidad real contra borrado, incluso privilegiado) sobre el repositorio de backups — hoy `Retention-Cleanup.sql` borra por antigüedad sin ninguna protección adicional.
+- **F5-09 (Backups inmutables):** ~~aplicar aislamiento, cifrado en reposo y protección WORM (immutabilidad real contra borrado, incluso privilegiado) sobre el repositorio de backups.~~ Resuelto — ver `docs/backups-inmutables-fase5.md`.
 - **Agendamiento productivo real** (SQL Server Agent Job / Task Scheduler / cron apuntando a infraestructura real) — esta tarea entrega los scripts versionados y la política de frecuencia/retención, no la creación de un job en un servidor productivo concreto (no hay hoy un servidor productivo real en este repositorio al cual apuntar; ver sección 13 del Plan Maestro sobre "habilitación de tráfico productivo").
 - **Backup de Kafka/cache** — fuera de alcance de esta tarea (ver sección "Alcance").
 - **Recalibración de frecuencias/retención con negocio e infraestructura real** (costo de almacenamiento, ventanas de mantenimiento reales) — los valores de las secciones 2 y 3 son la propuesta técnica de partida, alineada a los perfiles del BIA, no una calibración final aprobada por negocio.
@@ -153,3 +155,4 @@ Antes de fijar la implementación de `Retention-Cleanup.sql`, se detectó y corr
 - [`guia-quartz-ha.md`](guia-quartz-ha.md) — evidencia de por qué Quartz HA existe pero no se usa para este job (sección 4.1).
 - [`tools/SqlBackupAutomation/`](../tools/SqlBackupAutomation/) — scripts versionados (sección 4).
 - [`tests/Shared.Infrastructure.Persistence.Tests/Integration/SqlBackupRestoreIntegrationTests.cs`](../tests/Shared.Infrastructure.Persistence.Tests/Integration/SqlBackupRestoreIntegrationTests.cs) — prueba real que valida la restauración (sección 5).
+- [`backups-inmutables-fase5.md`](backups-inmutables-fase5.md) — aislamiento, cifrado y protección WORM de los backups (F5-09).
