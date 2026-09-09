@@ -1,6 +1,7 @@
 using BitCode.Framework.Shared.Infrastructure.Observability;
 using BitCode.Framework.Shared.Infrastructure.Security.Jwt;
 using BitCode.Gateway.RateLimiting;
+using BitCode.Gateway.Regional;
 using BitCode.Gateway.RequestLimits;
 using BitCode.Gateway.Security;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -54,6 +55,13 @@ builder.Services.AddGatewayRateLimiting(builder.Configuration);
 // hardcodeada, mismo patrón que "RateLimiting".
 builder.Services.AddGatewayRequestLimits(builder.Configuration);
 
+// Routing regional (F5-03, Fase 5 -- Disaster Recovery y multi-región): "Política global" que dirige
+// el tráfico hacia la región propietaria del tenant (F5-02, IRegionalOwnershipResolver) y rechaza de
+// forma explícita (RegionalOwnershipRoutingMiddleware, después) cuando esta instancia no lo es. Sección
+// "Regional" -- configurable por ambiente, ningún tenant/región hardcodeado; defaults ("primary", sin
+// asignaciones) dejan el comportamiento sin cambios para el despliegue de un solo host/región.
+builder.Services.AddGatewayRegionalRouting(builder.Configuration);
+
 // Routing (F4-08): rutas/clusters declarados en la sección "ReverseProxy" (ReverseProxy:Routes/
 // ReverseProxy:Clusters, formato estándar de YARP) -- externalizable por ambiente, ningún host/ruta
 // hardcodeado en código. AddTransforms agrega SensitiveHeaderSanitizingTransform a TODAS las rutas
@@ -80,6 +88,12 @@ app.MapGet("/health/live", () => Results.Ok());
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Routing regional (F5-03): DESPUÉS de auth (necesita el claim tenant_id del usuario ya autenticado) y
+// ANTES de proxyar -- un request destinado a un tenant cuya región propietaria no es esta instancia se
+// rechaza acá (421 + ProblemDetails, ver RegionalOwnershipRoutingMiddleware), nunca llega al backend.
+app.UseGatewayRegionalOwnershipRouting();
+
 app.UseRateLimiter();
 
 // Auth boundary + rate limiting aplicados a TODO lo que YARP proxya: un request sin token válido, o

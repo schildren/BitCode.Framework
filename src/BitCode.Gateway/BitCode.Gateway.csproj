@@ -14,6 +14,12 @@
          AddSharedCaching/SharedDataProtectionServiceCollectionExtensions (F4-03), en vez de introducir
          una clave de configuración propia del Gateway para lo mismo. -->
     <ProjectReference Include="..\Shared.Infrastructure.Caching\Shared.Infrastructure.Caching.csproj" />
+    <!-- Routing regional (F5-03, cierre de F5-02): AddRegionalOwnership/ITenantRegionMapStore/
+         IRegionalOwnershipResolver/ICurrentRegionProvider viven en este proyecto (F5-02). Ya es una
+         dependencia transitiva de Shared.Infrastructure.Security (línea de arriba); se declara acá
+         de forma explícita porque el Gateway consume sus tipos directamente (ver carpeta Regional/),
+         no solo transitivamente. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

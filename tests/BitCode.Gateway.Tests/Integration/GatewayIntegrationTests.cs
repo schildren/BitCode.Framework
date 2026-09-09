@@ -16,6 +16,7 @@ namespace BitCode.Gateway.Tests.Integration;
 /// limits y headers, todos contra el Gateway real (Kestrel/TestServer) proxyando a un backend HTTP
 /// real (<see cref="GatewayTestBackend"/>), nunca mockeado.
 /// </summary>
+[Collection(GatewayEnvironmentVariableCollection.Name)]
 public class GatewayIntegrationTests : IAsyncLifetime
 {
     private const string SecretKey = "clave-de-pruebas-de-integracion-del-gateway-32-caracteres";
