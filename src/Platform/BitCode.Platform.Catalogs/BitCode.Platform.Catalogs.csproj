@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Catalogs and Parameters -- Fase 6, módulo 3 del Plan Maestro BitCode: catálogos
+      versionados (Catalogo -&gt; CatalogoVersion -&gt; CatalogoItem, con vigencia explícita entre
+      versiones) y parámetros con vigencia (ParametroVigencia sin solapamiento), con auditoría, RBAC/ABAC
+      e idempotencia en las mutaciones expuestas por API, y eventos de dominio/integración reales sobre
+      agregados propios del módulo.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+</Project>

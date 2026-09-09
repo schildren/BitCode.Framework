@@ -1,12 +1,14 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07. **Actualizado:** 2026-09-08 (Fase 6, módulo 2 — Organization, primer registro
-productivo real, ver la sección "Eventos productivos registrados" más abajo).
-**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras tres filas productivas reales
-(`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`) --
-ver la sección "Por qué el catálogo está vacío hoy" para el contexto histórico de por qué el catálogo
-empezó vacío en F3-12.
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 3 — Catalogs and Parameters, agrega
+`Catalogos.CatalogoVersionPublicada` y `Catalogos.ParametroVigenciaCreada`; ver la sección "Eventos
+productivos registrados" más abajo). Actualizado previamente el 2026-09-08 (Fase 6, módulo 2 —
+Organization, primer registro productivo real).
+**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras cinco filas productivas reales
+(`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`,
+`Catalogos.CatalogoVersionPublicada`, `Catalogos.ParametroVigenciaCreada`) -- ver la sección "Por qué el
+catálogo está vacío hoy" para el contexto histórico de por qué el catálogo empezó vacío en F3-12.
 
 Este documento es el registro único de todo `IIntegrationEvent` (`Shared.Application.Eventing`, F3-01)
 que un bounded context publica o consume en producción: quién es su dueño, qué versión de esquema
@@ -87,11 +89,20 @@ activo; el mecanismo de publicación en sí (F3-02/F3-03) ya está probado de pu
 `Sample.Eventing`, F3-13, así que no es un pendiente de esta tarea, ver `docs/guia-organization.md`,
 sección "Pendientes".
 
+Catalogs and Parameters (Fase 6, módulo 3) agrega las dos filas siguientes, mismo criterio:
+`CatalogoVersion` y `ParametroVigencia` son `AggregateRoot<Guid>` propios del módulo, así que sus
+operaciones de negocio (`Publicar`/el constructor de alta respectivamente) levantan estos eventos vía
+`RaiseDomainEvent`, persistidos atómicamente en `CatalogsDbContext` por el mismo mecanismo de Outbox.
+Tampoco publicados hoy contra un broker productivo real (`samples/Sample.Catalogs.Api` no registra
+`AddSharedKafkaEventing`), ver `docs/guia-catalogs.md`, sección "Pendientes".
+
 | Nombre lógico (`EventType`) | Tipo .NET / proyecto | `SchemaVersion` | Owner | Consumidores conocidos | PII | Tópico Kafka | `PartitionKey` | Alta / última modificación |
 |---|---|---|---|---|---|---|---|---|
 | `Organizacion.EmpresaCreada` | `EmpresaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `RazonSocial`/`Identificador` son datos de la persona jurídica (empresa), no de una persona física; no hay identificador directo de individuo en el payload | `Organizacion.EmpresaCreada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `EmpresaId` (`IHasPartitionKey`) — todos los eventos de una misma empresa quedan en la misma partición | 2026-09-08 |
 | `Organizacion.EmpresaDesactivada` | `EmpresaDesactivadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaDesactivadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No | `Organizacion.EmpresaDesactivada` | `EmpresaId` (`IHasPartitionKey`) | 2026-09-08 |
 | `Organizacion.SucursalCreada` | `SucursalCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Sucursales/SucursalCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `Nombre`/`Direccion` son datos de un establecimiento comercial, no de una persona física | `Organizacion.SucursalCreada` | `SucursalId` (`IHasPartitionKey`) | 2026-09-08 |
+| `Catalogos.CatalogoVersionPublicada` | `CatalogoVersionPublicadaIntegrationEvent` — `src/Platform/BitCode.Platform.Catalogs` (`Catalogos/CatalogoVersionPublicadaIntegrationEvent.cs`) | 1 (vigente) | Catalogs and Parameters (Fase 6, módulo 3) | `(ninguno conocido aún)` — un consumidor típico sería un módulo que cachea los ítems de un catálogo y necesita invalidar su copia al publicarse una versión nueva | No — el payload solo transporta identificadores (`CatalogoVersionId`/`CatalogoId`), número de versión y fechas de vigencia, sin ningún dato de persona física | `Catalogos.CatalogoVersionPublicada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `CatalogoId` (`IHasPartitionKey`) — todos los eventos de publicación de un mismo catálogo quedan en la misma partición | 2026-09-09 |
+| `Catalogos.ParametroVigenciaCreada` | `ParametroVigenciaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Catalogs` (`Parametros/ParametroVigenciaCreadaIntegrationEvent.cs`) | 1 (vigente) | Catalogs and Parameters (Fase 6, módulo 3) | `(ninguno conocido aún)` — un consumidor típico sería un módulo que cachea el valor vigente de un parámetro y necesita invalidarlo al darse de alta una vigencia nueva | Depende del parámetro — el payload incluye `Valor` como `string` libre; si un consumidor real modela un parámetro cuyo valor es un dato personal (poco frecuente, pero posible), debe reclasificar esta fila explícitamente. Para los parámetros de ejemplo del módulo (tasas, límites) no hay PII | `Catalogos.ParametroVigenciaCreada` | `ParametroId` (`IHasPartitionKey`) — todas las vigencias de un mismo parámetro quedan en la misma partición | 2026-09-09 |
 
 ## Proceso obligatorio de mantenimiento
 
