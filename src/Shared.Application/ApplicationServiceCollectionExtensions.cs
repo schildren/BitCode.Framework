@@ -74,7 +74,23 @@ public static class ApplicationServiceCollectionExtensions
             config.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
         });
 
-        services.AddValidatorsFromAssemblies(assemblies);
+        // includeInternalTypes: true es OBLIGATORIO -- el default de FluentValidation
+        // (AddValidatorsFromAssemblies) es `false`, y absolutamente todos los validadores de este
+        // framework se declaran `internal sealed class XxxValidator : AbstractValidator<XxxCommand>`
+        // (convención deliberada, docs/convenciones.md: solo DbContext/extensiones DI/permisos/entidades
+        // públicas son `public`). Sin este flag, NINGÚN validador de NINGÚN módulo se registra en el
+        // contenedor de DI -- `ValidationBehavior<TRequest,TResponse>.validators` llega vacío,
+        // `validators.Any()` es `false`, y el pipeline salta la validación en silencio para TODO comando
+        // de TODO módulo, sin ningún error visible (la request simplemente "funciona" con datos
+        // inválidos). Hallazgo real descubierto en Fase 6, módulo 9 (Integration Hub, 2026-09-09): un
+        // test de integración esperaba 400 al crear un conector con autenticación ApiKey sin SecretKey y
+        // recibía 201 -- la regla `RuleFor(...).NotEmpty().When(...)` nunca se evaluaba. Corrige de raíz
+        // este defecto para TODOS los módulos que ya pasan sus propios `AbstractValidator` internos
+        // (Identity Administration, Organization, Catalogs, Feature Management, Documents, Workflow,
+        // Task Inbox, Notifications, Integration Hub) -- ver docs/gate-fase6-hallazgo-validadores.md
+        // para el detalle completo y la verificación de que ningún test existente dependía del
+        // comportamiento (incorrecto) anterior.
+        services.AddValidatorsFromAssemblies(assemblies, includeInternalTypes: true);
 
         var mapsterConfig = TypeAdapterConfig.GlobalSettings;
         mapsterConfig.Scan(assemblies);
