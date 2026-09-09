@@ -15,14 +15,26 @@ namespace BitCode.Framework.Tools.RegionalFailoverHarness;
 /// </summary>
 /// <remarks>
 /// Ver <c>docs/failover-automatizado-fase5.md</c> para el procedimiento completo y la evidencia real
-/// de ejecución repetida (failover → failback → failover) obtenida con esta herramienta.
+/// de ejecución repetida (failover → failback → failover) obtenida con esta herramienta, y
+/// <c>docs/failback-fase5.md</c> (F5-11) para el comando <c>failback</c> abajo: a diferencia de
+/// <c>failover</c> (que también sirve como "failback manual" cuando no hay <c>--health-url</c>,
+/// según F5-10 sección 2.4), <c>failback</c> NUNCA revierte sin evidencia de resincronización
+/// (<c>--resync-url</c> es obligatorio, nunca opcional) y aplica una ventana explícita de
+/// no-doble-escritor (todas las regiones rechazan escrituras del tenant) antes de promover la
+/// región que vuelve — esto es lo que evita split-brain, a diferencia del simple "no-op si ya es
+/// propietario" de <c>failover</c>.
 /// <code>
-///   RegionalFailoverHarness.exe init     &lt;mapFile&gt; &lt;tenantId&gt; &lt;ownerRegion&gt;
-///   RegionalFailoverHarness.exe node     &lt;mapFile&gt; &lt;regionId&gt; &lt;port&gt;
-///   RegionalFailoverHarness.exe failover &lt;mapFile&gt; &lt;auditLog&gt; &lt;tenantId&gt; &lt;candidateRegion&gt;
-///                                        [--health-url &lt;url&gt;] [--threshold &lt;n&gt;]
-///                                        [--interval-seconds &lt;s&gt;] [--confirm]
-///   RegionalFailoverHarness.exe status   &lt;mapFile&gt; &lt;auditLog&gt;
+///   RegionalFailoverHarness.exe init       &lt;mapFile&gt; &lt;tenantId&gt; &lt;ownerRegion&gt;
+///   RegionalFailoverHarness.exe node       &lt;mapFile&gt; &lt;regionId&gt; &lt;port&gt; [replicationStateFile]
+///   RegionalFailoverHarness.exe resync-set &lt;replicationStateFile&gt; &lt;tenantId&gt; &lt;lagSeconds&gt;
+///   RegionalFailoverHarness.exe failover   &lt;mapFile&gt; &lt;auditLog&gt; &lt;tenantId&gt; &lt;candidateRegion&gt;
+///                                          [--health-url &lt;url&gt;] [--threshold &lt;n&gt;]
+///                                          [--interval-seconds &lt;s&gt;] [--confirm]
+///   RegionalFailoverHarness.exe failback   &lt;mapFile&gt; &lt;auditLog&gt; &lt;tenantId&gt; &lt;candidateRegion&gt;
+///                                          --resync-url &lt;url&gt; [--resync-threshold &lt;n&gt;]
+///                                          [--resync-interval-seconds &lt;s&gt;] [--lock-hold-seconds &lt;s&gt;]
+///                                          [--confirm]
+///   RegionalFailoverHarness.exe status     &lt;mapFile&gt; &lt;auditLog&gt;
 /// </code>
 /// </remarks>
 internal static class Program
@@ -42,11 +54,18 @@ internal static class Program
                 return 0;
 
             case "node" when args.Length >= 4:
-                await RunNodeAsync(args[1], args[2], int.Parse(args[3]));
+                await RunNodeAsync(args[1], args[2], int.Parse(args[3]), args.Length >= 5 ? args[4] : null);
+                return 0;
+
+            case "resync-set" when args.Length >= 4:
+                SetReplicationLag(args[1], args[2], double.Parse(args[3]));
                 return 0;
 
             case "failover" when args.Length >= 4:
                 return await RunFailoverAsync(args[1], args[2], args[3], args[4], args[5..]);
+
+            case "failback" when args.Length >= 4:
+                return await RunFailbackAsync(args[1], args[2], args[3], args[4], args[5..]);
 
             case "status" when args.Length >= 3:
                 PrintStatus(args[1], args[2]);
@@ -61,12 +80,17 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.WriteLine("Uso:");
-        Console.WriteLine("  RegionalFailoverHarness init     <mapFile> <tenantId> <ownerRegion>");
-        Console.WriteLine("  RegionalFailoverHarness node     <mapFile> <regionId> <port>");
-        Console.WriteLine("  RegionalFailoverHarness failover <mapFile> <auditLog> <tenantId> <candidateRegion>");
-        Console.WriteLine("                                   [--health-url <url>] [--threshold <n>]");
-        Console.WriteLine("                                   [--interval-seconds <s>] [--confirm]");
-        Console.WriteLine("  RegionalFailoverHarness status   <mapFile> <auditLog>");
+        Console.WriteLine("  RegionalFailoverHarness init       <mapFile> <tenantId> <ownerRegion>");
+        Console.WriteLine("  RegionalFailoverHarness node       <mapFile> <regionId> <port> [replicationStateFile]");
+        Console.WriteLine("  RegionalFailoverHarness resync-set <replicationStateFile> <tenantId> <lagSeconds>");
+        Console.WriteLine("  RegionalFailoverHarness failover   <mapFile> <auditLog> <tenantId> <candidateRegion>");
+        Console.WriteLine("                                     [--health-url <url>] [--threshold <n>]");
+        Console.WriteLine("                                     [--interval-seconds <s>] [--confirm]");
+        Console.WriteLine("  RegionalFailoverHarness failback   <mapFile> <auditLog> <tenantId> <candidateRegion>");
+        Console.WriteLine("                                     --resync-url <url> [--resync-threshold <n>]");
+        Console.WriteLine("                                     [--resync-interval-seconds <s>] [--lock-hold-seconds <s>]");
+        Console.WriteLine("                                     [--confirm]");
+        Console.WriteLine("  RegionalFailoverHarness status     <mapFile> <auditLog>");
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -96,7 +120,7 @@ internal static class Program
     // archivo se refleja SIN reiniciar este proceso, igual que ocurriría con un ConfigMap real.
     // ---------------------------------------------------------------------------------------------
 
-    private static async Task RunNodeAsync(string mapFile, string regionId, int port)
+    private static async Task RunNodeAsync(string mapFile, string regionId, int port, string? replicationStateFile)
     {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Logging.ClearProviders();
@@ -111,14 +135,53 @@ internal static class Program
         // para el volumen de ConfigMap en desarrollo local sin volumen montado).
         builder.Configuration.AddJsonFile(mapFile, optional: true, reloadOnChange: true);
 
+        // F5-11: archivo independiente que representa, para ESTA región, cuán al día está su réplica
+        // local respecto de la región que fue temporalmente propietaria durante el failover (en un
+        // despliegue real esto lo alimentaría la métrica de RPO real de F5-04/F5-05, p. ej.
+        // SqlLogShippingRpoIntegrationTests o el lag de consumidor de Kafka -- acá se simula con
+        // "resync-set" para poder ejercer el escenario adversarial con procesos de SO reales).
+        if (replicationStateFile is not null)
+        {
+            builder.Configuration.AddJsonFile(replicationStateFile, optional: true, reloadOnChange: true);
+        }
+
         var app = builder.Build();
         var currentRegion = new RegionId(regionId);
         var pid = Environment.ProcessId;
 
         app.MapGet("/health", () => Results.Ok(new { region = currentRegion.Value, pid, status = "up" }));
 
+        app.MapGet("/replication-status/{tenantId}", (string tenantId) =>
+        {
+            var lagValue = app.Configuration[$"ReplicationLagSeconds:{tenantId}"];
+
+            // Fallo cerrado (fail-closed): si no hay dato de lag explícito, NUNCA se asume "al día" --
+            // una región recién recuperada, sin evidencia de resincronización, no puede reclamar que
+            // está lista para el failback. Esto es lo que impide un failback prematuro por omisión.
+            var lagSeconds = double.TryParse(lagValue, out var parsed) ? parsed : double.MaxValue;
+            var caughtUp = lagSeconds <= 0;
+
+            return Results.Ok(new { region = currentRegion.Value, pid, tenantId, lagSeconds, caughtUp });
+        });
+
         app.MapGet("/write/{tenantId}", (string tenantId, HttpContext context) =>
         {
+            // F5-11: ventana explícita de no-doble-escritor. Mientras el lock está activo, TODAS las
+            // regiones (la propietaria vigente y la candidata en resincronización) rechazan la
+            // escritura -- nunca hay ambigüedad entre "dos propietarias" ni una ventana en la que una
+            // región acepte escrituras basándose en un estado de ownership que ya está siendo revisado.
+            var lockedValue = app.Configuration[$"TenantRegionLock:{tenantId}"];
+            if (string.Equals(lockedValue, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                app.Logger.LogWarning(
+                    "[{Region}] Write BLOQUEADO para tenant {TenantId}: ventana de no-doble-escritor activa (failback en curso).",
+                    currentRegion.Value,
+                    tenantId);
+                return Results.Json(
+                    new { status = "locked", region = currentRegion.Value, pid },
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+
             var ownerRegionValue = app.Configuration[$"TenantRegionMap:{tenantId}"];
             var ownerRegion = string.IsNullOrWhiteSpace(ownerRegionValue) ? RegionId.Primary : new RegionId(ownerRegionValue);
 
@@ -260,6 +323,250 @@ internal static class Program
         AppendAudit(auditLog, tenantId, previousOwner, newOwner: candidateRegion, result: "promoted",
             consecutiveFailures, healthUrl, reason: healthUrl is null ? "manual-confirmed" : "consecutive-health-check-failures");
         return 0;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // resync-set: actualiza (reescritura atómica) el lag de replicación simulado de una región para
+    // un tenant. En un despliegue real esto NO es un comando manual -- lo alimentaría la métrica de
+    // RPO real (F5-04 log shipping / Always On, F5-05 lag de consumidor Kafka). Se expone como
+    // comando explícito acá únicamente para poder reproducir el escenario de resincronización con
+    // procesos de SO reales sin depender de una topología SQL/Kafka completa en este harness.
+    // ---------------------------------------------------------------------------------------------
+
+    private static void SetReplicationLag(string replicationStateFile, string tenantId, double lagSeconds)
+    {
+        var doc = File.Exists(replicationStateFile)
+            ? JsonNode.Parse(File.ReadAllText(replicationStateFile)) as JsonObject ?? new JsonObject()
+            : new JsonObject();
+
+        var lagNode = doc["ReplicationLagSeconds"] as JsonObject ?? new JsonObject();
+        lagNode[tenantId] = lagSeconds;
+        doc["ReplicationLagSeconds"] = lagNode;
+
+        var tempFile = replicationStateFile + ".tmp";
+        File.WriteAllText(tempFile, doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        File.Move(tempFile, replicationStateFile, overwrite: true);
+
+        Console.WriteLine($"resync-set: '{replicationStateFile}' tenant='{tenantId}' lagSeconds={lagSeconds} (caughtUp={lagSeconds <= 0}).");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // failback: workflow de RETORNO de ownership hacia una región que fue temporalmente desplazada
+    // por un failover (F5-11). Deliberadamente NO es el mismo código que "failover" con los
+    // parámetros invertidos (a diferencia del failback MANUAL descrito en la sección 4.3 de
+    // docs/failover-automatizado-fase5.md, que es una decisión de operador sin evidencia de
+    // resincronización automatizable): un failback siempre corre el riesgo de que la región que
+    // vuelve tenga datos desactualizados respecto de la región que estuvo aceptando escrituras
+    // mientras la primera estaba caída. Revertir sin verificar eso es split-brain de datos, no solo
+    // de tráfico. Dos garantías obligatorias, ninguna opcional:
+    //
+    // 1) Resincronización verificada ANTES de revertir (--resync-url es OBLIGATORIO, nunca opcional
+    //    como --health-url en "failover"): solo se promueve a la región candidata cuando su propio
+    //    endpoint de estado de replicación reporta "al día" (caughtUp=true) en <resync-threshold>
+    //    observaciones CONSECUTIVAS -- igual patrón de ventana de gracia que "failover", pero
+    //    exigiendo éxito consecutivo en vez de fallo consecutivo, y sin poder saltearse el chequeo.
+    //
+    // 2) Ventana explícita de no-doble-escritor: antes de reescribir el propietario, se activa un
+    //    lock (`TenantRegionLock:{tenantId}=true`) que TODAS las instancias "node" (incluida la
+    //    propietaria vigente) observan vía el mismo hot-reload de F4-12 y usan para rechazar
+    //    CUALQUIER escritura del tenant, sin ambigüedad: nunca hay un instante en el que dos
+    //    regiones puedan aceptar escrituras del mismo tenant simultáneamente, y nunca hay un
+    //    instante en el que ninguna región sepa quién es la propietaria real -- o hay exactamente
+    //    una propietaria, o hay un bloqueo total y corto, nunca un estado ambiguo.
+    // ---------------------------------------------------------------------------------------------
+
+    private static async Task<int> RunFailbackAsync(
+        string mapFile,
+        string auditLog,
+        string tenantId,
+        string candidateRegion,
+        string[] options)
+    {
+        string? resyncUrl = null;
+        var resyncThreshold = 3;
+        var resyncIntervalSeconds = 2;
+        var lockHoldSeconds = 2;
+        var confirm = false;
+
+        for (var i = 0; i < options.Length; i++)
+        {
+            switch (options[i])
+            {
+                case "--resync-url":
+                    resyncUrl = options[++i];
+                    break;
+                case "--resync-threshold":
+                    resyncThreshold = int.Parse(options[++i]);
+                    break;
+                case "--resync-interval-seconds":
+                    resyncIntervalSeconds = int.Parse(options[++i]);
+                    break;
+                case "--lock-hold-seconds":
+                    lockHoldSeconds = int.Parse(options[++i]);
+                    break;
+                case "--confirm":
+                    confirm = true;
+                    break;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(resyncUrl))
+        {
+            Console.WriteLine("failback: falta --resync-url (obligatorio) -- nunca se revierte ownership sin evidencia de resincronización. Se aborta sin tocar el mapa.");
+            AppendAudit(auditLog, tenantId, previousOwner: null, newOwner: candidateRegion, result: "aborted-missing-resync-url",
+                consecutiveFailures: 0, healthUrl: null, reason: "missing-resync-url");
+            return 4;
+        }
+
+        var consecutiveCaughtUp = 0;
+
+        using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(2) })
+        {
+            for (var attempt = 1; attempt <= resyncThreshold; attempt++)
+            {
+                var caughtUp = await IsCaughtUpAsync(httpClient, resyncUrl, tenantId);
+
+                if (caughtUp)
+                {
+                    consecutiveCaughtUp++;
+                    Console.WriteLine($"failback: resync-check {attempt}/{resyncThreshold} AL DÍA ({resyncUrl}) -- consecutivos al día={consecutiveCaughtUp}.");
+                }
+                else
+                {
+                    consecutiveCaughtUp = 0;
+                    Console.WriteLine($"failback: resync-check {attempt}/{resyncThreshold} NO al día ({resyncUrl}) -- se reinicia el contador de observaciones consecutivas.");
+                }
+
+                if (consecutiveCaughtUp < resyncThreshold && attempt < resyncThreshold)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(resyncIntervalSeconds));
+                }
+            }
+
+            if (consecutiveCaughtUp < resyncThreshold)
+            {
+                Console.WriteLine("failback: la región candidata NO demostró estar resincronizada -- se aborta la reversión sin tocar el mapa (evita split-brain de datos).");
+                AppendAudit(auditLog, tenantId, previousOwner: null, newOwner: candidateRegion, result: "aborted-not-resynced",
+                    consecutiveFailures: 0, healthUrl: resyncUrl, reason: "insufficient-consecutive-resync-confirmations");
+                return 2;
+            }
+        }
+
+        if (!confirm)
+        {
+            Console.WriteLine("failback: falta --confirm (confirmación explícita obligatoria) -- se aborta la reversión sin tocar el mapa.");
+            AppendAudit(auditLog, tenantId, previousOwner: null, newOwner: candidateRegion, result: "aborted-not-confirmed",
+                consecutiveFailures: 0, healthUrl: resyncUrl, reason: "missing-explicit-confirmation");
+            return 3;
+        }
+
+        var currentOwner = ReadOwner(mapFile, tenantId);
+
+        if (currentOwner == candidateRegion)
+        {
+            Console.WriteLine($"failback: tenant '{tenantId}' ya tiene a '{candidateRegion}' como propietaria -- no-op idempotente, el mapa no se reescribe y no se activa el lock.");
+            AppendAudit(auditLog, tenantId, previousOwner: currentOwner, newOwner: candidateRegion, result: "no-op-already-owner",
+                consecutiveFailures: 0, healthUrl: resyncUrl, reason: "resync-confirmed-failback");
+            return 0;
+        }
+
+        // Ventana de no-doble-escritor: se activa el lock ANTES de tocar el propietario. Desde este
+        // instante y hasta que se libere (unido, en la misma escritura atómica, a la promoción), toda
+        // instancia "node" -- la propietaria vigente incluida -- rechaza escrituras del tenant.
+        SetLock(mapFile, tenantId, locked: true);
+        Console.WriteLine($"failback: LOCK activado para tenant '{tenantId}' -- ninguna región acepta escrituras durante {lockHoldSeconds}s (ventana de no-doble-escritor).");
+        AppendAudit(auditLog, tenantId, previousOwner: currentOwner, newOwner: candidateRegion, result: "lock-applied",
+            consecutiveFailures: consecutiveCaughtUp, healthUrl: resyncUrl, reason: "no-double-writer-window");
+
+        await Task.Delay(TimeSpan.FromSeconds(lockHoldSeconds));
+
+        PromoteAndUnlock(mapFile, tenantId, candidateRegion);
+
+        Console.WriteLine($"failback: PROMOCIÓN aplicada y lock liberado. tenant='{tenantId}' propietaria anterior='{currentOwner ?? RegionId.Primary.Value}' propietaria nueva='{candidateRegion}'.");
+        AppendAudit(auditLog, tenantId, previousOwner: currentOwner, newOwner: candidateRegion, result: "promoted",
+            consecutiveFailures: consecutiveCaughtUp, healthUrl: resyncUrl, reason: "resync-confirmed-failback");
+
+        return 0;
+    }
+
+    private static async Task<bool> IsCaughtUpAsync(HttpClient httpClient, string resyncUrl, string tenantId)
+    {
+        try
+        {
+            var url = resyncUrl.TrimEnd('/') + "/" + Uri.EscapeDataString(tenantId);
+            var response = await httpClient.GetAsync(url);
+
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                return false;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var json = JsonNode.Parse(body) as JsonObject;
+            return json?["caughtUp"]?.GetValue<bool>() ?? false;
+        }
+        catch
+        {
+            // Igual que el health-check de "failover": cualquier fallo de transporte se trata como
+            // "NO al día" -- fallo cerrado, nunca se asume resincronización sin evidencia positiva.
+            return false;
+        }
+    }
+
+    private static string? ReadOwner(string mapFile, string tenantId)
+    {
+        if (!File.Exists(mapFile))
+        {
+            return null;
+        }
+
+        var doc = JsonNode.Parse(File.ReadAllText(mapFile)) as JsonObject;
+        var mapNode = doc?["TenantRegionMap"] as JsonObject;
+        return mapNode?[tenantId]?.GetValue<string>();
+    }
+
+    /// <summary>
+    /// Reescritura atómica del flag de lock del tenant, independiente de la reescritura del
+    /// propietario -- así una instancia "node" nunca puede leer, a mitad de escritura, un archivo
+    /// con el lock activado pero el propietario ya cambiado (o viceversa) de forma inconsistente.
+    /// </summary>
+    private static void SetLock(string mapFile, string tenantId, bool locked)
+    {
+        var doc = File.Exists(mapFile)
+            ? JsonNode.Parse(File.ReadAllText(mapFile)) as JsonObject ?? new JsonObject()
+            : new JsonObject();
+
+        var lockNode = doc["TenantRegionLock"] as JsonObject ?? new JsonObject();
+        lockNode[tenantId] = locked;
+        doc["TenantRegionLock"] = lockNode;
+
+        var tempFile = mapFile + ".tmp";
+        File.WriteAllText(tempFile, doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        File.Move(tempFile, mapFile, overwrite: true);
+    }
+
+    /// <summary>
+    /// Libera el lock y promueve al nuevo propietario en UNA sola escritura atómica -- ningún proceso
+    /// "node" observando el archivo puede ver un estado intermedio de "lock liberado pero propietario
+    /// todavía viejo" ni al revés.
+    /// </summary>
+    private static void PromoteAndUnlock(string mapFile, string tenantId, string candidateRegion)
+    {
+        var doc = File.Exists(mapFile)
+            ? JsonNode.Parse(File.ReadAllText(mapFile)) as JsonObject ?? new JsonObject()
+            : new JsonObject();
+
+        var mapNode = doc["TenantRegionMap"] as JsonObject ?? new JsonObject();
+        mapNode[tenantId] = candidateRegion;
+        doc["TenantRegionMap"] = mapNode;
+
+        var lockNode = doc["TenantRegionLock"] as JsonObject ?? new JsonObject();
+        lockNode[tenantId] = false;
+        doc["TenantRegionLock"] = lockNode;
+
+        var tempFile = mapFile + ".tmp";
+        File.WriteAllText(tempFile, doc.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        File.Move(tempFile, mapFile, overwrite: true);
     }
 
     private static async Task<bool> IsHealthyAsync(HttpClient httpClient, string healthUrl)
