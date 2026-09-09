@@ -1,9 +1,12 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07
-**Estado:** Aplicado como PROCESO y PLANTILLA. Cero eventos productivos registrados hoy porque cero
-eventos productivos existen en el repositorio (ver sección "Por qué el catálogo está vacío hoy").
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-08 (Fase 6, módulo 2 — Organization, primer registro
+productivo real, ver la sección "Eventos productivos registrados" más abajo).
+**Estado:** Aplicado como PROCESO y PLANTILLA, con sus primeras tres filas productivas reales
+(`Organizacion.EmpresaCreada`, `Organizacion.EmpresaDesactivada`, `Organizacion.SucursalCreada`) --
+ver la sección "Por qué el catálogo está vacío hoy" para el contexto histórico de por qué el catálogo
+empezó vacío en F3-12.
 
 Este documento es el registro único de todo `IIntegrationEvent` (`Shared.Application.Eventing`, F3-01)
 que un bounded context publica o consume en producción: quién es su dueño, qué versión de esquema
@@ -73,13 +76,22 @@ incluye únicamente para dejar claro el formato esperado de una fila real.
 
 ## Eventos productivos registrados
 
-*(vacío — ver "Por qué el catálogo está vacío hoy". Esta tabla se completa con la primera fila real el
-día que un bounded context de negocio publique su primer `IIntegrationEvent` productivo, Fase 6 en
-adelante.)*
+Primeras filas reales del catálogo, dadas de alta por Organization (Fase 6, módulo 2): `Empresa` y
+`Sucursal` son `AggregateRoot<TId>` propios del módulo (a diferencia de Identity Administration, módulo
+1, que reutilizaba tipos ajenos de Security 2.0 sin poder levantar eventos de dominio reales), así que
+sus operaciones de negocio levantan estos eventos vía `RaiseDomainEvent`, y `OutboxSaveChangesInterceptor`
+(F1-23) los persiste atómicamente junto con el cambio de negocio en `OrganizationDbContext`. Ningún host
+de referencia del repositorio (`samples/Sample.Organization.Api`) los publica hoy contra un broker Kafka
+productivo real (no registra `AddSharedKafkaEventing`) — quedan en la tabla `OutboxMessage`, sin relay
+activo; el mecanismo de publicación en sí (F3-02/F3-03) ya está probado de punta a punta por
+`Sample.Eventing`, F3-13, así que no es un pendiente de esta tarea, ver `docs/guia-organization.md`,
+sección "Pendientes".
 
 | Nombre lógico (`EventType`) | Tipo .NET / proyecto | `SchemaVersion` | Owner | Consumidores conocidos | PII | Tópico Kafka | `PartitionKey` | Alta / última modificación |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — |
+| `Organizacion.EmpresaCreada` | `EmpresaCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `RazonSocial`/`Identificador` son datos de la persona jurídica (empresa), no de una persona física; no hay identificador directo de individuo en el payload | `Organizacion.EmpresaCreada` (resuelto tal cual por `DefaultKafkaTopicNameResolver`, sin caracteres a reemplazar) | `EmpresaId` (`IHasPartitionKey`) — todos los eventos de una misma empresa quedan en la misma partición | 2026-09-08 |
+| `Organizacion.EmpresaDesactivada` | `EmpresaDesactivadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Empresas/EmpresaDesactivadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No | `Organizacion.EmpresaDesactivada` | `EmpresaId` (`IHasPartitionKey`) | 2026-09-08 |
+| `Organizacion.SucursalCreada` | `SucursalCreadaIntegrationEvent` — `src/Platform/BitCode.Platform.Organization` (`Sucursales/SucursalCreadaIntegrationEvent.cs`) | 1 (vigente) | Organization (Fase 6, módulo 2) | `(ninguno conocido aún)` | No — `Nombre`/`Direccion` son datos de un establecimiento comercial, no de una persona física | `Organizacion.SucursalCreada` | `SucursalId` (`IHasPartitionKey`) | 2026-09-08 |
 
 ## Proceso obligatorio de mantenimiento
 
