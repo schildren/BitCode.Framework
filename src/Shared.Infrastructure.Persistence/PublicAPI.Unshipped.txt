@@ -94,6 +94,18 @@ static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding
 static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Success(System.Guid tenantId) -> BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!
 static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.operator !=(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? right) -> bool
 static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.operator ==(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? right) -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.InMemoryTenantRegionMapStore() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.Assign(System.Guid tenantId, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId regionId) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.TryGetOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver.TenantRegionOwnershipResolver(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantRegionMapStore! regionMapStore) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver.ResolveOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider.StaticCurrentRegionProvider(BitCode.Framework.Shared.Domain.MultiTenancy.RegionId currentRegion) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider.CurrentRegion.get -> BitCode.Framework.Shared.Domain.MultiTenancy.RegionId
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.RegionalOwnershipServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.RegionalOwnershipServiceCollectionExtensions.AddRegionalOwnership(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId currentRegion) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions
 BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>
 BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbContext.get -> Microsoft.EntityFrameworkCore.DbContext!
