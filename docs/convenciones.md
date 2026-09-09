@@ -20,6 +20,19 @@ MiApp/
 
 Un feature = una carpeta = un `IWebFrameworkModule` con `[DependsOn(typeof(InfrastructureModule))]`. Ver `samples/Sample.Api/Productos/` como referencia completa.
 
+## Namespaces de módulos de Platform (Fase 6)
+
+El Plan Maestro (sección 10, "Estructura sugerida") propone `src/Platform/BitCode.Platform.<Módulo>` como convención de **carpeta** de proyecto para los bounded contexts de plataforma de Fase 6 en adelante (Identity Administration, Organization, Catalogs and Parameters, etc.) — esa sugerencia es anterior a la convención de namespace raíz que el resto del repositorio ya adoptó (`BitCode.Framework.*`, no `BitCode.*` a secas, ver por ejemplo `BitCode.Framework.Shared.Domain.MultiTenancy`).
+
+Precedente fijado por el módulo 1 (Identity Administration, `src/Platform/BitCode.Platform.Identity/`):
+
+- El **nombre del proyecto/carpeta** sigue el Plan Maestro tal cual: `BitCode.Platform.<Módulo>` (ej. `BitCode.Platform.Identity`).
+- El **namespace raíz dentro del código** usa el prefijo real del repositorio: `BitCode.Framework.Platform.<Módulo>` (ej. `BitCode.Framework.Platform.Identity`), consistente con `BitCode.Framework.Shared.*`.
+
+Todo módulo de plataforma nuevo (Organization, Catalogs and Parameters, Feature Management, Documents, Workflow, Task Inbox, Notifications, Integration Hub, Import and Export, Reporting, Dashboard) debe seguir el mismo patrón: carpeta `src/Platform/BitCode.Platform.<Módulo>/`, namespace `BitCode.Framework.Platform.<Módulo>`.
+
+Un módulo de plataforma es una librería de clases (no un host ejecutable): expone su propio `DbContext` (dueño de sus tablas, "ownership de datos" del requisito común de Fase 6), una extensión `AddShared<Módulo>(...)`/`AddShared<Módulo>Persistence(...)` (mismo patrón `AddSharedX<T>()` que el resto del framework) y una extensión `Map<Módulo>Endpoints(...)` sobre `IEndpointRouteBuilder` — nunca un `IWebFrameworkModule` propio con `[DependsOn(typeof(InfrastructureModule))]`, porque ese atributo necesita referenciar el `InfrastructureModule` concreto del host, que la librería no puede conocer en tiempo de compilación. El host consumidor (ej. `samples/Sample.IdentityAdmin.Api`) declara su propio `IWebFrameworkModule` con esa dependencia y delega en la extensión pública de la librería. Ver `docs/guia-identity-administration.md`.
+
 ## Nomenclatura
 
 | Elemento | Convención | Ejemplo |
@@ -150,4 +163,6 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 - [`docs/politica-versionado.md`](politica-versionado.md) — política de compatibilidad y deprecación para paquetes NuGet, API HTTP, eventos y esquemas de base de datos.
 - [`docs/catalogo-eventos.md`](catalogo-eventos.md) — catálogo de eventos de integración productivos (F3-12): owner, `SchemaVersion`, PII, consumidores conocidos, tópico y `PartitionKey` por `EventType`; proceso obligatorio (regla dura 27) para que un bounded context de negocio nuevo lo mantenga actualizado.
 - [`docs/guia-quartz-ha.md`](guia-quartz-ha.md) — Quartz HA (F4-11): `AddSharedBackgroundJobs(..., configureHighAvailability)` para pasar de `RAMJobStore` a `AdoJobStore` persistente clusterizado sobre SQL Server, cómo aplicar el esquema `QRTZ_*` (`QuartzSqlServerSchemaInitializer`/`Schema/quartz-sqlserver-schema.sql`), configuración de misfire y por qué el clustering no alcanza por sí solo si los `IJob` no son idempotentes.
+- [`docs/guia-identity-administration.md`](guia-identity-administration.md) — Identity Administration (Fase 6, módulo 1): usuarios/roles/permisos/sesiones sobre Security 2.0, RBAC + ABAC en la asignación de roles (`SelfRoleAssignmentAbacRule`), auditoría, idempotencia y los pendientes explícitos (delegaciones, eventos de dominio/integración).
 - [`samples/Sample.Api`](../samples/Sample.Api) — implementación de referencia siguiendo todas estas convenciones.
+- [`samples/Sample.IdentityAdmin.Api`](../samples/Sample.IdentityAdmin.Api) — aplicación de referencia que consume `BitCode.Platform.Identity` (Fase 6, módulo 1).

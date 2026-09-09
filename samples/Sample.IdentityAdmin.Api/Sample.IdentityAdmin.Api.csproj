@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Identity\BitCode.Platform.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Modularity\Shared.Modularity.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
