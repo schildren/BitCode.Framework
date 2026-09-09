@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Documents -- Fase 6, módulo 5 del Plan Maestro BitCode: metadata y clasificación de
+      documentos (Documento), versionado inmutable con hash de contenido (DocumentoVersion), carga y
+      descarga segura contra un almacenamiento de blobs desacoplado (IDocumentBlobStore), escaneo
+      antivirus modelado como estado explícito de la versión (IAntivirusScanner), retención y disposición,
+      y autorización por recurso (RBAC + ABAC de alcance por documentoId) con auditoría real de las
+      operaciones críticas (subida, descarga, disposición). Ver docs/guia-documents.md.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+</Project>

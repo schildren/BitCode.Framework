@@ -1,0 +1,212 @@
+#nullable enable
+const BitCode.Framework.Platform.Documents.Antivirus.ReferenceAntivirusScanner.EicarSignature = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*" -> string!
+const BitCode.Framework.Platform.Documents.DocumentsPermissions.DocumentosVer = "documents.documentos.ver" -> string!
+const BitCode.Framework.Platform.Documents.DocumentsPermissions.DocumentosCrear = "documents.documentos.crear" -> string!
+const BitCode.Framework.Platform.Documents.DocumentsPermissions.DocumentosSubirVersion = "documents.documentos.subirversion" -> string!
+const BitCode.Framework.Platform.Documents.DocumentsPermissions.DocumentosDescargar = "documents.documentos.descargar" -> string!
+const BitCode.Framework.Platform.Documents.DocumentsPermissions.DocumentosDisponer = "documents.documentos.disponer" -> string!
+BitCode.Framework.Platform.Documents.Actors.IDocumentsActorContext
+BitCode.Framework.Platform.Documents.Actors.IDocumentsActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Documents.Actors.IDocumentsActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Documents.Almacenamiento.DocumentBlobStoreOptions
+BitCode.Framework.Platform.Documents.Almacenamiento.DocumentBlobStoreOptions.DocumentBlobStoreOptions() -> void
+BitCode.Framework.Platform.Documents.Almacenamiento.DocumentBlobStoreOptions.RootPath.get -> string!
+BitCode.Framework.Platform.Documents.Almacenamiento.DocumentBlobStoreOptions.RootPath.set -> void
+BitCode.Framework.Platform.Documents.Almacenamiento.IDocumentBlobStore
+BitCode.Framework.Platform.Documents.Almacenamiento.IDocumentBlobStore.DeleteAsync(string! blobKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.Documents.Almacenamiento.IDocumentBlobStore.DownloadAsync(string! blobKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.IO.Stream!>!
+BitCode.Framework.Platform.Documents.Almacenamiento.IDocumentBlobStore.ExistsAsync(string! blobKey, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+BitCode.Framework.Platform.Documents.Almacenamiento.IDocumentBlobStore.UploadAsync(string! blobKey, System.IO.Stream! content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.Documents.Antivirus.IAntivirusScanner
+BitCode.Framework.Platform.Documents.Antivirus.IAntivirusScanner.ScanAsync(byte[]! content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo>!
+BitCode.Framework.Platform.Documents.Antivirus.ReferenceAntivirusScanner
+BitCode.Framework.Platform.Documents.Antivirus.ReferenceAntivirusScanner.ReferenceAntivirusScanner() -> void
+BitCode.Framework.Platform.Documents.Antivirus.ReferenceAntivirusScanner.ScanAsync(byte[]! content, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo>!
+BitCode.Framework.Platform.Documents.Documentos.Documento
+BitCode.Framework.Platform.Documents.Documentos.Documento.Clasificacion.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.Documento.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Documents.Documentos.Documento.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.CreatedBy.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.Documento.CreatedBy.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Documents.Documentos.Documento.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.DeletedBy.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.Documento.DeletedBy.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.Descripcion.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.Documento.DisponibleParaDisposicionDesde.get -> System.DateTime
+BitCode.Framework.Platform.Documents.Documentos.Documento.Documento(System.Guid id, string! titulo, string? descripcion, string! clasificacion, int retencionDias) -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.IsDeleted.get -> bool
+BitCode.Framework.Platform.Documents.Documentos.Documento.IsDeleted.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Documents.Documentos.Documento.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.Documento.ModifiedBy.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.PuedeDisponerse(System.DateTime ahoraUtc) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Documents.Documentos.Documento.RegistrarNuevaVersion(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion! version) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Documents.Documentos.Documento.RegistrarVersionInicial(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion! version) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Documents.Documentos.Documento.RetencionDias.get -> int
+BitCode.Framework.Platform.Documents.Documentos.Documento.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.Documento.TenantId.set -> void
+BitCode.Framework.Platform.Documents.Documentos.Documento.Titulo.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.Documento.VersionActualId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.Documento.VersionActualNumero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Deconstruct(out System.Guid DocumentoId, out System.Guid VersionId, out int Numero, out BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo Resultado) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.DocumentoEscaneadoIntegrationEvent(System.Guid DocumentoId, System.Guid VersionId, int Numero, BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo Resultado) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.DocumentoId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.DocumentoId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Equals(BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Numero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Numero.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Resultado.get -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Resultado.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.VersionId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.VersionId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.<Clone>$() -> BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Clasificacion.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Clasificacion.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Deconstruct(out System.Guid Id, out string! Titulo, out string? Descripcion, out string! Clasificacion, out int RetencionDias, out System.Guid VersionActualId, out int VersionActualNumero, out System.DateTime DisponibleParaDisposicionDesde) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Descripcion.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Descripcion.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.DisponibleParaDisposicionDesde.get -> System.DateTime
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.DisponibleParaDisposicionDesde.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.DocumentoResponse(System.Guid Id, string! Titulo, string? Descripcion, string! Clasificacion, int RetencionDias, System.Guid VersionActualId, int VersionActualNumero, System.DateTime DisponibleParaDisposicionDesde) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Equals(BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse? other) -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Id.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Id.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.RetencionDias.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.RetencionDias.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Titulo.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Titulo.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.VersionActualId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.VersionActualId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.VersionActualNumero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.VersionActualNumero.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.Deconstruct(out System.Guid DocumentoId, out System.Guid VersionId, out string! NombreArchivo, out string! HashSha256) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.DocumentoId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.DocumentoId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.DocumentoSubidoIntegrationEvent(System.Guid DocumentoId, System.Guid VersionId, string! NombreArchivo, string! HashSha256) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.Equals(BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.HashSha256.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.HashSha256.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.NombreArchivo.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.NombreArchivo.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.VersionId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.VersionId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.BlobKey.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.ContentType.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.CreatedBy.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.CreatedBy.set -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.DocumentoId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.DocumentoVersion(System.Guid id, System.Guid documentoId, int numero, string! nombreArchivo, string! contentType, long tamanioBytes, string! hashSha256, string! blobKey) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.EscaneadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.EstadoEscaneo.get -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.HashSha256.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.MarcarEscaneada(BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo resultado) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.ModifiedBy.set -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.NombreArchivo.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.Numero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.PuedeDescargarse() -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.TamanioBytes.get -> long
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion.TenantId.set -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Deconstruct(out System.Guid DocumentoId, out System.Guid VersionId, out int Numero, out string! HashSha256) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.DocumentoId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.DocumentoId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.DocumentoVersionCreadaIntegrationEvent(System.Guid DocumentoId, System.Guid VersionId, int Numero, string! HashSha256) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Equals(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.HashSha256.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.HashSha256.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Numero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Numero.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.VersionId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.VersionId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.<Clone>$() -> BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.ContentType.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.ContentType.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Deconstruct(out System.Guid Id, out System.Guid DocumentoId, out int Numero, out string! NombreArchivo, out string! ContentType, out long TamanioBytes, out string! HashSha256, out BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo EstadoEscaneo) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.DocumentoId.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.DocumentoId.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.DocumentoVersionResponse(System.Guid Id, System.Guid DocumentoId, int Numero, string! NombreArchivo, string! ContentType, long TamanioBytes, string! HashSha256, BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo EstadoEscaneo) -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Equals(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse? other) -> bool
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.EstadoEscaneo.get -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.EstadoEscaneo.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.HashSha256.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.HashSha256.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Id.get -> System.Guid
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Id.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.NombreArchivo.get -> string!
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.NombreArchivo.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Numero.get -> int
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Numero.init -> void
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.TamanioBytes.get -> long
+BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.TamanioBytes.init -> void
+BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo.Infectado = 2 -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo.Limpio = 1 -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo.PendienteEscaneo = 0 -> BitCode.Framework.Platform.Documents.Documentos.EstadoEscaneo
+BitCode.Framework.Platform.Documents.DocumentsDbContext
+BitCode.Framework.Platform.Documents.DocumentsDbContext.DocumentoVersiones.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Documents.Documentos.DocumentoVersion!>!
+BitCode.Framework.Platform.Documents.DocumentsDbContext.Documentos.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Documents.Documentos.Documento!>!
+BitCode.Framework.Platform.Documents.DocumentsDbContext.DocumentsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Documents.DocumentsDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Documents.DocumentsEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Documents.DocumentsPermissions
+BitCode.Framework.Platform.Documents.DocumentsServiceCollectionExtensions
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.ToString() -> string!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.ToString() -> string!
+override sealed BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.operator !=(BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent.operator ==(BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoEscaneadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.operator !=(BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse.operator ==(BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoResponse? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.operator !=(BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent.operator ==(BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoSubidoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.operator !=(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse? right) -> bool
+static BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse.operator ==(BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse? left, BitCode.Framework.Platform.Documents.Documentos.DocumentoVersionResponse? right) -> bool
+static BitCode.Framework.Platform.Documents.DocumentsEndpointRouteBuilderExtensions.MapDocumentsEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Documents.DocumentsServiceCollectionExtensions.AddSharedDocuments(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Platform.Documents.Almacenamiento.DocumentBlobStoreOptions!>! configureBlobStore) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
