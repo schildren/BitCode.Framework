@@ -18,3 +18,11 @@ export * from './lib/i18n/translate.pipe';
 
 // F7-12: harness de accesibilidad (axe-core) compartido para specs de otros paquetes.
 export * from './lib/testing/a11y-harness';
+
+// F7-13: web vitals, errores, trazas y contexto ("frontend telemetry").
+export * from './lib/telemetry/telemetry.model';
+export * from './lib/telemetry/correlation';
+export * from './lib/telemetry/telemetry.service';
+export * from './lib/telemetry/telemetry.interceptor';
+export * from './lib/telemetry/web-vitals';
+export * from './lib/telemetry/provide-telemetry';
