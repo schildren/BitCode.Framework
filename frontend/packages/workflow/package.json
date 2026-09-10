@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/workflow",
+  "version": "0.1.0",
+  "description": "Bandeja de tareas, historial y acciones de Workflow.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}

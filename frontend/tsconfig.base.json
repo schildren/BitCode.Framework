@@ -1,0 +1,27 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "paths": {
+      "@bitcode/core": ["./packages/core/src/index.ts"],
+      "@bitcode/auth": ["./packages/auth/src/index.ts"],
+      "@bitcode/ui": ["./packages/ui/src/index.ts"],
+      "@bitcode/grid": ["./packages/grid/src/index.ts"],
+      "@bitcode/forms": ["./packages/forms/src/index.ts"],
+      "@bitcode/workflow": ["./packages/workflow/src/index.ts"],
+      "@bitcode/documents": ["./packages/documents/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

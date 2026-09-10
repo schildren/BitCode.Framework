@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/documents",
+  "version": "0.1.0",
+  "description": "Carga, descarga, versiones y visualizacion de Documents.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}

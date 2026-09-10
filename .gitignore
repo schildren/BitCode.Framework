@@ -5,3 +5,13 @@ obj/
 
 # Salida local de `dotnet pack` (docs/politica-empaquetado.md) — nunca se versiona.
 artifacts/
+
+# Frontend Angular (Fase 7, docs/guia-frontend-workspace.md).
+# El workspace tiene su propio .gitignore (frontend/.gitignore) con el detalle completo;
+# estas entradas son una red de seguridad adicional a nivel raíz.
+frontend/node_modules/
+frontend/dist/
+frontend/.nx/cache/
+frontend/.nx/workspace-data/
+frontend/**/node_modules/
+frontend/**/dist/

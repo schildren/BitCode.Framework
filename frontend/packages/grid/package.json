@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/grid",
+  "version": "0.1.0",
+  "description": "Grillas empresariales con paginado, filtros y exportacion server-side.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}

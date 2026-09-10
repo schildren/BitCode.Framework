@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/auth",
+  "version": "0.1.0",
+  "description": "Sesion, guards, claims y BFF para autenticacion en aplicaciones BitCode.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}

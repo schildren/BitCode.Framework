@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/forms",
+  "version": "0.1.0",
+  "description": "Formularios, validacion accesible y componentes de datos.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}

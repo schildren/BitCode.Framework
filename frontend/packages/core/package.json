@@ -1,0 +1,10 @@
+{
+  "name": "@bitcode/core",
+  "version": "0.1.0",
+  "description": "Configuracion, errores, logging, HTTP y convenciones compartidas del frontend BitCode.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0"
+  },
+  "sideEffects": false
+}
