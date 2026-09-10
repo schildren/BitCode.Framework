@@ -103,9 +103,11 @@ Cada paquete bajo `packages/` es una librería Angular **publicable y buildable*
 - Lint con ESLint flat config + `angular-eslint` + `@nx/dependency-checks` (valida que las
   dependencias usadas en el código estén correctamente declaradas en el `package.json` del paquete).
 
-La aplicación `apps/shell` es un placeholder de la futura "Navigation shell" (F7-05): una app Angular
-standalone mínima, sin rutas ni menú real todavía, que sirve para validar que el workspace puede producir
-un artefacto de aplicación (no solo librerías) con el mismo pipeline de build.
+La aplicación `apps/shell` era un placeholder de la "Navigation shell" en esta tarea (F7-01): una app
+Angular standalone mínima, sin rutas ni menú real, que sirvió para validar que el workspace puede
+producir un artefacto de aplicación (no solo librerías) con el mismo pipeline de build. F7-05 ya completó
+el menú dinámico/navigation shell real -- ver
+[`docs/guia-frontend-navigation.md`](guia-frontend-navigation.md).
 
 ## 4. Build reproducible — cómo se verificó
 

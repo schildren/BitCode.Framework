@@ -1,0 +1,34 @@
+<nav class="bc-nav" aria-label="Navegación principal">
+  <ul class="bc-nav__list">
+    @for (item of menu(); track item.id) {
+      <li class="bc-nav__item">
+        @if (isGroup(item)) {
+          <button
+            type="button"
+            class="bc-nav__group-toggle"
+            [attr.aria-expanded]="isExpanded(item)"
+            (click)="toggleGroup(item)"
+          >
+            <span class="bc-nav__label">{{ item.label }}</span>
+            <span class="bc-nav__chevron" [class.bc-nav__chevron--expanded]="isExpanded(item)">›</span>
+          </button>
+          @if (isExpanded(item)) {
+            <ul class="bc-nav__sublist">
+              @for (child of item.children; track child.id) {
+                <li class="bc-nav__item">
+                  <a class="bc-nav__link" [routerLink]="child.link" routerLinkActive="bc-nav__link--active">
+                    {{ child.label }}
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        } @else {
+          <a class="bc-nav__link" [routerLink]="item.link" routerLinkActive="bc-nav__link--active">
+            {{ item.label }}
+          </a>
+        }
+      </li>
+    }
+  </ul>
+</nav>
