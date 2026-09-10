@@ -7,7 +7,8 @@
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",
-    "analyze:shell": "node scripts/analyze-bundle.mjs"
+    "analyze:shell": "node scripts/analyze-bundle.mjs",
+    "e2e:shell": "playwright test --config=e2e/shell/playwright.config.ts"
   },
   "dependencies": {
     "@angular/cdk": "^22.1.5",
@@ -41,6 +42,7 @@
     "@nx/vitest": "23.2.0",
     "@nx/workspace": "23.2.0",
     "@oxc-project/runtime": "^0.115.0",
+    "@playwright/test": "^1.63.0",
     "@schematics/angular": "22.1.6",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",

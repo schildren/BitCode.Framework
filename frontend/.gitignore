@@ -48,6 +48,14 @@ Thumbs.db
 .claude/worktrees
 .playwright-mcp
 
+# F7-15: artefactos de corridas de Playwright (E2E) -- los baselines de visual regression en
+# e2e/shell/tests/**/*-snapshots/ SÍ se versionan (son el contrato de comparación), esto no.
+/test-results
+/playwright-report
+/blob-report
+/e2e/shell/test-results
+/e2e/shell/playwright-report
+
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
