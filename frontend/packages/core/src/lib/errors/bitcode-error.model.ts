@@ -1,4 +1,5 @@
 import { InjectionToken, Provider } from '@angular/core';
+import { BitcodeLocale } from '../i18n/locale.model';
 import { ProblemDetails } from './problem-details.model';
 
 /**
@@ -49,7 +50,7 @@ export interface BitcodeUiError {
 
 /** Catálogo de mensajes consistentes por `BitcodeErrorKind` -- un único lugar para el texto, en vez de que
  * cada componente que consuma un error decida el suyo. Configurable/localizable (ver
- * `provideBitcodeErrorMessages`); i18n real (idiomas múltiples) es F7-11, fuera de alcance de F7-06. */
+ * `provideBitcodeErrorMessages`/`provideBitcodeErrorMessagesForLocale`, F7-11). */
 export type BitcodeErrorMessages = Readonly<Record<BitcodeErrorKind, string>>;
 
 export const DEFAULT_BITCODE_ERROR_MESSAGES: BitcodeErrorMessages = {
@@ -71,4 +72,37 @@ export const BITCODE_ERROR_MESSAGES = new InjectionToken<BitcodeErrorMessages>('
  * (`app.config.ts`). Cualquier `kind` no provisto conserva su mensaje por defecto. */
 export function provideBitcodeErrorMessages(overrides: Partial<BitcodeErrorMessages> = {}): Provider[] {
   return [{ provide: BITCODE_ERROR_MESSAGES, useValue: { ...DEFAULT_BITCODE_ERROR_MESSAGES, ...overrides } }];
+}
+
+/**
+ * Catálogo de `BitcodeErrorMessages` por locale (F7-11) -- cierra el pendiente explícito que dejó F7-06
+ * ("sin i18n real de los mensajes del catálogo"). `en-US` es una traducción literal del catálogo por
+ * defecto en español; cualquier locale no listado cae al de `es-AR`.
+ */
+export const BITCODE_ERROR_MESSAGES_BY_LOCALE: Readonly<Record<BitcodeLocale, BitcodeErrorMessages>> = {
+  'es-AR': DEFAULT_BITCODE_ERROR_MESSAGES,
+  'en-US': {
+    validation: 'Check the entered data: some fields contain invalid information.',
+    unauthorized: 'Your session is invalid or has expired. Please sign in again.',
+    forbidden: 'You do not have sufficient permissions to perform this action.',
+    'not-found': 'The requested resource was not found.',
+    conflict: 'The operation could not be completed due to a conflict with the current state of the data.',
+    server: 'An unexpected error occurred. If the problem persists, contact support with the correlation code.',
+    network: 'Could not connect to the server. Check your connection and try again.',
+    unknown: 'An unexpected error occurred.',
+  },
+};
+
+/**
+ * Variante de `provideBitcodeErrorMessages` que arranca del catálogo del `locale` indicado en vez de
+ * siempre `es-AR`. Sólo aplica en el momento del bootstrap de la app (el token `BITCODE_ERROR_MESSAGES` no
+ * es reactivo -- ver `BitcodeLocaleService`/`BitcodeTranslationService` para textos que sí deban
+ * recalcularse al cambiar de idioma en caliente, p. ej. vía el catálogo `BITCODE_TRANSLATIONS`).
+ */
+export function provideBitcodeErrorMessagesForLocale(
+  locale: BitcodeLocale,
+  overrides: Partial<BitcodeErrorMessages> = {},
+): Provider[] {
+  const base = BITCODE_ERROR_MESSAGES_BY_LOCALE[locale] ?? DEFAULT_BITCODE_ERROR_MESSAGES;
+  return [{ provide: BITCODE_ERROR_MESSAGES, useValue: { ...base, ...overrides } }];
 }

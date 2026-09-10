@@ -162,6 +162,8 @@ Resultado: 16 tests nuevos pasando (`error-experience.service.spec.ts` + `error.
   shell que se beneficiara de registrar el interceptor en esta tarea (sólo el árbol de navegación
   estático); un consumidor real de un módulo de negocio (F7-07 en adelante) debe registrar
   `bitcodeErrorInterceptor` siguiendo el orden documentado en la sección 4.
-- **Sin i18n real de los mensajes del catálogo** (F7-11): `BITCODE_ERROR_MESSAGES` es overridable
-  (`provideBitcodeErrorMessages`) pero los valores por defecto están sólo en español.
+- **Sin i18n real de los mensajes del catálogo**: resuelto en F7-11, ver
+  [`docs/guia-frontend-i18n.md`](guia-frontend-i18n.md#5-catálogo-de-mensajes-de-error-por-locale-cierra-el-pendiente-de-f7-06)
+  (`BITCODE_ERROR_MESSAGES_BY_LOCALE`, `provideBitcodeErrorMessagesForLocale`), con una limitación honesta
+  documentada ahí: no es reactivo a un cambio de idioma en caliente.
 - **Sin `depConstraints` de Nx** (heredado de F7-01/F7-02/F7-05): no cambia con esta tarea.

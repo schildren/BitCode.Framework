@@ -6,3 +6,12 @@ export * from './lib/errors/bitcode-error.model';
 export * from './lib/errors/bitcode-http-error';
 export * from './lib/errors/error-experience.service';
 export * from './lib/errors/error.interceptor';
+
+// F7-11: idiomas, fechas, moneda y zona horaria.
+export * from './lib/i18n/locale.model';
+export * from './lib/i18n/locale.service';
+export * from './lib/i18n/formatters';
+export * from './lib/i18n/pipes';
+export * from './lib/i18n/translation.model';
+export * from './lib/i18n/translation.service';
+export * from './lib/i18n/translate.pipe';
