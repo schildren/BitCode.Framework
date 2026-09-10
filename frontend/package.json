@@ -12,7 +12,8 @@
     "typecheck": "nx run-many -t typecheck",
     "contracts:export": "dotnet run --project ../samples/OpenApiExport",
     "contracts:generate": "node scripts/generate-contracts.mjs",
-    "contracts:refresh": "npm run contracts:export && npm run contracts:generate"
+    "contracts:refresh": "npm run contracts:export && npm run contracts:generate",
+    "contracts:verify": "node scripts/verify-contracts.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^22.1.5",

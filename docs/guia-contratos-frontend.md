@@ -128,6 +128,42 @@ Pendiente, documentado explícitamente (no un olvido silencioso):
   correspondiente en el frontend (Fase 7 cubrió auth/core/documents/forms/grid/ui/workflow) — se agregan a
   `samples/OpenApiExport` cuando ese paquete exista.
 
+## Verificación automatizada (F8-04): `npm run contracts:verify`
+
+`frontend/scripts/verify-contracts.mjs` corre el pipeline completo de punta a punta y prueba, sin
+intervención humana, el criterio de aceptación de F8-04 ("Sin edición manual del cliente"):
+
+```bash
+# Desde frontend/, requiere Docker corriendo.
+npm run contracts:verify
+```
+
+Hace, en orden:
+
+1. `dotnet run --project samples/OpenApiExport` (paso 1 del pipeline, arriba).
+2. `node scripts/generate-contracts.mjs` (paso 2 del pipeline, arriba).
+3. `git diff --exit-code` sobre `docs/openapi/**/*.json` y
+   `frontend/packages/*/src/lib/contracts/generated/**/*.ts`: si el working tree cambia después de
+   regenerar, significa que el backend cambió un contrato sin que alguien regenerara/commiteara el
+   resultado, o que alguien editó a mano un archivo bajo `contracts/generated/` — en ambos casos el
+   script falla (exit 1) con un mensaje explicando cómo corregirlo (`npm run contracts:refresh` +
+   commitear).
+4. `npx tsc --noEmit --strict --skipLibCheck` sobre cada `.ts` generado, de forma aislada (no como
+   parte del `typecheck` del paquete completo): prueba que el output de `openapi-typescript` compila
+   por sí mismo, sin acoplar el resultado a otros archivos del paquete que puedan tener errores
+   preexistentes no relacionados con contratos.
+
+Este comando corre en CI (`.github/workflows/ci.yml`, job `contracts-verify`, en cada push/PR a
+`master`) — Docker ya está disponible en los runners `ubuntu-latest` de GitHub Actions, igual que para
+los tests de integración con Testcontainers del resto del pipeline. Cualquier cambio de contrato que no
+se haya regenerado y commiteado bloquea el pipeline.
+
+Nota: `contracts:verify` no reemplaza `npx nx run-many -t typecheck` (que sigue siendo el target que
+hace efectiva la verificación de `contract-consistency.ts` contra los modelos de mano, ver arriba) — son
+complementarios: `contracts:verify` prueba que el cliente generado es reproducible y compila por sí
+mismo; `typecheck` prueba que los modelos de mano del paquete siguen cubriendo las claves del contrato
+generado.
+
 ## Referencias
 
 - `samples/OpenApiExport/Program.cs` — exportador de documentos OpenAPI reales vía Testcontainers.
@@ -135,4 +171,7 @@ Pendiente, documentado explícitamente (no un olvido silencioso):
 - `frontend/packages/core/src/lib/contracts/`, `frontend/packages/documents/src/lib/contracts/`,
   `frontend/packages/workflow/src/lib/contracts/` — tipos generados (`generated/`, no editar a mano) y
   verificación de consistencia (`contract-consistency.ts`).
+- `frontend/scripts/generate-contracts.mjs` — regenera el cliente TypeScript desde `docs/openapi/`.
+- `frontend/scripts/verify-contracts.mjs` — verificación de punta a punta (`npm run contracts:verify`),
+  usada en CI.
 - `docs/guia-openapi.md` — cómo y por qué cada `Sample.*.Api` genera su documento OpenAPI real.

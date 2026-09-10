@@ -80,6 +80,34 @@ jobs:
           name: integration-test-results
           path: ./TestResults
 
+  contracts-verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias de frontend
+        run: npm ci
+        working-directory: frontend
+
+      # F8-04 (docs/guia-contratos-frontend.md): prueba que el cliente TypeScript
+      # generado en frontend/packages/*/src/lib/contracts/generated/ es 100%
+      # reproducible desde el OpenAPI real de cada Sample.*.Api (Testcontainers SQL
+      # Server, requiere Docker -- ya presente en el runner ubuntu-latest) y nunca
+      # requiere edición manual: regenera de punta a punta, falla si el working tree
+      # cambia (git diff --exit-code) y compila cada archivo generado con tsc --strict.
+      - name: Verificar contratos TypeScript generados desde OpenAPI
+        run: npm run contracts:verify
+        working-directory: frontend
+
   dependency-scan:
     needs: build
     runs-on: ubuntu-latest
