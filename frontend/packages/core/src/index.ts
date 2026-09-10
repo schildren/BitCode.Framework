@@ -15,3 +15,6 @@ export * from './lib/i18n/pipes';
 export * from './lib/i18n/translation.model';
 export * from './lib/i18n/translation.service';
 export * from './lib/i18n/translate.pipe';
+
+// F7-12: harness de accesibilidad (axe-core) compartido para specs de otros paquetes.
+export * from './lib/testing/a11y-harness';

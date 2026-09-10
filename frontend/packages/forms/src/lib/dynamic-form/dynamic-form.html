@@ -13,6 +13,7 @@
             [formControlName]="field.name"
             [attr.placeholder]="field.placeholder ?? null"
             [attr.aria-invalid]="showFieldError(field)"
+            [attr.aria-describedby]="fieldDescribedBy(field)"
           ></textarea>
         }
         @case ('select') {
@@ -21,6 +22,7 @@
             [id]="fieldId(field)"
             [formControlName]="field.name"
             [attr.aria-invalid]="showFieldError(field)"
+            [attr.aria-describedby]="fieldDescribedBy(field)"
           >
             @for (option of field.options ?? []; track option.label) {
               <option [ngValue]="option.value">{{ option.label }}</option>
@@ -46,14 +48,15 @@
             [formControlName]="field.name"
             [attr.placeholder]="field.placeholder ?? null"
             [attr.aria-invalid]="showFieldError(field)"
+            [attr.aria-describedby]="fieldDescribedBy(field)"
           />
         }
       }
 
       @if (fieldErrorMessage(field); as message) {
-        <p class="bc-form__error" role="alert">{{ message }}</p>
+        <p class="bc-form__error" [id]="fieldErrorId(field)" role="alert">{{ message }}</p>
       } @else if (field.hint) {
-        <p class="bc-form__hint">{{ field.hint }}</p>
+        <p class="bc-form__hint" [id]="fieldHintId(field)">{{ field.hint }}</p>
       }
     </div>
   }

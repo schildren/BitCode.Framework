@@ -50,6 +50,7 @@
     "@vitest/ui": "~4.1.0",
     "angular-eslint": "22.2.0",
     "autoprefixer": "^10.4.0",
+    "axe-core": "^4.13.0",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "jsdom": "~22.1.0",

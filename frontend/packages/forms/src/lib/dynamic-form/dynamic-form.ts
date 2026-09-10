@@ -131,6 +131,29 @@ export class BitcodeDynamicForm<T = Record<string, unknown>> {
     return `bc-form-field-${field.name}`;
   }
 
+  fieldErrorId(field: BitcodeFormFieldConfig): string {
+    return `${this.fieldId(field)}-error`;
+  }
+
+  fieldHintId(field: BitcodeFormFieldConfig): string {
+    return `${this.fieldId(field)}-hint`;
+  }
+
+  /** `aria-describedby` del control (F7-12): un lector de pantalla que enfoque el input debe anunciar el
+   * mensaje de error o la ayuda asociada, no sólo el `<label>` -- sin esto, el `role="alert"` del párrafo
+   * de error sólo se anuncia una vez al aparecer, pero no queda asociado al campo si el foco vuelve a él
+   * después. `null` (no `undefined`) para que `[attr.aria-describedby]` elimine el atributo por completo
+   * cuando no aplica, en vez de dejarlo con el string `"null"`. */
+  fieldDescribedBy(field: BitcodeFormFieldConfig): string | null {
+    if (this.fieldErrorMessage(field)) {
+      return this.fieldErrorId(field);
+    }
+    if (field.hint) {
+      return this.fieldHintId(field);
+    }
+    return null;
+  }
+
   control(field: BitcodeFormFieldConfig): AbstractControl | null {
     return this.form().get(field.name);
   }
