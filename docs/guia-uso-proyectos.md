@@ -86,11 +86,17 @@ public partial class Program;
 
 `AddModules`/`UseModules` (Fase 5) descubren por reflexión todas las clases `IFrameworkModule`/`IWebFrameworkModule` del assembly, resuelven el orden por `[DependsOn]` y llaman `ConfigureServices`/`ConfigureApplication` en ese orden.
 
-**Migraciones, no `EnsureCreated`:** `Sample.Api` usa `EnsureCreatedAsync()` porque es un piloto/demo. Un proyecto real debe usar EF Core Migrations:
+**Migraciones, no `EnsureCreated`:** `Sample.Api` usa `EnsureCreatedAsync()` solo como bootstrap de test/demo. Un proyecto real debe usar EF Core Migrations junto con el tooling oficial `BitCode.Migrations` (F8-07, ver [`guia-migraciones.md`](guia-migraciones.md)) para garantizar despliegues zero-downtime mediante el patrón Expand-and-Contract:
 
 ```bash
+# 1. Generar la migración aditiva
 dotnet ef migrations add InicialMiApp --project MiApp.Api
-dotnet ef database update --project MiApp.Api
+
+# 2. Validar que no contenga operaciones destructivas (bloquea en CI/CD si viola expand-and-contract)
+dotnet run --project tools/BitCode.Migrations -- validate --assembly "bin/Debug/net10.0/MiApp.Api.dll"
+
+# 3. Aplicar el forward rollout a la base de datos (típicamente desde un Job de Kubernetes pre-deploy)
+dotnet run --project tools/BitCode.Migrations -- migrate --connection-string $CONNECTION_STRING --assembly "bin/Debug/net10.0/MiApp.Api.dll" --context "MiAppDbContext"
 ```
 
 ## 5. Agregar un feature (CQRS)
