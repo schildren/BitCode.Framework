@@ -190,41 +190,73 @@ Después de generarla:
 
 ## 6. Versionado
 
-Mecanismo: **Nx Release**, configurado en `nx.json` (`release`):
+Mecanismo: **Nx Release**, configurado en `nx.json` (`release`).
 
-- `projectsRelationship: "independent"` — cada paquete (`@bitcode/core`, `@bitcode/auth`, etc.) versiona
-  de forma independiente según sus propios cambios, no en lockstep.
+**Actualizado por F8-06** (`docs/adr/0019-registry-npm-github-packages.md`): `projectsRelationship`
+cambió de `"independent"` a **`"fixed"`** — los 7 paquetes (`@bitcode/core`, `@bitcode/auth`, etc.)
+versionan siempre en lockstep (misma versión para todos en cada release), mismo patrón que Angular
+Material/Angular CDK. El motivo: en modo `independent`, dos paquetes con distinto historial de
+Conventional Commits pueden divergir en versión (confuso para quien instala varios paquetes `@bitcode/*`
+juntos esperando una única "versión de BitCode Angular"); F8-06 hizo de esto un criterio de aceptación
+explícito ("versiones alineadas"), que `independent` no garantizaba estructuralmente. Ver el ADR para el
+análisis completo (incluida la alternativa descartada de un script propio con un archivo `VERSION` raíz).
+
+Configuración vigente:
+
+- `projectsRelationship: "fixed"` — grupo único (`projects: ["packages/*"]`) versionado en lockstep.
+- `releaseTag.pattern: "v{version}"` — un único tag por release para todo el grupo (reemplaza el patrón
+  `{projectName}@{version}` que usaba el modo `independent`).
 - `version.conventionalCommits: true` — el bump de versión (patch/minor/major) se calcula a partir de
-  Conventional Commits (`feat:`, `fix:`, `BREAKING CHANGE:`, etc.) que toquen archivos del paquete.
-- `changelog.projectChangelogs: true` — genera un `CHANGELOG.md` por paquete.
+  Conventional Commits (`feat:`, `fix:`, `BREAKING CHANGE:`) sobre TODO el grupo, no por paquete.
+- `changelog.projectChangelogs: true` + `changelog.workspaceChangelog: true` — un `CHANGELOG.md` por
+  paquete más un changelog agregado a nivel de release.
 - Versión inicial de los 7 paquetes: `0.1.0`.
+- Cada `packages/<paquete>/project.json` mantiene su propio `release.version` con
+  `manifestRootsToUpdate: ["dist/{projectRoot}"]` (el manifiesto que realmente se versiona/publica es el
+  de `dist/`, no el `package.json` fuente) y `currentVersionResolver: "git-tag"` con fallback `"disk"`.
 
-**Verificado en modo dry-run** (sin publicar nada, sin tocar tags ni package.json reales):
+**Verificado con una ejecución real** (no solo dry-run — `docs/adr/0019-registry-npm-github-packages.md`,
+sección "Versionado alineado (fixed)"):
 
 ```bash
-npx nx release version --dry-run
+cd frontend
+npx nx release version
+grep -h '"version"' dist/packages/*/package.json
 ```
 
-Salida confirmada: Nx resuelve correctamente la versión actual de cada paquete desde el manifest
-(`0.1.0`, ya que no hay tags git `<paquete>@<version>` todavía) y reporta "No changes were detected"
-porque no hay commits Conventional Commits que afecten a los paquetes desde su creación en este mismo
-cambio (comportamiento esperado en un scaffold recién creado).
+Resultado real observado: los 7 manifiestos de `dist/packages/*/package.json` quedaron con exactamente
+el mismo valor (`"version": "0.1.1"`, calculado desde el tag existente `v0.1.0` más un bump `minor`
+detectado por Conventional Commits), y el log de Nx confirma explícitamente para cada paquete salvo el
+primero: "Applied version ... directly, because the project is a member of a fixed release group" — la
+alineación es garantizada por el mecanismo, no una coincidencia de historiales individuales. El comando
+no creó ningún commit ni tag real (`git-commit`/`git-tag` no configurados, default `false` para el
+subcomando `version` aislado) ni modificó los `package.json` fuente de `packages/*` (permanecen en
+`0.1.0`; solo el manifiesto de `dist/` se versiona).
 
-**Registro npm — pendiente real, no resuelto en esta tarea:** no hay un registry npm privado configurado
-todavía (eso es la tarea F8-06 de una fase posterior). Para poder probar el flujo de publicación de punta
-a punta sin depender de un registry externo, el workspace incluye un target `local-registry`
-(`@nx/js:verdaccio`, definido en `frontend/project.json`) que levanta un Verdaccio local en
-`http://localhost:4873`:
+**Riesgo conocido, no bloqueante:** el paso interno de `nx release version` que refresca
+`package-lock.json` (`npm install --package-lock-only`) falla por un conflicto de peer dependencies
+preexistente (`openapi-typescript` vs. `typescript@6.0.3`, ver sección 8) — no impidió que el paso de
+versionado de manifiestos completara correctamente (se ejecuta antes en la secuencia), pero hay que
+resolver ese conflicto de peer dependencies antes de que un `nx release`/CI real necesite además
+sincronizar el lockfile.
+
+**Registro npm — configurado, no activado** (F8-06, `docs/adr/0019-registry-npm-github-packages.md`):
+GitHub Packages (`https://npm.pkg.github.com`), scope `@bitcode` resuelto vía `frontend/.npmrc`
+(autenticación solo por `NODE_AUTH_TOKEN`, nunca embebida), publicación desde CI vía
+`.github/workflows/npm-publish.yml` (disparo acotado a tag `v*`/`workflow_dispatch`). Activar una
+publicación real (primer tag real, ADR 0008 de licencias `Accepted`) sigue pendiente de aprobación
+humana — ver el ADR para el detalle completo.
+
+Para probar el flujo de publicación de punta a punta sin depender de un registry externo (uso normal de
+desarrollo, sin relación con la activación real de GitHub Packages), el workspace sigue incluyendo el
+target `local-registry` (`@nx/js:verdaccio`, definido en `frontend/project.json`) que levanta un
+Verdaccio local en `http://localhost:4873`:
 
 ```bash
 npx nx run @bitcode/frontend-workspace:local-registry
 # en otra terminal:
 npx nx release publish --registry=http://localhost:4873
 ```
-
-Esto no se ejecutó como parte de esta tarea (no es necesario para el criterio de aceptación "builds
-reproducibles" ni fue pedido), pero el mecanismo queda documentado y disponible para cuando se necesite
-validar un release end-to-end antes de tener el registry definitivo.
 
 ## 7. Design tokens (F7-02, paquete `@bitcode/ui`)
 

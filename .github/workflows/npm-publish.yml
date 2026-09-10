@@ -1,0 +1,87 @@
+name: npm Publish
+
+# F8-06 (docs/adr/0019-registry-npm-github-packages.md): job de versionado (fixed, ver
+# frontend/nx.json "release") y publicación de los 7 paquetes @bitcode/* del monorepo frontend
+# al feed propio en GitHub Packages. Trigger DELIBERADAMENTE acotado -- nunca se dispara por push
+# a rama ni por pull request, solo por un tag de versión real (`v*`) o de forma manual
+# (workflow_dispatch) para permitir un ensayo controlado sin necesidad de crear un tag.
+#
+# Este workflow queda listo como configuración-como-código, no como una publicación real ya
+# activa: mientras no exista un consumidor real ni el ADR 0008 (licencias) esté `Accepted`,
+# publicar una versión real sigue siendo una decisión de release sujeta a aprobación humana (ver
+# docs/adr/0019-registry-npm-github-packages.md, "Contexto"). El disparo manual por defecto corre
+# en modo dry-run (no publica nada) -- publicar de verdad requiere pasar dry_run=false a propósito
+# o empujar un tag real.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Si es true, versiona y empaqueta pero NO ejecuta npm publish."
+        type: boolean
+        default: true
+
+env:
+  # F8-06: feed propio de los paquetes @bitcode/* en GitHub Packages, ver
+  # docs/adr/0019-registry-npm-github-packages.md.
+  BITCODE_NPM_REGISTRY: https://npm.pkg.github.com
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: read
+  packages: write
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  version-build-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Nx Release necesita el historial completo de tags para resolver la versión actual del grupo "fixed".
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org" # registro por defecto; frontend/.npmrc resuelve el scope @bitcode contra GitHub Packages.
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Versiona los 7 paquetes @bitcode/* del grupo "fixed" (frontend/nx.json, release) a la
+      # MISMA versión en un solo comando -- ver docs/adr/0019-registry-npm-github-packages.md,
+      # "Versionado alineado (fixed)". No crea commit ni tag (git-commit/git-tag no configurados
+      # en release, ver ADR): el tag real que dispara este workflow ya fue empujado por quien hizo
+      # el release, o se está corriendo en dry-run manual.
+      - name: Versionar (nx release version, grupo fixed)
+        run: npx nx release version ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Listar versiones resultantes (verificación de alineación)
+        run: |
+          echo "Versiones de los 7 manifiestos publicables tras nx release version:"
+          grep -H '"version"' dist/packages/*/package.json || echo "(dist/ vacío -- se esperaba en un dry-run que no corrió build todavía)"
+
+      # Publicación condicionada: nunca corre en un dry-run manual explícito. Usa el token
+      # efímero de Actions (packages: write arriba) vía frontend/.npmrc -- no hace falta ningún
+      # PAT de larga vida para publicar desde CI (ver
+      # docs/adr/0019-registry-npm-github-packages.md, razón #2 de elegir GitHub Packages).
+      - name: Publicar al feed (nx release publish)
+        if: github.event_name == 'push' || github.event.inputs.dry_run == 'false'
+        # No se pasa --registry: frontend/.npmrc ya resuelve el scope @bitcode contra
+        # $BITCODE_NPM_REGISTRY (GitHub Packages); un --registry explícito aquí sobreescribiría esa
+        # resolución por scope para el comando completo, con riesgo de intentar publicar contra el
+        # registro equivocado si algún día se agrega un paquete fuera del scope @bitcode.
+        run: npx nx release publish
+
+      - name: Publicar artefactos de paquete (siempre, incluso en dry-run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-packages
+          path: frontend/dist/packages/*/package.json

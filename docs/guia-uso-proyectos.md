@@ -229,7 +229,62 @@ corre, no sobre paquetes publicados desde otro repositorio.
   `docs/adr/0018-registry-nuget-github-packages.md`, sección "Contexto". Seguir usando
   `ProjectReference` (secciones 1 a 9 de esta guía) hasta entonces.
 
-## 10. Checklist de arranque
+## 10. Consumo autenticado del feed npm (F8-06)
+
+`docs/adr/0019-registry-npm-github-packages.md` deja configurado (no activado todavía -- ver ese ADR
+para los bloqueos pendientes) un feed propio de los 7 paquetes Angular del framework
+(`@bitcode/{auth,core,documents,forms,grid,ui,workflow}`) en **GitHub Packages**:
+`https://npm.pkg.github.com`. Esta sección documenta cómo se consumirá desde un proyecto Angular externo
+una vez que exista al menos una versión real publicada; hoy el propio monorepo frontend consume estos
+paquetes vía npm workspaces (symlinks a `frontend/packages/*`, no una dependencia publicada).
+
+### 10.1 `.npmrc` de ejemplo (consumidor externo)
+
+```ini
+# Registro por defecto sin cambios -- solo el scope @bitcode se resuelve contra GitHub Packages.
+@bitcode:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Ese archivo va en la raíz del proyecto consumidor (mismo mecanismo de resolución de npm que
+`NuGet.Config`/`Directory.Build.props`: busca hacia arriba desde el directorio actual). Nunca commitear
+un token real -- el `.npmrc` de ejemplo de arriba solo referencia una variable de entorno.
+
+### 10.2 Variable de entorno y comando de instalación
+
+| Variable | Contenido |
+|---|---|
+| `NODE_AUTH_TOKEN` | Personal Access Token de GitHub con scope `read:packages` (mínimo necesario para instalar; nunca `write:packages` en un consumidor que solo instala). |
+
+```bash
+# 1) Definir la variable de entorno (nunca commitear el token)
+export NODE_AUTH_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+# 2) Instalar normalmente -- npm resuelve el scope @bitcode usando esa variable
+npm install @bitcode/core @bitcode/ui
+```
+
+En GitHub Actions, un workflow consumidor que instale paquetes `@bitcode/*` de otro repositorio privado
+del mismo framework necesita un token con `read:packages` guardado como secret del repositorio
+consumidor (`secrets.NODE_AUTH_TOKEN` o el nombre que ese repositorio adopte) -- `secrets.GITHUB_TOKEN`
+del propio job solo tiene alcance sobre el repositorio en el que corre, no sobre paquetes publicados
+desde otro repositorio (mismo límite que ya documenta la sección 9.2 para NuGet).
+
+### 10.3 Troubleshooting básico
+
+- **`404 Not Found - GET https://npm.pkg.github.com/@bitcode%2f...` / 401/403:** `NODE_AUTH_TOKEN` no
+  está definida en el entorno, el token no tiene scope `read:packages`, expiró, o el paquete todavía no
+  tiene ninguna versión publicada (ver más abajo).
+- **`npm install` funciona para el resto de las dependencias pero falla apenas se agrega un paquete
+  `@bitcode/*`:** confirmar que el proyecto realmente tiene el `.npmrc` (sección 10.1) en su árbol de
+  directorios -- copiarlo desde `frontend/.npmrc` de este repositorio si el consumidor vive en otro
+  repositorio.
+- **Ninguna versión aparece publicada todavía:** esperado mientras el ADR 0008 (licencias) siga
+  `Proposed` y no exista un primer tag real empujado -- ver
+  `docs/adr/0019-registry-npm-github-packages.md`, sección "Contexto". Seguir consumiendo estos paquetes
+  vía npm workspaces dentro del propio monorepo (`frontend/`) hasta entonces.
+
+## 11. Checklist de arranque
 
 - [ ] Referenciar solo los proyectos `Shared.*` que se van a usar.
 - [ ] `DbContext` hereda de `MultiTenantDbContext` (o `MultiTenantIdentityDbContext<,>`).
@@ -240,3 +295,4 @@ corre, no sobre paquetes publicados desde otro repositorio.
 - [ ] `appsettings.json` tiene solo las secciones de los `AddSharedX` registrados.
 - [ ] Tests de integración marcados y corriendo contra `Shared.Testing`.
 - [ ] Si se consume un paquete `BitCode.Framework.*` real desde el feed (en vez de `ProjectReference`): `NUGET_GITHUB_ACTOR`/`NUGET_GITHUB_TOKEN` definidas y `NuGet.Config` propio con la fuente `bitcode-github` (sección 9).
+- [ ] Si se consume un paquete `@bitcode/*` real desde el feed npm (en vez de npm workspaces): `NODE_AUTH_TOKEN` definida y `.npmrc` propio con el scope `@bitcode` (sección 10).

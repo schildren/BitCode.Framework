@@ -44,13 +44,17 @@
   },
   "release": {
     "projects": ["packages/*"],
-    "projectsRelationship": "independent",
+    "projectsRelationship": "fixed",
+    "releaseTag": {
+      "pattern": "v{version}"
+    },
     "version": {
       "preVersionCommand": "npx nx run-many -t build",
       "conventionalCommits": true
     },
     "changelog": {
-      "projectChangelogs": true
+      "projectChangelogs": true,
+      "workspaceChangelog": true
     }
   },
   "plugins": [
