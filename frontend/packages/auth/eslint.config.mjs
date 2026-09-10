@@ -29,7 +29,12 @@ export default [
         'error',
         {
           type: 'attribute',
-          prefix: 'lib',
+          // "bitcode" (no "lib", el default de scaffold sin usar hasta F7-04, primera vez que este
+          // paquete agrega directivas): consistente con el resto de los símbolos públicos de
+          // `@bitcode/auth` (`bitcodeAuthGuard`, `bitcodeAuthInterceptor`, `BITCODE_WINDOW`, etc.) y con
+          // el uso documentado en `docs/plan-maestro-bitcode-ia.md`/F7-04
+          // (`*bitcodeHasPermission`, `*bitcodeIfActor`).
+          prefix: 'bitcode',
           style: 'camelCase',
         },
       ],

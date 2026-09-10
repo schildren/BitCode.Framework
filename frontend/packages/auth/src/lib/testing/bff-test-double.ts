@@ -6,6 +6,9 @@ export interface FakeUserClaims {
   readonly email?: string;
   readonly roles: readonly string[];
   readonly tenantId?: string;
+  /** Ver `BitcodeUserClaims.permissions` (F7-04) -- opcional porque ningún host real lo publica todavía;
+   * el doble lo soporta para poder probar el mapeo cliente y el endpoint protegido de abajo. */
+  readonly permissions?: readonly string[];
 }
 
 /**
@@ -153,6 +156,30 @@ export class BffTestDouble {
       }
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ pong: true }));
+      return;
+    }
+
+    // Endpoint de harness (F7-04): representa lo que en un backend real haría `[RequirePermission]`
+    // (`Shared.Infrastructure.Security/Permissions/RequirePermissionAttribute.cs`) -- exige el permiso
+    // `identidad.usuarios.crear` server-side, DEVUELTO por el propio servidor, no calculado por el
+    // cliente. Existe únicamente para que `require-permission.guard.spec.ts` pueda demostrar que un 403
+    // real del backend ocurre incluso si algo del lado cliente (guard, directiva) hubiese fallado o sido
+    // sorteado -- la UI nunca es la última línea de defensa.
+    if (req.method === 'POST' && req.url === '/bff/api/usuarios') {
+      if (!claims) {
+        res.statusCode = 401;
+        res.end();
+        return;
+      }
+      if (!(claims.permissions ?? []).includes('identidad.usuarios.crear')) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ title: 'Forbidden', status: 403 }));
+        return;
+      }
+      res.statusCode = 201;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ id: 'user-creado' }));
       return;
     }
 

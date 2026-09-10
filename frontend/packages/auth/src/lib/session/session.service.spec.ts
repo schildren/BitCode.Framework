@@ -79,6 +79,23 @@ describe('BitcodeSessionService (contra un doble real del BFF)', () => {
     expect(result.claims?.roles).toEqual(['Admin', 'Ventas']);
     expect(service.isAuthenticated()).toBe(true);
     expect(service.claims()?.tenantId).toBe('tenant-1');
+    // (F7-04) ningún host BFF real publica "permissions" todavía (ver claims-mapper.ts) -- sin ese
+    // campo, el mapeo resuelve un array vacío, nunca lanza ni deja `undefined`.
+    expect(result.claims?.permissions).toEqual([]);
+  });
+
+  it('(F7-04) si el doble publica "permissions", checkSession() los mapea tipados; si no, resuelve vacío', async () => {
+    const sessionId = server.seedSession({
+      subject: 'user-2',
+      roles: ['Admin'],
+      permissions: ['identidad.usuarios.ver', 'identidad.usuarios.crear'],
+    });
+    await seedCookieInBrowser(sessionId);
+
+    const service = TestBed.inject(BitcodeSessionService);
+    const result = await service.checkSession();
+
+    expect(result.claims?.permissions).toEqual(['identidad.usuarios.ver', 'identidad.usuarios.crear']);
   });
 
   it('checkSession() concurrente comparte una sola petición HTTP', async () => {

@@ -3,9 +3,14 @@ import { BitcodeUserClaims } from '../models/user-claims.model';
 /**
  * Convierte el JSON crudo devuelto por `sessionEndpoint` (contrato propuesto por este paquete, ver
  * `docs/guia-frontend-auth.md`) al modelo tipado `BitcodeUserClaims`. Acepta varios alias comunes por
- * campo (`sub`/`subject`, `roles`/`role`, `tenantId`/`tenant_id`) porque el esquema exacto depende del
- * IdP configurado y de cómo el backend decida serializar la sesión -- nunca decodifica un JWT: recibe
- * los claims ya resueltos como JSON plano.
+ * campo (`sub`/`subject`, `roles`/`role`, `tenantId`/`tenant_id`, `permissions`/`permission`) porque el
+ * esquema exacto depende del IdP configurado y de cómo el backend decida serializar la sesión -- nunca
+ * decodifica un JWT: recibe los claims ya resueltos como JSON plano.
+ *
+ * `permissions`/`permission` (F7-04) es, igual que el resto de este mapeo, un alias de "mejor esfuerzo":
+ * ningún host BFF real publica hoy los permisos RBAC resueltos del usuario en `/bff/session` (ver
+ * `docs/guia-frontend-auth.md` y el comentario de `BitcodeUserClaims.permissions`) -- si el campo no
+ * viene en la respuesta, se resuelve como array vacío, nunca lanza.
  */
 export function mapToUserClaims(raw: Record<string, unknown>): BitcodeUserClaims {
   const subject = firstString(raw, ['sub', 'subject']) ?? '';
@@ -13,6 +18,7 @@ export function mapToUserClaims(raw: Record<string, unknown>): BitcodeUserClaims
   const email = firstString(raw, ['email']);
   const tenantId = firstString(raw, ['tenantId', 'tenant_id']);
   const roles = firstStringArray(raw, ['roles', 'role']);
+  const permissions = firstStringArray(raw, ['permissions', 'permission']);
 
   return {
     subject,
@@ -20,6 +26,7 @@ export function mapToUserClaims(raw: Record<string, unknown>): BitcodeUserClaims
     email,
     tenantId,
     roles,
+    permissions,
     raw,
   };
 }

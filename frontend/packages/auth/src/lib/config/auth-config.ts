@@ -31,6 +31,15 @@ export interface BitcodeAuthConfig {
   readonly logoutAllEndpoint: string;
   /** Nombre del parámetro de query string usado para indicarle al BFF a dónde volver tras el login. */
   readonly returnUrlParam: string;
+  /**
+   * Ruta de la SPA (navegación interna de Angular Router, NO `window.location`) a la que
+   * `bitcodeRequirePermissionGuard` (F7-04) redirige cuando hay sesión activa pero el usuario no tiene
+   * el/los permiso(s) requeridos por la ruta. Deliberadamente distinta de `loginPath`: esto NO es "sin
+   * sesión" (ese caso lo sigue resolviendo `bitcodeAuthGuard` de F7-03), es "sesión válida, permiso
+   * insuficiente" -- redirigir a login otra vez sería confuso y no resolvería nada (el usuario ya está
+   * autenticado).
+   */
+  readonly unauthorizedPath: string;
 }
 
 export const DEFAULT_BITCODE_AUTH_CONFIG: BitcodeAuthConfig = {
@@ -39,6 +48,7 @@ export const DEFAULT_BITCODE_AUTH_CONFIG: BitcodeAuthConfig = {
   logoutEndpoint: '/auth/logout',
   logoutAllEndpoint: '/auth/logout-all',
   returnUrlParam: 'returnUrl',
+  unauthorizedPath: '/unauthorized',
 };
 
 export const BITCODE_AUTH_CONFIG = new InjectionToken<BitcodeAuthConfig>('BITCODE_AUTH_CONFIG', {

@@ -13,3 +13,10 @@ export * from './lib/actions/auth.service';
 export * from './lib/guards/auth.guard';
 
 export * from './lib/interceptors/auth.interceptor';
+
+export * from './lib/permissions/permission-checks';
+export * from './lib/permissions/require-permission.guard';
+export * from './lib/permissions/has-permission.directive';
+
+export * from './lib/abac/actor-attributes';
+export * from './lib/abac/if-actor.directive';
