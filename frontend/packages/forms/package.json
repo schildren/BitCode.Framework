@@ -4,7 +4,11 @@
   "description": "Formularios, validacion accesible y componentes de datos.",
   "license": "UNLICENSED",
   "peerDependencies": {
-    "@angular/core": "^22.1.0"
+    "@angular/core": "^22.1.0",
+    "@angular/forms": "^22.1.0",
+    "@bitcode/auth": "^0.1.0",
+    "@bitcode/core": "^0.1.0",
+    "rxjs": "~7.8.0"
   },
   "sideEffects": false
 }

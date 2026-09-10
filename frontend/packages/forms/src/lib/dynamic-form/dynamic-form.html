@@ -1,0 +1,81 @@
+<form class="bc-form" [formGroup]="form()" (ngSubmit)="onSubmit()" novalidate>
+  @for (field of visibleFields(); track field.name) {
+    <div class="bc-form__field" [class.bc-form__field--checkbox]="field.type === 'checkbox'">
+      @if (field.type !== 'checkbox') {
+        <label class="bc-form__label" [attr.for]="fieldId(field)">{{ field.label }}</label>
+      }
+
+      @switch (field.type ?? 'text') {
+        @case ('textarea') {
+          <textarea
+            class="bc-form__control"
+            [id]="fieldId(field)"
+            [formControlName]="field.name"
+            [attr.placeholder]="field.placeholder ?? null"
+            [attr.aria-invalid]="showFieldError(field)"
+          ></textarea>
+        }
+        @case ('select') {
+          <select
+            class="bc-form__control"
+            [id]="fieldId(field)"
+            [formControlName]="field.name"
+            [attr.aria-invalid]="showFieldError(field)"
+          >
+            @for (option of field.options ?? []; track option.label) {
+              <option [ngValue]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        }
+        @case ('checkbox') {
+          <label class="bc-form__checkbox-label" [attr.for]="fieldId(field)">
+            <input
+              type="checkbox"
+              class="bc-form__checkbox"
+              [id]="fieldId(field)"
+              [formControlName]="field.name"
+            />
+            <span>{{ field.label }}</span>
+          </label>
+        }
+        @default {
+          <input
+            class="bc-form__control"
+            [id]="fieldId(field)"
+            [type]="field.type ?? 'text'"
+            [formControlName]="field.name"
+            [attr.placeholder]="field.placeholder ?? null"
+            [attr.aria-invalid]="showFieldError(field)"
+          />
+        }
+      }
+
+      @if (fieldErrorMessage(field); as message) {
+        <p class="bc-form__error" role="alert">{{ message }}</p>
+      } @else if (field.hint) {
+        <p class="bc-form__hint">{{ field.hint }}</p>
+      }
+    </div>
+  }
+
+  @if (submitError(); as error) {
+    <div class="bc-form__submit-error" role="alert">
+      <p class="bc-form__submit-error-message">{{ error.userMessage }}</p>
+      <p class="bc-form__submit-error-correlation">
+        Código de correlación: {{ error.correlationId ?? 'no disponible' }}
+      </p>
+      @if (error.technicalDetail) {
+        <details class="bc-form__submit-error-detail">
+          <summary>Detalle técnico</summary>
+          <p>{{ error.technicalDetail }}</p>
+        </details>
+      }
+    </div>
+  }
+
+  <div class="bc-form__actions">
+    <button type="submit" class="bc-form__submit" [disabled]="status() === 'submitting'">
+      {{ status() === 'submitting' ? 'Enviando…' : submitLabel() }}
+    </button>
+  </div>
+</form>
