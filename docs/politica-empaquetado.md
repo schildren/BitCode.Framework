@@ -122,9 +122,25 @@ Remove-Item -Recurse -Force "$env:USERPROFILE\.nuget\packages\shared.domain"
 
 ---
 
-## 6. Publicación (fuera de alcance de esta tarea)
+## 6. Publicación
 
-Esta política **no** habilita publicación a ningún feed real (`nuget.org`, GitHub Packages, feed interno). Eso requiere, como mínimo: el ADR 0008 de licencias en estado `Accepted`, una herramienta de versionado automático elegida (`docs/politica-versionado.md`, sección 2, "decisión a confirmar"), un job de CI de `dotnet pack`/`nuget push` (brecha ya registrada en `docs/inventario-tecnico.md`, sección 5) y credenciales/API key gestionadas como secreto (nunca en el repositorio). Publicar es, además, una acción que corresponde a otra tarea del backlog de Fase 1/7/8, no a F1-02.
+Esta política **no** habilita publicación a ningún feed real. F8-05 (Fase 8, ver
+[`adr/0018-registry-nuget-github-packages.md`](adr/0018-registry-nuget-github-packages.md)) ya deja
+resuelta la **configuración como código** que faltaba aquí registrada como brecha: feed elegido
+(GitHub Packages, `bitcode-github` en `NuGet.Config`), job de CI de `dotnet pack`/firma/`nuget push`
+(`.github/workflows/nuget-publish.yml`, disparado únicamente por tag `v*` o `workflow_dispatch`) y
+política de retención documental (`docs/politica-retencion-paquetes-nuget.md`). La herramienta de
+versionado automático ya estaba resuelta desde F1-04 (MinVer, sección 2 de arriba y
+`docs/politica-versionado.md` sección 2).
+
+Lo que sigue faltando para una publicación **real** no es configuración sino aprobación/ejecución
+humana, exactamente igual que antes de F8-05:
+
+- El ADR 0008 de licencias sigue en estado `Proposed` — sigue siendo cierto que "publicar artefactos... antes de resolver esta decisión no es aceptable".
+- No existe todavía ningún tag `vX.Y.Z` real empujado a `origin` (`docs/politica-versionado.md`, sección 2) que produzca una versión publicable distinta de la prerelease de desarrollo.
+- Los secretos reales de firma (`NUGET_SIGNING_CERTIFICATE`/`NUGET_SIGNING_CERTIFICATE_PASSWORD`) no existen en el repositorio — el workflow falla explícitamente en el paso de firma si se ejecuta sin ellos, por diseño.
+
+Publicar una versión real (crear esos secretos, aprobar el ADR 0008, taggear y disparar el workflow con intención real) es una acción de release sujeta a la sección 13 del Plan Maestro (aprobación humana), no una tarea que la IA ejecutora deba o pueda completar por su cuenta.
 
 ---
 
@@ -134,5 +150,8 @@ Esta política **no** habilita publicación a ningún feed real (`nuget.org`, Gi
 - [`inventario-tecnico.md`](inventario-tecnico.md) — estructura de `src/`/`tests/`/`samples/`, brechas #2/#3 (sin CPM), #5 (sin ADR previos).
 - [`politica-versionado.md`](politica-versionado.md) — SemVer de paquetes NuGet, sección 2.
 - [`adr/0008-licencias-open-core.md`](adr/0008-licencias-open-core.md) — estado `Proposed`, condiciona `PackageLicenseExpression`.
-- [`guia-uso-proyectos.md`](guia-uso-proyectos.md) — uso de `Shared.Testing` desde un proyecto consumidor.
+- [`adr/0018-registry-nuget-github-packages.md`](adr/0018-registry-nuget-github-packages.md) — F8-05, feed/firma/versionado/retención del registro NuGet.
+- [`politica-retencion-paquetes-nuget.md`](politica-retencion-paquetes-nuget.md) — F8-05, política de retención por tipo de versión.
+- [`guia-uso-proyectos.md`](guia-uso-proyectos.md) — uso de `Shared.Testing` desde un proyecto consumidor; sección 9, consumo autenticado del feed NuGet.
 - `src/Directory.Build.props`, `tests/Directory.Build.props`, `samples/Directory.Build.props` — implementación de esta política.
+- `.github/workflows/nuget-publish.yml` — job de CI de pack/firma/publicación (F8-05).

@@ -1,0 +1,97 @@
+name: NuGet Publish
+
+# F8-05 (docs/adr/0018-registry-nuget-github-packages.md): job de publicación de los paquetes
+# públicos del framework al feed propio en GitHub Packages. Trigger DELIBERADAMENTE acotado --
+# nunca se dispara por push a rama ni por pull request, solo por un tag de versión real (`v*`,
+# ver docs/politica-versionado.md sección 2) o de forma manual (workflow_dispatch) para permitir
+# un ensayo controlado sin necesidad de crear un tag.
+#
+# Este workflow queda listo como configuración-como-código, no como una publicación real ya
+# activa: mientras `secrets.NUGET_SIGNING_CERTIFICATE`/`secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD`
+# no existan en el repositorio real de GitHub, el paso de firma falla explícitamente (comportamiento
+# esperado -- nunca se publica un paquete sin firmar ni se omite el paso en silencio). Publicar una
+# versión real, además, requiere que el ADR 0008 (licencias) esté `Accepted` y que exista un tag
+# real aprobado y empujado (ver docs/politica-empaquetado.md sección 6 y docs/adr/0018-registry-nuget-github-packages.md).
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Si es true, empaqueta y firma pero NO ejecuta dotnet nuget push."
+        type: boolean
+        default: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # F8-05: feed propio del framework en GitHub Packages, ver docs/adr/0018-registry-nuget-github-packages.md.
+  BITCODE_NUGET_FEED: https://nuget.pkg.github.com/schildren/index.json
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  pack-sign-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # MinVer (src/Directory.Build.props) necesita el historial completo de tags para calcular Version/PackageVersion.
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore BitCode.Framework.slnx
+
+      # Empaqueta únicamente los 11 proyectos públicos de src/ (IsPackable=true por convención de
+      # src/Directory.Build.props, ver docs/politica-empaquetado.md sección 1) -- dotnet pack sobre
+      # la solución completa salta automáticamente tests/ y samples/ (IsPackable=false), pero se
+      # empaqueta explícitamente por directorio para no depender de que ningún proyecto nuevo bajo
+      # tests/ o samples/ olvide ese flag.
+      - name: Pack (paquetes públicos de src/)
+        run: dotnet pack BitCode.Framework.slnx -c Release --no-restore -o ./artifacts/packages
+
+      - name: Listar paquetes generados
+        run: ls -la ./artifacts/packages
+
+      # Firma de código real (Authenticode), NUNCA autofirmada. El certificado y su contraseña se
+      # referencian exclusivamente por nombre de secreto -- ninguno de los dos existe hoy en este
+      # repositorio (ver docs/adr/0018-registry-nuget-github-packages.md, "Política de firma"). Si
+      # los secretos no están provistos, este paso falla explícitamente en vez de firmar con una
+      # clave no verificada o de omitir la firma en silencio.
+      - name: Firmar paquetes (dotnet nuget sign)
+        run: |
+          echo "${{ secrets.NUGET_SIGNING_CERTIFICATE }}" | base64 --decode > signing-cert.pfx
+          dotnet nuget sign "./artifacts/packages/*.nupkg" \
+            --certificate-path signing-cert.pfx \
+            --certificate-password "${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD }}" \
+            --timestamper http://timestamp.digicert.com \
+            --overwrite
+          rm -f signing-cert.pfx
+
+      - name: Verificar firma
+        run: dotnet nuget verify "./artifacts/packages/*.nupkg"
+
+      # Push condicionado: nunca corre en un dry-run manual, y usa el token efímero de Actions
+      # (packages: write arriba) -- no hace falta ningún PAT de larga vida para publicar desde CI
+      # (ver docs/adr/0018-registry-nuget-github-packages.md, razón #2 de elegir GitHub Packages).
+      - name: Publicar al feed (dotnet nuget push)
+        if: github.event_name == 'push' || github.event.inputs.dry_run == 'false'
+        run: |
+          dotnet nuget push "./artifacts/packages/*.nupkg" \
+            --source "$BITCODE_NUGET_FEED" \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --skip-duplicate
+
+      - name: Publicar artefactos de paquete (siempre, incluso en dry-run)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: ./artifacts/packages/*.nupkg

@@ -166,7 +166,70 @@ dotnet test --filter "FullyQualifiedName!~Integration"   # rápidos, sin Docker
 dotnet test --filter "FullyQualifiedName~Integration"    # requieren Docker
 ```
 
-## 9. Checklist de arranque
+## 9. Consumo autenticado del feed NuGet (F8-05)
+
+`docs/adr/0018-registry-nuget-github-packages.md` deja configurado (no activado todavía -- ver ese
+ADR para los bloqueos pendientes) un feed propio del framework en **GitHub Packages**:
+`https://nuget.pkg.github.com/schildren/index.json`. Esta sección documenta cómo se consumirá desde
+un repositorio externo una vez que exista al menos una versión real publicada; hoy (mientras las
+secciones 1 a 9 de esta guía sigan siendo la única vía real) sigue aplicando `ProjectReference`.
+
+### 9.1 Variables de entorno esperadas
+
+El repositorio ya trae un `NuGet.Config` en la raíz con la fuente `bitcode-github` registrada y sus
+credenciales resueltas **solo** por variable de entorno (nunca embebidas en el archivo):
+
+| Variable | Contenido |
+|---|---|
+| `NUGET_GITHUB_ACTOR` | Usuario de GitHub del consumidor (o cualquier valor no vacío si se usa un token de tipo "fine-grained" sin usuario asociado a validar). |
+| `NUGET_GITHUB_TOKEN` | Personal Access Token de GitHub con scope `read:packages` (mínimo necesario para restaurar; nunca `write:packages` en un consumidor que solo restaura). |
+
+Un proyecto consumidor que sea otro repositorio del propio framework agrega el mismo bloque
+`packageSourceCredentials` en su propio `NuGet.Config` (o usa el de este repo como referencia) --
+`NuGet.Config` no es exclusivo de este repositorio, cada consumidor externo necesita su propia copia.
+
+### 9.2 Comando de login/restore
+
+GitHub Packages para NuGet no tiene un comando de "login" separado -- la autenticación va en el
+propio `nuget.config`/`NuGet.Config` del proyecto consumidor (sección 9.1). El flujo real es:
+
+```bash
+# 1) Definir las variables de entorno (nunca commitear el token)
+export NUGET_GITHUB_ACTOR="tu-usuario-github"
+export NUGET_GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+# 2) Restaurar normalmente -- NuGet resuelve la fuente bitcode-github usando esas variables
+dotnet restore
+```
+
+En GitHub Actions, un workflow consumidor no necesita generar el PAT manualmente para *publicar*
+(ver `docs/adr/0018-registry-nuget-github-packages.md`, razón #2), pero para *restaurar* paquetes de
+otro repositorio privado del mismo framework sí necesita un token con `read:packages` guardado como
+secret del repositorio consumidor (`secrets.NUGET_GITHUB_TOKEN` o el nombre que ese repositorio
+adopte) -- `secrets.GITHUB_TOKEN` del propio job solo tiene alcance sobre el repositorio en el que
+corre, no sobre paquetes publicados desde otro repositorio.
+
+### 9.3 Troubleshooting básico
+
+- **`error NU1301: No se pudieron cargar los datos del servicio de origen` / 401/403 contra
+  `bitcode-github`:** `NUGET_GITHUB_ACTOR`/`NUGET_GITHUB_TOKEN` no están definidas en el entorno, o el
+  token no tiene scope `read:packages`, o expiró. Verificar con `echo $NUGET_GITHUB_TOKEN` (nunca
+  loguear el valor completo en CI) y regenerar el PAT si hace falta.
+- **`dotnet restore` funciona para paquetes de `nuget.org` pero falla apenas se agrega una
+  `PackageReference` a un paquete `BitCode.Framework.*`:** confirmar que el proyecto realmente tiene
+  el `NuGet.Config` con la fuente `bitcode-github` en su árbol de directorios (NuGet resuelve el
+  `NuGet.Config` más cercano hacia arriba desde el proyecto, igual que `Directory.Build.props`) --
+  copiarlo desde la raíz de este repositorio si el consumidor vive en otro repositorio.
+- **El paquete restaura pero `dotnet nuget verify` falla sobre su firma:** no instalar ese paquete en
+  un pipeline de producción -- reportarlo, no es un problema de configuración del consumidor sino una
+  firma inválida del propio paquete (ver `docs/adr/0018-registry-nuget-github-packages.md`, "Política
+  de firma").
+- **Ninguna versión aparece publicada todavía:** esperado mientras el ADR 0008 (licencias) siga
+  `Proposed` y no exista un primer tag real empujado -- ver
+  `docs/adr/0018-registry-nuget-github-packages.md`, sección "Contexto". Seguir usando
+  `ProjectReference` (secciones 1 a 9 de esta guía) hasta entonces.
+
+## 10. Checklist de arranque
 
 - [ ] Referenciar solo los proyectos `Shared.*` que se van a usar.
 - [ ] `DbContext` hereda de `MultiTenantDbContext` (o `MultiTenantIdentityDbContext<,>`).
@@ -176,3 +239,4 @@ dotnet test --filter "FullyQualifiedName~Integration"    # requieren Docker
 - [ ] Cada feature es una carpeta con su `IWebFrameworkModule` y `[DependsOn(typeof(InfrastructureModule))]`.
 - [ ] `appsettings.json` tiene solo las secciones de los `AddSharedX` registrados.
 - [ ] Tests de integración marcados y corriendo contra `Shared.Testing`.
+- [ ] Si se consume un paquete `BitCode.Framework.*` real desde el feed (en vez de `ProjectReference`): `NUGET_GITHUB_ACTOR`/`NUGET_GITHUB_TOKEN` definidas y `NuGet.Config` propio con la fuente `bitcode-github` (sección 9).
