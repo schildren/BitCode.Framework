@@ -363,9 +363,10 @@ mismos primitivos. Activación: agregar el atributo `data-theme="dark"` a un anc
 
 ## 8. Limitaciones y pendientes explícitos (fuera de alcance de F7-01)
 
-- **Sin contenido funcional real:** los 7 paquetes y la app `shell` son placeholders mínimos que
-  compilan (un componente vacío por paquete). Autenticación, grillas, formularios, workflow UI,
-  documents UI, etc. son tareas F7-03 a F7-10 (design tokens ya cubierto por F7-02, sección 7).
+- **Sin contenido funcional real (salvo lo ya cubierto):** design tokens (F7-02, sección 7) y
+  autenticación (F7-03, `@bitcode/auth` -- ver [`docs/guia-frontend-auth.md`](guia-frontend-auth.md)) ya
+  tienen contenido real. Grillas, formularios, workflow UI, documents UI, etc. siguen siendo placeholders
+  mínimos pendientes de F7-07 a F7-10.
 - **Sin reglas de dependencia entre paquetes (`depConstraints`):** se dejó `depConstraints: []` en el
   `@nx/enforce-module-boundaries` del `eslint.config.mjs` raíz a propósito, en vez de inventar tags
   (`scope:core`, `scope:ui`, etc.) sin saber todavía el grafo de dependencias real entre los 7 paquetes.
