@@ -222,11 +222,150 @@ Esto no se ejecutó como parte de esta tarea (no es necesario para el criterio d
 reproducibles" ni fue pedido), pero el mecanismo queda documentado y disponible para cuando se necesite
 validar un release end-to-end antes de tener el registry definitivo.
 
-## 7. Limitaciones y pendientes explícitos (fuera de alcance de F7-01)
+## 7. Design tokens (F7-02, paquete `@bitcode/ui`)
+
+> Tarea de origen: F7-02 (Design tokens) del Plan Maestro. Alcance: colores, tipografía, espacios y
+> estados. No incluye componentes de UI reales (botones, inputs, etc.) ni autenticación/menú/grillas —
+> esas son F7-03 en adelante.
+
+### 7.1. Fuente de verdad: JSON, no CSS a mano
+
+Los tokens viven como datos, no como CSS escrito a mano, en `frontend/packages/ui/tokens/`:
+
+```
+frontend/packages/ui/tokens/
+├── primitives.tokens.json   # Paleta cruda: escalas de color, espaciado, tipografía, radios, etc.
+├── semantic.tokens.json     # Alias con significado (surface, textPrimary, brandPrimary, error...)
+│                             # organizados por tema: "light" y "dark". Referencian primitivos con
+│                             # la sintaxis {grupo.clave} (p. ej. "{color.blue.600}").
+└── build-tokens.mjs         # Generador: JSON -> CSS/SCSS/TS. Sin dependencias externas (Node puro).
+```
+
+El formato de cada nodo hoja (`{ "$value": ..., "$type": "color" }`) está inspirado en la
+especificación del Design Tokens Community Group, simplificado para lo que este proyecto necesita hoy
+(no implementa el spec completo, p. ej. los tokens de tipo `shadow` se guardan como string CSS ya
+armado en vez de un objeto estructurado por capas — una simplificación deliberada, documentada aquí).
+
+**Por qué separar `primitives` de `semantic`:** cambiar la paleta de marca (p. ej. pasar de azul a
+otro color primario) implica editar `semantic.tokens.json` (qué primitivo usa `brandPrimary`), no
+buscar y reemplazar valores hexadecimales sueltos en todo el código. Permite además tener temas
+(claro/oscuro) que reutilizan los mismos primitivos con distinto mapeo semántico.
+
+### 7.2. Artefactos generados (no editar a mano)
+
+`node tokens/build-tokens.mjs` (ejecutado desde `frontend/packages/ui/`) lee las dos fuentes JSON y
+escribe:
+
+| Artefacto | Contenido | Consumido por |
+|---|---|---|
+| `src/styles/tokens.css` | Custom properties `--bc-*` en `:root` (tema claro, por defecto) y `[data-theme='dark']` (tema oscuro) | Cualquier hoja de estilos (Angular component styles, `styles.scss` de una app) |
+| `src/styles/tokens.scss` | Variables SCSS `$bc-*` que envuelven `var(--bc-*)`, para quien prefiera esa sintaxis | Ídem, opcional |
+| `src/lib/tokens.generated.ts` | Objeto TS tipado (`tokens.color.brandPrimary === 'var(--bc-color-brand-primary)'`) | Código TS que necesita referenciar un token sin hardcodear el nombre de la variable CSS (p. ej. pasar un color a una librería de charts o a un `<canvas>`) |
+
+Cada archivo generado empieza con un comentario `AUTO-GENERADO — no editar a mano`. Cualquier cambio de
+diseño se hace en `primitives.tokens.json` / `semantic.tokens.json` y se regenera.
+
+**Target de Nx:** `npx nx run ui:build-tokens` ejecuta el generador. Está declarado como dependencia
+(`dependsOn`) de los targets `build` y `test` del proyecto `ui` en `packages/ui/project.json`, por lo
+que corre automáticamente antes de `nx run ui:build` y `nx run ui:test` (y por lo tanto también dentro
+de `nx run-many -t build test`) — no hace falta invocarlo manualmente en el flujo normal, aunque se
+puede.
+
+Los artefactos generados se versionan en git (no se agregaron a `.gitignore`): así cualquier paquete o
+app puede consumir el CSS/SCSS por ruta relativa sin tener que correr un build de `@bitcode/ui` primero
+durante desarrollo. La consistencia entre fuente y artefacto generado la garantiza el test descrito en
+7.4, no la disciplina manual del desarrollador.
+
+`ng-package.json` de `ui` declara `assets` para copiar `src/styles/` a `dist/packages/ui/styles/` al
+publicar el paquete, de forma que un consumidor externo (post-publicación npm) pueda hacer
+`@import '@bitcode/ui/styles/tokens.css';`.
+
+### 7.3. Decisiones de línea gráfica (criterio de aceptación "cumplimiento de línea gráfica")
+
+No existía una guía de marca previa en el repo para un producto empresarial nuevo. Se definieron
+valores de partida razonables y documentados, no arbitrarios:
+
+- **Espaciado:** escala base 4px (`--bc-space-0` a `--bc-space-16`, hasta 64px), el estándar de facto
+  en sistemas de diseño empresariales (Material, Carbon, Fluent usan variantes de esto) — permite
+  alinear todo a una grilla consistente.
+- **Tipografía:** escala modular con razón ~1.2 (minor third) desde una base de 16px (`xs` 12px hasta
+  `4xl` 48px), family `Inter` (sans, alta legibilidad en UI densa, muy usada en productos B2B) y
+  `JetBrains Mono` (mono, para datos tabulares/código). Pesos: regular/medium/semibold/bold (400/500/
+  600/700) — cubre los casos de uso habituales sin fragmentar en demasiados pesos.
+- **Color:** paleta basada en escalas ampliamente documentadas (grises neutros + azul de marca + verde/
+  ámbar/rojo de estado), elegida por tener pares fondo/texto con contraste adecuado para texto normal
+  en las combinaciones semánticas usadas por defecto (p. ej. `textPrimary` #0f172a sobre `surface`
+  #f8fafc, o `brandPrimaryText` #1d4ed8 sobre fondo claro) — sin ser una auditoría de accesibilidad
+  completa (eso es F7-12), se evitó arrancar con combinaciones de contraste evidentemente insuficiente.
+- **Estados:** tokens explícitos de interacción — `brandPrimary` / `brandPrimaryHover` /
+  `brandPrimaryActive` (progresión de oscurecimiento en tema claro, de aclarado en tema oscuro),
+  `focusRing`, `textDisabled`, y capas de opacidad (`--bc-opacity-hover` 0.08, `-pressed` 0.12,
+  `-disabled` 0.4) pensadas para overlays sobre cualquier color de fondo sin tener que definir un color
+  sólido por cada combinación posible.
+- **Estados semánticos:** `success` / `warning` / `error` / `info`, cada uno con tres variantes
+  (`-` texto/ícono, `-bg` fondo tenue, `-border`) en tema claro y oscuro.
+
+### 7.4. Tema claro/oscuro
+
+Se implementó como capa semántica desde el día uno (`semantic.tokens.json` tiene bloques `light` y
+`dark` completos) en vez de posponerlo: al separar "primitivo" (color crudo) de "semántico" (`surface`,
+`textPrimary`, etc.), agregar el tema oscuro no costó una segunda paleta desde cero, solo remapear los
+mismos primitivos. Activación: agregar el atributo `data-theme="dark"` a un ancestro (p. ej. `<html>` o
+`<body>`) — no implementado ningún mecanismo de UI para alternar el tema (switch, persistencia en
+`localStorage`, detección de `prefers-color-scheme`), eso queda fuera de alcance de F7-02.
+
+### 7.5. Cómo consume un paquete nuevo los tokens
+
+- **Desde SCSS/CSS de un componente Angular:** importar por ruta relativa hasta que exista un mecanismo
+  de resolución de paquetes hacia `dist/` en desarrollo (ver limitación en 7.6):
+  ```scss
+  @use '../../../ui/src/styles/tokens.css';
+  // o, si se prefiere la sintaxis SCSS:
+  @use '../../../ui/src/styles/tokens.scss' as tokens;
+  .mi-componente {
+    padding: var(--bc-space-4);
+    color: var(--bc-color-text-primary);
+    // o bien: color: tokens.$bc-color-text-primary;
+  }
+  ```
+  Ejemplo real ya integrado: `frontend/apps/shell/src/styles.scss` importa
+  `packages/ui/src/styles/tokens.css` como estilo global de la app placeholder.
+- **Desde TypeScript:** `import { tokens } from '@bitcode/ui';` y usar `tokens.color.brandPrimary`
+  (devuelve el string `'var(--bc-color-brand-primary)'`, no el valor resuelto — el valor real depende
+  del tema activo en tiempo de ejecución).
+
+### 7.6. Verificación y limitaciones honestas
+
+- **Test automatizado** (`frontend/packages/ui/src/lib/tokens.spec.ts`, corre con `nx run ui:test`):
+  regenera los tokens en memoria desde las fuentes JSON y compara byte a byte contra los artefactos
+  versionados (`tokens.css`/`tokens.scss`/`tokens.generated.ts`) — si alguien edita un artefacto
+  generado a mano sin tocar el JSON fuente, o cambia el JSON sin regenerar, el test falla. Además
+  verifica la presencia de las custom properties de espaciado/tipografía/radios/sombras/duración/
+  opacidad esperadas, de los tokens de estado (`success`/`warning`/`error`/`info` con sus 3 variantes,
+  en ambos temas) y de los tokens de interacción (hover/active/focus/disabled).
+- **No es una auditoría de accesibilidad formal:** los pares de color elegidos son razonables a simple
+  vista pero no se verificó cada combinación con una herramienta de contraste automatizada (eso es
+  F7-12). Riesgo conocido, no oculto.
+- **Sin mecanismo de cambio de tema en UI:** el tema oscuro existe como datos (`[data-theme='dark']`)
+  pero no hay ningún componente/servicio que lo active — pendiente para cuando exista contenido real de
+  `@bitcode/ui` o del shell (F7-05).
+- **Resolución de paquete en desarrollo:** los paquetes npm workspaces se symlinkean a la carpeta
+  fuente (`packages/ui/`), no al build de `ng-packagr` (`dist/packages/ui/`); por eso el ejemplo de
+  `apps/shell` importa el CSS por ruta relativa a `src/styles/` en vez de `@bitcode/ui/styles/`. Cuando
+  el paquete se instale como dependencia publicada (post-F8-06, registro npm privado) la ruta de
+  import correcta pasa a ser `@bitcode/ui/styles/tokens.css` (ya verificado que ese archivo existe en
+  `dist/packages/ui/styles/tokens.css` tras `nx run ui:build`).
+- **Sin `depConstraints` de Nx todavía** (ver sección 6 heredada de F7-01): no cambia con esta tarea.
+- **Paleta pendiente de validación de diseño real:** los valores son un punto de partida consistente y
+  justificado (ver 7.3), no el resultado de un proceso de branding con un diseñador; es esperable que
+  cambien cuando exista una guía de marca oficial — al estar centralizados en dos archivos JSON, ese
+  cambio no debería requerir tocar componentes.
+
+## 8. Limitaciones y pendientes explícitos (fuera de alcance de F7-01)
 
 - **Sin contenido funcional real:** los 7 paquetes y la app `shell` son placeholders mínimos que
-  compilan (un componente vacío por paquete). Design tokens, autenticación, grillas, formularios,
-  workflow UI, documents UI, etc. son tareas F7-02 a F7-10.
+  compilan (un componente vacío por paquete). Autenticación, grillas, formularios, workflow UI,
+  documents UI, etc. son tareas F7-03 a F7-10 (design tokens ya cubierto por F7-02, sección 7).
 - **Sin reglas de dependencia entre paquetes (`depConstraints`):** se dejó `depConstraints: []` en el
   `@nx/enforce-module-boundaries` del `eslint.config.mjs` raíz a propósito, en vez de inventar tags
   (`scope:core`, `scope:ui`, etc.) sin saber todavía el grafo de dependencias real entre los 7 paquetes.

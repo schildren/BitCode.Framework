@@ -1,0 +1,116 @@
+{
+  "$description": "Primitivos de BitCode Design Tokens (F7-02). Valores crudos sin significado semántico. No se consumen directamente desde componentes: se referencian desde semantic.tokens.json mediante alias {grupo.clave}.",
+  "color": {
+    "white": { "$type": "color", "$value": "#ffffff" },
+    "gray": {
+      "50": { "$type": "color", "$value": "#f8fafc" },
+      "100": { "$type": "color", "$value": "#f1f5f9" },
+      "200": { "$type": "color", "$value": "#e2e8f0" },
+      "300": { "$type": "color", "$value": "#cbd5e1" },
+      "400": { "$type": "color", "$value": "#94a3b8" },
+      "500": { "$type": "color", "$value": "#64748b" },
+      "600": { "$type": "color", "$value": "#475569" },
+      "700": { "$type": "color", "$value": "#334155" },
+      "800": { "$type": "color", "$value": "#1e293b" },
+      "900": { "$type": "color", "$value": "#0f172a" }
+    },
+    "blue": {
+      "50": { "$type": "color", "$value": "#eff6ff" },
+      "100": { "$type": "color", "$value": "#dbeafe" },
+      "200": { "$type": "color", "$value": "#bfdbfe" },
+      "300": { "$type": "color", "$value": "#93c5fd" },
+      "400": { "$type": "color", "$value": "#60a5fa" },
+      "500": { "$type": "color", "$value": "#3b82f6" },
+      "600": { "$type": "color", "$value": "#2563eb" },
+      "700": { "$type": "color", "$value": "#1d4ed8" },
+      "800": { "$type": "color", "$value": "#1e40af" },
+      "900": { "$type": "color", "$value": "#1e3a8a" }
+    },
+    "green": {
+      "50": { "$type": "color", "$value": "#f0fdf4" },
+      "300": { "$type": "color", "$value": "#86efac" },
+      "500": { "$type": "color", "$value": "#22c55e" },
+      "600": { "$type": "color", "$value": "#16a34a" },
+      "700": { "$type": "color", "$value": "#15803d" }
+    },
+    "amber": {
+      "50": { "$type": "color", "$value": "#fffbeb" },
+      "300": { "$type": "color", "$value": "#fcd34d" },
+      "500": { "$type": "color", "$value": "#f59e0b" },
+      "600": { "$type": "color", "$value": "#d97706" },
+      "700": { "$type": "color", "$value": "#b45309" }
+    },
+    "red": {
+      "50": { "$type": "color", "$value": "#fef2f2" },
+      "300": { "$type": "color", "$value": "#fca5a5" },
+      "500": { "$type": "color", "$value": "#ef4444" },
+      "600": { "$type": "color", "$value": "#dc2626" },
+      "700": { "$type": "color", "$value": "#b91c1c" }
+    }
+  },
+  "spacing": {
+    "$description": "Escala base 4px, para separar de forma consistente el ritmo vertical/horizontal de la UI.",
+    "0": { "$type": "dimension", "$value": "0px" },
+    "1": { "$type": "dimension", "$value": "4px" },
+    "2": { "$type": "dimension", "$value": "8px" },
+    "3": { "$type": "dimension", "$value": "12px" },
+    "4": { "$type": "dimension", "$value": "16px" },
+    "5": { "$type": "dimension", "$value": "20px" },
+    "6": { "$type": "dimension", "$value": "24px" },
+    "8": { "$type": "dimension", "$value": "32px" },
+    "10": { "$type": "dimension", "$value": "40px" },
+    "12": { "$type": "dimension", "$value": "48px" },
+    "16": { "$type": "dimension", "$value": "64px" }
+  },
+  "fontFamily": {
+    "sans": { "$type": "fontFamily", "$value": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" },
+    "mono": { "$type": "fontFamily", "$value": "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace" }
+  },
+  "fontSize": {
+    "$description": "Escala tipográfica modular, razón ~1.2 (minor third) desde una base de 16px.",
+    "xs": { "$type": "dimension", "$value": "12px" },
+    "sm": { "$type": "dimension", "$value": "14px" },
+    "base": { "$type": "dimension", "$value": "16px" },
+    "lg": { "$type": "dimension", "$value": "20px" },
+    "xl": { "$type": "dimension", "$value": "24px" },
+    "2xl": { "$type": "dimension", "$value": "30px" },
+    "3xl": { "$type": "dimension", "$value": "36px" },
+    "4xl": { "$type": "dimension", "$value": "48px" }
+  },
+  "fontWeight": {
+    "regular": { "$type": "fontWeight", "$value": "400" },
+    "medium": { "$type": "fontWeight", "$value": "500" },
+    "semibold": { "$type": "fontWeight", "$value": "600" },
+    "bold": { "$type": "fontWeight", "$value": "700" }
+  },
+  "lineHeight": {
+    "tight": { "$type": "number", "$value": "1.2" },
+    "normal": { "$type": "number", "$value": "1.5" },
+    "relaxed": { "$type": "number", "$value": "1.7" }
+  },
+  "radius": {
+    "sm": { "$type": "dimension", "$value": "4px" },
+    "md": { "$type": "dimension", "$value": "8px" },
+    "lg": { "$type": "dimension", "$value": "12px" },
+    "full": { "$type": "dimension", "$value": "9999px" }
+  },
+  "shadow": {
+    "sm": { "$type": "shadow", "$value": "0 1px 2px 0 rgba(15, 23, 42, 0.08)" },
+    "md": { "$type": "shadow", "$value": "0 4px 8px -2px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.08)" },
+    "lg": { "$type": "shadow", "$value": "0 12px 24px -4px rgba(15, 23, 42, 0.16), 0 4px 8px -4px rgba(15, 23, 42, 0.08)" }
+  },
+  "duration": {
+    "fast": { "$type": "duration", "$value": "120ms" },
+    "base": { "$type": "duration", "$value": "200ms" },
+    "slow": { "$type": "duration", "$value": "320ms" }
+  },
+  "easing": {
+    "standard": { "$type": "cubicBezier", "$value": "cubic-bezier(0.4, 0, 0.2, 1)" }
+  },
+  "opacity": {
+    "hover": { "$type": "number", "$value": "0.08" },
+    "pressed": { "$type": "number", "$value": "0.12" },
+    "disabled": { "$type": "number", "$value": "0.4" },
+    "focusRing": { "$type": "number", "$value": "0.35" }
+  }
+}

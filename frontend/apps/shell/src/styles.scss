@@ -1,1 +1,11 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Design tokens de BitCode (F7-02, @bitcode/ui). Se referencian por ruta relativa al código
+// fuente del paquete (en vez de vía import de npm) porque el workspace no resuelve todavía
+// `@bitcode/ui` hacia `dist/packages/ui` en tiempo de desarrollo (los paquetes npm workspaces
+// se symlinkean a la carpeta fuente, no al build de ng-packagr) — ver
+// docs/guia-frontend-workspace.md, sección "Design tokens (F7-02)". Cuando el paquete se
+// consuma como dependencia publicada (post-F8-06), la ruta pasa a ser
+// `@bitcode/ui/styles/tokens.css`.
+@use '../../../packages/ui/src/styles/tokens.css';
+

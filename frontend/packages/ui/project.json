@@ -13,8 +13,27 @@
   },
   "tags": [],
   "targets": {
+    "build-tokens": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/tokens/primitives.tokens.json",
+        "{projectRoot}/tokens/semantic.tokens.json",
+        "{projectRoot}/tokens/build-tokens.mjs"
+      ],
+      "outputs": [
+        "{projectRoot}/src/styles/tokens.css",
+        "{projectRoot}/src/styles/tokens.scss",
+        "{projectRoot}/src/lib/tokens.generated.ts"
+      ],
+      "options": {
+        "command": "node tokens/build-tokens.mjs",
+        "cwd": "packages/ui"
+      }
+    },
     "build": {
       "executor": "@nx/angular:package",
+      "dependsOn": ["build-tokens", "^build"],
       "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
       "defaultConfiguration": "production",
       "options": {
@@ -27,6 +46,9 @@
         },
         "development": {}
       }
+    },
+    "test": {
+      "dependsOn": ["build-tokens"]
     },
     "nx-release-publish": {
       "options": {

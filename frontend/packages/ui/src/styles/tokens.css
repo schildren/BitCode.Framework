@@ -1,0 +1,108 @@
+/**
+ * BitCode Design Tokens — AUTO-GENERADO por tokens/build-tokens.mjs. No editar a mano.
+ * Fuente de verdad: packages/ui/tokens/primitives.tokens.json y semantic.tokens.json.
+ * Tema activo: `:root` (claro, por defecto) y `[data-theme="dark"]` (oscuro).
+ */
+
+:root {
+  --bc-space-0: 0px;
+  --bc-space-1: 4px;
+  --bc-space-2: 8px;
+  --bc-space-3: 12px;
+  --bc-space-4: 16px;
+  --bc-space-5: 20px;
+  --bc-space-6: 24px;
+  --bc-space-8: 32px;
+  --bc-space-10: 40px;
+  --bc-space-12: 48px;
+  --bc-space-16: 64px;
+  --bc-font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bc-font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --bc-font-size-xs: 12px;
+  --bc-font-size-sm: 14px;
+  --bc-font-size-base: 16px;
+  --bc-font-size-lg: 20px;
+  --bc-font-size-xl: 24px;
+  --bc-font-size-2xl: 30px;
+  --bc-font-size-3xl: 36px;
+  --bc-font-size-4xl: 48px;
+  --bc-font-weight-regular: 400;
+  --bc-font-weight-medium: 500;
+  --bc-font-weight-semibold: 600;
+  --bc-font-weight-bold: 700;
+  --bc-line-height-tight: 1.2;
+  --bc-line-height-normal: 1.5;
+  --bc-line-height-relaxed: 1.7;
+  --bc-radius-sm: 4px;
+  --bc-radius-md: 8px;
+  --bc-radius-lg: 12px;
+  --bc-radius-full: 9999px;
+  --bc-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.08);
+  --bc-shadow-md: 0 4px 8px -2px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.08);
+  --bc-shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.16), 0 4px 8px -4px rgba(15, 23, 42, 0.08);
+  --bc-duration-fast: 120ms;
+  --bc-duration-base: 200ms;
+  --bc-duration-slow: 320ms;
+  --bc-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --bc-opacity-hover: 0.08;
+  --bc-opacity-pressed: 0.12;
+  --bc-opacity-disabled: 0.4;
+  --bc-opacity-focus-ring: 0.35;
+  --bc-color-surface: #f8fafc;
+  --bc-color-surface-elevated: #ffffff;
+  --bc-color-surface-sunken: #f1f5f9;
+  --bc-color-border: #e2e8f0;
+  --bc-color-border-strong: #cbd5e1;
+  --bc-color-text-primary: #0f172a;
+  --bc-color-text-secondary: #475569;
+  --bc-color-text-disabled: #94a3b8;
+  --bc-color-text-inverse: #ffffff;
+  --bc-color-brand-primary: #2563eb;
+  --bc-color-brand-primary-hover: #1d4ed8;
+  --bc-color-brand-primary-active: #1e40af;
+  --bc-color-brand-primary-text: #1d4ed8;
+  --bc-color-on-brand-primary: #ffffff;
+  --bc-color-focus-ring: #3b82f6;
+  --bc-color-success: #16a34a;
+  --bc-color-success-bg: #f0fdf4;
+  --bc-color-success-border: #86efac;
+  --bc-color-warning: #d97706;
+  --bc-color-warning-bg: #fffbeb;
+  --bc-color-warning-border: #fcd34d;
+  --bc-color-error: #dc2626;
+  --bc-color-error-bg: #fef2f2;
+  --bc-color-error-border: #fca5a5;
+  --bc-color-info: #2563eb;
+  --bc-color-info-bg: #eff6ff;
+  --bc-color-info-border: #93c5fd;
+}
+
+[data-theme='dark'] {
+  --bc-color-surface: #0f172a;
+  --bc-color-surface-elevated: #1e293b;
+  --bc-color-surface-sunken: #0f172a;
+  --bc-color-border: #334155;
+  --bc-color-border-strong: #475569;
+  --bc-color-text-primary: #f8fafc;
+  --bc-color-text-secondary: #cbd5e1;
+  --bc-color-text-disabled: #475569;
+  --bc-color-text-inverse: #0f172a;
+  --bc-color-brand-primary: #3b82f6;
+  --bc-color-brand-primary-hover: #60a5fa;
+  --bc-color-brand-primary-active: #93c5fd;
+  --bc-color-brand-primary-text: #93c5fd;
+  --bc-color-on-brand-primary: #0f172a;
+  --bc-color-focus-ring: #60a5fa;
+  --bc-color-success: #86efac;
+  --bc-color-success-bg: #15803d;
+  --bc-color-success-border: #22c55e;
+  --bc-color-warning: #fcd34d;
+  --bc-color-warning-bg: #b45309;
+  --bc-color-warning-border: #f59e0b;
+  --bc-color-error: #fca5a5;
+  --bc-color-error-bg: #b91c1c;
+  --bc-color-error-border: #ef4444;
+  --bc-color-info: #93c5fd;
+  --bc-color-info-bg: #1d4ed8;
+  --bc-color-info-border: #3b82f6;
+}
