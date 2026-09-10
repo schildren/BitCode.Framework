@@ -1,0 +1,59 @@
+<div class="bc-instance-status">
+  @switch (status()) {
+    @case ('loading') {
+      <p class="bc-instance-status__loading" role="status">Cargando estado de la instancia…</p>
+    }
+    @case ('error') {
+      <div class="bc-instance-status__error" role="alert">
+        <p class="bc-instance-status__error-message">{{ error()?.userMessage }}</p>
+        <p class="bc-instance-status__error-correlation">
+          Código de correlación: {{ error()?.correlationId ?? 'no disponible' }}
+        </p>
+        @if (error()?.technicalDetail) {
+          <details class="bc-instance-status__error-detail">
+            <summary>Detalle técnico</summary>
+            <p>{{ error()?.technicalDetail }}</p>
+          </details>
+        }
+        <button type="button" class="bc-instance-status__retry" (click)="reload()">Reintentar</button>
+      </div>
+    }
+    @case ('loaded') {
+      <section class="bc-instance-status__summary">
+        <p>
+          <strong>Estado de la instancia:</strong> {{ estadoInstanciaLabel() }}
+        </p>
+        <p>
+          <strong>Estado actual:</strong> {{ estadoActualNombre() ?? instance()?.estadoActualId }}
+        </p>
+        @if (transicionesDisponibles().length > 0) {
+          <p>
+            <strong>Acciones posibles desde este estado:</strong>
+            {{ transicionesDisponibles().map(t => t.accion).join(', ') }}
+          </p>
+        } @else {
+          <p class="bc-instance-status__no-transitions">
+            No hay transiciones salientes registradas desde el estado actual (puede ser un estado final).
+          </p>
+        }
+      </section>
+
+      <section class="bc-instance-status__history">
+        <h4>Historial</h4>
+        @if (historialOrdenado().length === 0) {
+          <p class="bc-instance-status__history-empty">Sin eventos de historial todavía.</p>
+        } @else {
+          <ul class="bc-instance-status__history-list">
+            @for (entry of historialOrdenado(); track entry.id) {
+              <li class="bc-instance-status__history-item">
+                <span class="bc-instance-status__history-date">{{ entry.fechaUtc }}</span>
+                <span class="bc-instance-status__history-event">{{ entry.tipoEvento }}</span>
+                <span class="bc-instance-status__history-detail">{{ entry.detalle }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    }
+  }
+</div>
