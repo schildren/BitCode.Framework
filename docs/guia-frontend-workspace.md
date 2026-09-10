@@ -367,10 +367,13 @@ mismos primitivos. Activación: agregar el atributo `data-theme="dark"` a un anc
 
 ## 8. Limitaciones y pendientes explícitos (fuera de alcance de F7-01)
 
-- **Sin contenido funcional real (salvo lo ya cubierto):** design tokens (F7-02, sección 7) y
-  autenticación (F7-03, `@bitcode/auth` -- ver [`docs/guia-frontend-auth.md`](guia-frontend-auth.md)) ya
-  tienen contenido real. Grillas, formularios, workflow UI, documents UI, etc. siguen siendo placeholders
-  mínimos pendientes de F7-07 a F7-10.
+- **Sin contenido funcional real (salvo lo ya cubierto):** design tokens (F7-02, sección 7), autenticación
+  (F7-03/F7-04, `@bitcode/auth` -- ver [`docs/guia-frontend-auth.md`](guia-frontend-auth.md)), menú
+  dinámico (F7-05 -- ver [`docs/guia-frontend-navigation.md`](guia-frontend-navigation.md)), errores/
+  `ProblemDetails` (F7-06 -- ver [`docs/guia-frontend-errores.md`](guia-frontend-errores.md)) y la grilla
+  de datos empresarial (F7-07, `@bitcode/grid` -- ver [`docs/guia-frontend-grid.md`](guia-frontend-grid.md))
+  ya tienen contenido real. Formularios, workflow UI, documents UI, etc. siguen siendo placeholders
+  mínimos pendientes de F7-08 a F7-10.
 - **Sin reglas de dependencia entre paquetes (`depConstraints`):** se dejó `depConstraints: []` en el
   `@nx/enforce-module-boundaries` del `eslint.config.mjs` raíz a propósito, en vez de inventar tags
   (`scope:core`, `scope:ui`, etc.) sin saber todavía el grafo de dependencias real entre los 7 paquetes.
