@@ -14,6 +14,7 @@
     <Project Path="samples/Sample.Documents.Api.Tests/Sample.Documents.Api.Tests.csproj" />
     <Project Path="samples/Sample.Workflow.Api/Sample.Workflow.Api.csproj" />
     <Project Path="samples/Sample.Workflow.Api.Tests/Sample.Workflow.Api.Tests.csproj" />
+    <Project Path="samples/OpenApiExport/OpenApiExport.csproj" />
     <Project Path="samples/Sample.TaskInbox.Api/Sample.TaskInbox.Api.csproj" />
     <Project Path="samples/Sample.TaskInbox.Api.Tests/Sample.TaskInbox.Api.Tests.csproj" />
     <Project Path="samples/Sample.Notifications.Api/Sample.Notifications.Api.csproj" />

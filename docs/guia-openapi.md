@@ -197,3 +197,6 @@ Además de la validez estructural, la suite verifica:
 - `samples/Sample.Api/Productos/ProductosOpenApiExamples.cs` — transformer de ejemplos de referencia.
 - `samples/Sample.Api.Tests/Integration/OpenApiDocumentsIntegrationTests.cs` — validación automática
   de punta a punta contra SQL Server real.
+- `docs/guia-contratos-frontend.md` — cómo el frontend (`frontend/packages/*`) consume estos documentos
+  OpenAPI para generar tipos TypeScript reales, en vez de mantener modelos escritos a mano sin ninguna
+  verificación contra el contrato del backend.
