@@ -131,12 +131,16 @@ Estilos (`navigation-shell.scss`) consumen exclusivamente custom properties `--b
   pero NINGUNO fue verificado contra el catálogo real de permisos que cada módulo backend expone (habría
   que inspeccionar los 12 módulos uno por uno, fuera del alcance de F7-05, que es sobre el MECANISMO
   genérico, no sobre cablear el catálogo definitivo de permisos de cada módulo).
-- **Ninguna de las rutas del menú está registrada en `app.routes.ts`:** F7-05 es sobre el menú en sí, no
-  sobre implementar cada página de los 12 módulos (eso es trabajo de F7-09 Workflow UI, F7-10 Documents
-  UI, y tareas futuras para el resto). Un click en un item del menú hoy navega a una URL sin ruta
-  registrada (el `Router` de Angular no encuentra coincidencia y no navega, sin lanzar una excepción no
-  controlada) -- comportamiento esperado y aceptable para el alcance de esta tarea, pero UX incompleta
-  hasta que existan esas páginas.
+- **La mayoría de las rutas del menú siguen sin registrar en `app.routes.ts`:** F7-05 es sobre el menú en
+  sí, no sobre implementar cada página de los 12 módulos. F7-14 registró tres rutas lazy de demostración
+  (`/inicio`, `/procesos/documentos`, `/procesos/workflow`, ver `docs/guia-frontend-performance.md`) para
+  probar code-splitting real, con páginas mínimas (no pantallas de negocio terminadas) -- el resto de los
+  `link` del menú (identidad, organización, catálogos, feature management, bandeja de tareas,
+  notificaciones, integraciones, reporting, dashboard) sigue sin ruta registrada. Un click en esos items
+  navega a una URL sin ruta registrada (el `Router` de Angular no encuentra coincidencia y no navega, sin
+  lanzar una excepción no controlada) -- comportamiento esperado y aceptable para el alcance de estas
+  tareas, pero UX incompleta hasta que existan esas páginas (trabajo de una aplicación de referencia real,
+  Fase 8).
 - **Doble de prueba HTTP propio en `@bitcode/ui`, no reutilización directa de `BffTestDouble`:**
   `packages/ui/src/lib/navigation/testing/session-endpoint-test-double.ts` es un servidor HTTP real
   (Node `http`) que reproduce únicamente `GET /bff/session` -- un subconjunto deliberadamente mínimo del

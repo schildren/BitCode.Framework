@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import { criticalA11yViolations, describeA11yViolations, runBitcodeA11yCheck } from '@bitcode/core';
+import { criticalA11yViolations, describeA11yViolations, runBitcodeA11yCheck } from '@bitcode/core/testing';
 import { describe, expect, it } from 'vitest';
 import { BitcodeFormFieldConfig } from '../models/form-field.model';
 import { BitcodeDynamicForm } from './dynamic-form';

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
-    "lint": "nx run-many -t lint"
+    "lint": "nx run-many -t lint",
+    "analyze:shell": "node scripts/analyze-bundle.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^22.1.5",

@@ -1,7 +1,7 @@
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { criticalA11yViolations, describeA11yViolations, runBitcodeA11yCheck } from '@bitcode/core';
+import { criticalA11yViolations, describeA11yViolations, runBitcodeA11yCheck } from '@bitcode/core/testing';
 import { describe, expect, it } from 'vitest';
 import { DocumentUpload, DocumentUploadMode } from './document-upload';
 
