@@ -1,5 +1,12 @@
 # Fase 6 — Scaffolding/generadores
 
+> **Nota (F8-03, Plan Maestro Fase 8):** `templates/feature-cqrs` (`bitcode-feature`, descrito abajo) fue
+> reemplazado por `templates/feature` -- mismo shortName `bitcode-feature`, pero vertical slice completo
+> (Command **o** Query + Validator + Handler + Endpoint, no solo Command) pensado explícitamente para
+> insertarse dentro de un módulo generado por `dotnet new bitcode-module` (Fase 8). El contenido de esta
+> sección describe el estado histórico de Fase 6; ver `docs/plan-maestro-bitcode-ia.md` (F8-03) y
+> `templates/feature/README.md` para el estado actual.
+
 **Estado:** Completa
 **Commits:** `34861f1`, `2754ea3` (2 commits)
 **Tests:** 3 (verificación real de ambas plantillas, incluyendo compilación del código generado)

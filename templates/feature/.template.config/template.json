@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BitCode.Framework",
+  "classifications": ["Common", "CQRS", "BitCode.Framework"],
+  "identity": "BitCode.Framework.Templates.Feature",
+  "name": "BitCode Framework - Feature (vertical slice CQRS)",
+  "shortName": "bitcode-feature",
+  "sourceName": "FeatureName",
+  "preferNameDirectory": false,
+  "tags": {
+    "language": "C#",
+    "type": "item"
+  },
+  "symbols": {
+    "Kind": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "Command",
+          "description": "Vertical slice de escritura: Command + Validator + Handler + endpoint POST."
+        },
+        {
+          "choice": "Query",
+          "description": "Vertical slice de lectura: Query + Response + Handler + endpoint GET."
+        }
+      ],
+      "defaultValue": "Command",
+      "description": "Tipo de vertical slice a generar."
+    },
+    "Namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "MyApp.Modules.Elementos",
+      "defaultValue": "MyApp.Modules.Elementos",
+      "description": "Namespace completo del feature generado -- tiene que coincidir con el namespace del módulo/subcarpeta destino donde corrés este comando (ver README.md de este template)."
+    },
+    "ResponseType": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "Guid",
+      "defaultValue": "Guid",
+      "description": "Tipo de dato que retorna el Command (ICommand<ResponseType>). Se ignora cuando Kind=Query -- la Query siempre retorna el record *Response generado junto a ella."
+    }
+  },
+  "sources": [
+    {
+      "exclude": [".template.config/**", "README.md"],
+      "modifiers": [
+        {
+          "condition": "(Kind == \"Query\")",
+          "exclude": ["FeatureNameCommand.cs", "FeatureNameCommandEndpoints.cs"]
+        },
+        {
+          "condition": "(Kind == \"Command\")",
+          "exclude": ["FeatureNameQuery.cs", "FeatureNameQueryEndpoints.cs"]
+        }
+      ]
+    }
+  ]
+}
