@@ -107,7 +107,9 @@ La aplicación `apps/shell` era un placeholder de la "Navigation shell" en esta 
 Angular standalone mínima, sin rutas ni menú real, que sirvió para validar que el workspace puede
 producir un artefacto de aplicación (no solo librerías) con el mismo pipeline de build. F7-05 ya completó
 el menú dinámico/navigation shell real -- ver
-[`docs/guia-frontend-navigation.md`](guia-frontend-navigation.md).
+[`docs/guia-frontend-navigation.md`](guia-frontend-navigation.md). F7-06 agregó el mapeo de
+`ProblemDetails`/correlation id y la "error experience" consistente en `@bitcode/core` -- ver
+[`docs/guia-frontend-errores.md`](guia-frontend-errores.md).
 
 ## 4. Build reproducible — cómo se verificó
 
