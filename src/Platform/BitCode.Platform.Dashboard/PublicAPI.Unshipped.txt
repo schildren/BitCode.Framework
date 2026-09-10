@@ -1,0 +1,67 @@
+#nullable enable
+BitCode.Framework.Platform.Dashboard.Actors.IDashboardActorContext
+BitCode.Framework.Platform.Dashboard.Actors.IDashboardActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.Dashboard.DashboardDbContext
+BitCode.Framework.Platform.Dashboard.DashboardDbContext.DashboardDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Dashboard.DashboardDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Dashboard.DashboardDbContext.DashboardWidgets.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget!>!
+BitCode.Framework.Platform.Dashboard.DashboardEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Dashboard.DashboardOptions
+BitCode.Framework.Platform.Dashboard.DashboardOptions.DashboardOptions() -> void
+BitCode.Framework.Platform.Dashboard.DashboardOptions.ReportingBaseUrl.get -> string!
+BitCode.Framework.Platform.Dashboard.DashboardOptions.ReportingBaseUrl.set -> void
+BitCode.Framework.Platform.Dashboard.DashboardPermissions
+BitCode.Framework.Platform.Dashboard.DashboardServiceCollectionExtensions
+BitCode.Framework.Platform.Dashboard.Metricas.DashboardReportingHttpClient
+BitCode.Framework.Platform.Dashboard.Metricas.DashboardReportingHttpClient.DashboardReportingHttpClient(System.Net.Http.HttpClient! httpClient) -> void
+BitCode.Framework.Platform.Dashboard.Metricas.DashboardReportingHttpClient.HttpClient.get -> System.Net.Http.HttpClient!
+BitCode.Framework.Platform.Dashboard.Metricas.IReportingMetricSource
+BitCode.Framework.Platform.Dashboard.Metricas.IReportingMetricSource.ObtenerPromedioDuracionPorDefinicionAsync(System.Guid workflowDefinitionId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado!>!
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado.Disponible = 0 -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado.NoDisponible = 1 -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.<Clone>$() -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado!
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.CantidadInstanciasFinalizadas.get -> int?
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.CantidadInstanciasFinalizadas.init -> void
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Deconstruct(out BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado Estado, out double? PromedioDuracionSegundos, out int? CantidadInstanciasFinalizadas, out string? ErrorMensaje) -> void
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Equals(BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado? other) -> bool
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.ErrorMensaje.init -> void
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Estado.get -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Estado.init -> void
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.PromedioDuracionSegundos.get -> double?
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.PromedioDuracionSegundos.init -> void
+BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.ReportingMetricResultado(BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricEstado Estado, double? PromedioDuracionSegundos, int? CantidadInstanciasFinalizadas, string? ErrorMensaje) -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.CambiarOrden(int nuevoOrden) -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.CreatedBy.get -> string?
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.CreatedBy.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.DashboardWidget(System.Guid id, System.Guid userId, BitCode.Framework.Platform.Dashboard.Widgets.TipoWidgetDashboard tipo, string! titulo, System.Guid? workflowDefinitionId, int orden) -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.ModifiedBy.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.Orden.get -> int
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.RowVersion.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.TenantId.set -> void
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.Tipo.get -> BitCode.Framework.Platform.Dashboard.Widgets.TipoWidgetDashboard
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.Titulo.get -> string!
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.UserId.get -> System.Guid
+BitCode.Framework.Platform.Dashboard.Widgets.DashboardWidget.WorkflowDefinitionId.get -> System.Guid?
+BitCode.Framework.Platform.Dashboard.Widgets.TipoWidgetDashboard
+BitCode.Framework.Platform.Dashboard.Widgets.TipoWidgetDashboard.PromedioDuracionWorkflowPorDefinicion = 0 -> BitCode.Framework.Platform.Dashboard.Widgets.TipoWidgetDashboard
+const BitCode.Framework.Platform.Dashboard.DashboardPermissions.WidgetsAdministrar = "dashboard.widgets.administrar" -> string!
+const BitCode.Framework.Platform.Dashboard.DashboardPermissions.WidgetsVer = "dashboard.widgets.ver" -> string!
+override BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.GetHashCode() -> int
+override BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.ToString() -> string!
+static BitCode.Framework.Platform.Dashboard.DashboardEndpointRouteBuilderExtensions.MapDashboardEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Dashboard.DashboardServiceCollectionExtensions.AddSharedDashboard(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! reportingBaseUrl, System.Action<BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions!>? configureHttpResilience = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.Disponible(double? promedioDuracionSegundos, int cantidadInstanciasFinalizadas) -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado!
+static BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.NoDisponible(string! errorMensaje) -> BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado!
+static BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.operator !=(BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado? left, BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado? right) -> bool
+static BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado.operator ==(BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado? left, BitCode.Framework.Platform.Dashboard.Metricas.ReportingMetricResultado? right) -> bool

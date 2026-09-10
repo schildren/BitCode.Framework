@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Dashboard: Fase 6, módulo 12 (el ÚLTIMO) del Plan Maestro BitCode: widgets, métricas y
+      preferencias. Dependencia declarada: Reporting (Fase 6, módulo 11) — pero Reporting NO publica
+      ningún evento de integración propio (`docs/catalogo-eventos.md`, `docs/guia-reporting.md`), así que
+      este módulo, a diferencia de TODOS los demás módulos de Fase 6 que dependen de otro módulo de la
+      misma fase, NO puede engancharse vía el patrón de consumo de eventos de integración (Inbox,
+      F1-24/F3-04) — no hay ningún evento que consumir. En su lugar, trata a Reporting como un sistema
+      externo y lo consume por su API HTTP PÚBLICA (`GET /api/v1/reporting/workflow-instancias/promedio-duracion`)
+      con un cliente HTTP resiliente (F1-26), el mismo patrón que ya usa Integration Hub (Fase 6, módulo 9)
+      para llamar a un conector externo. Ver `docs/guia-dashboard.md` para el detalle honesto de qué separa
+      este diseño del resto de Fase 6, qué quedó completo y qué no.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Http\Shared.Infrastructure.Http.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+</Project>

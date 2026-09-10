@@ -1,7 +1,12 @@
 # Catálogo de eventos de integración — BitCode.Framework
 
 **Tarea:** F3-12 (Fase 3 — Plataforma de eventos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).
-**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 11 — Reporting, no agrega eventos
+**Fecha:** 2026-09-07. **Actualizado:** 2026-09-09 (Fase 6, módulo 12 — Dashboard, el ÚLTIMO módulo de la
+fase: NO agrega ningún evento productivo nuevo ni consume ninguno -- a diferencia de todos los módulos
+anteriores de Fase 6 que dependen de otro módulo de la misma fase, Dashboard depende de Reporting, que a
+su vez no publica ningún evento de integración propio, así que no hay nada que consumir por este mecanismo;
+Dashboard llama a la API HTTP pública de Reporting como sistema externo en su lugar, ver
+`docs/guia-dashboard.md`). Actualizado previamente el mismo día (Fase 6, módulo 11 — Reporting, no agrega eventos
 productivos nuevos -- es un módulo puramente CONSUMIDOR/agregador -- pero suma Reporting como consumidor
 conocido adicional de `Workflow.WorkflowInstanciaIniciada`/`Workflow.WorkflowInstanciaFinalizada`, ver la
 fila de ambos eventos más abajo). Actualizado previamente el mismo día (Fase 6, módulo 9 — Integration Hub, agrega
