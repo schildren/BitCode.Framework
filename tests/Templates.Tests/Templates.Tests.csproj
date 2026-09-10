@@ -18,4 +18,12 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- F8-01: AppTemplateVerificationTests ejercita el template "bitcode-app" de punta a punta (build +
+         runtime real contra SQL Server), mismo criterio que las pruebas de integración de
+         Shared.Infrastructure.Persistence.Tests. Shared.Testing trae MsSqlBuilder/Testcontainers.MsSql
+         transitivamente, sin necesidad de referenciarlo acá directamente. -->
+    <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
+  </ItemGroup>
+
 </Project>

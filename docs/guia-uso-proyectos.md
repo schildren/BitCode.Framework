@@ -2,6 +2,17 @@
 
 Guía práctica, paso a paso, para arrancar un proyecto **consumidor** del framework desde cero. Para nomenclatura y reglas duras ya establecidas, ver [`convenciones.md`](convenciones.md); para el detalle de diseño de cada pieza, ver los documentos de fase en [`README.md`](README.md). El proyecto [`samples/Sample.Api`](../samples/Sample.Api) es la referencia viva de todo lo descrito aquí.
 
+## 0. Atajo: `dotnet new bitcode-app` (F8-01)
+
+Las secciones 1 a 4 de esta guía describen cómo armar cada pieza a mano. `dotnet new bitcode-app` (Fase 8, `templates/app`) genera esas mismas piezas ya cableadas -- una aplicación base REALMENTE ejecutable, no un esqueleto vacío -- para no repetir el boilerplate:
+
+```bash
+dotnet new install ./templates/app
+dotnet new bitcode-app -n MiApp.Api -o samples/MiApp.Api --SharedSourceRoot ../../src
+```
+
+Genera `Program.cs`/`InfrastructureModule.cs`/`AppDbContext.cs` con persistencia multi-tenant, pipeline CQRS + validación + transacciones, versionado de API (`/api/v1/...`), OpenAPI, health checks y observabilidad ya configurados, más un feature de ejemplo (`Elementos/`, mismo patrón que `samples/Sample.Api/Productos`) para copiar o reemplazar por el dominio real. El parámetro `--SharedSourceRoot` (default `../../src`, asumiendo que el proyecto se genera dos niveles bajo la raíz del repo, ej. `samples/MiApp.Api/`) acepta una ruta absoluta si el proyecto se genera fuera del árbol de este repositorio -- el framework todavía no publica sus paquetes en un feed NuGet (ver sección 1 más abajo y F8-05, pendiente). Verificado de punta a punta (build real + arranque contra un SQL Server real + CRUD de ejemplo) en `tests/Templates.Tests/AppTemplateVerificationTests.cs`.
+
 ## 1. Referenciar el framework
 
 Hoy se consume por `ProjectReference` directa (aún no hay paquetes NuGet publicados — ver [`fase-8-documentacion-adopcion.md`](fase-8-documentacion-adopcion.md)). En el `.csproj` del proyecto Web, referenciar solo los proyectos que el consumidor necesita:

@@ -98,6 +98,7 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 
 | Necesito... | Uso |
 |---|---|
+| Una aplicación base nueva (host ejecutable) | `dotnet new bitcode-app -n MiApp.Api -o samples/MiApp.Api --SharedSourceRoot ../../src` (F8-01, `templates/app`) — genera `Program.cs`/`InfrastructureModule.cs`/`<Nombre>DbContext.cs` con persistencia multi-tenant, pipeline CQRS + validación + transacciones, versionado de API, OpenAPI, health checks y observabilidad ya cableados, más un feature de ejemplo (`Elementos/`, mismo patrón que `samples/Sample.Api/Productos`) para copiar/reemplazar. `--SharedSourceRoot` acepta una ruta absoluta si el proyecto se genera fuera del árbol del repo (el framework todavía no publica sus paquetes en un feed NuGet, ver F8-05, pendiente) |
 | Una entidad nueva | `dotnet new bitcode-entity -n MiEntidad --MultiTenant true\|false` |
 | Un feature CQRS nuevo | `dotnet new bitcode-feature -n MiAccion` |
 | Agrupar servicios de una feature | `IFrameworkModule` con `[DependsOn(typeof(InfrastructureModule))]` |
