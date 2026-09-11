@@ -177,3 +177,4 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 - [`docs/guia-portal-tecnico.md`](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): visualizador y catálogo interactivo de documentación, ADRs, OpenAPI y scaffolding.
 - [`docs/golden-paths.md`](golden-paths.md) — Golden Paths de Desarrollo (F8-10): rutas canónicas y código de referencia para CRUD/CQRS, Workflow, Events (Outbox+Kafka+Inbox), Documents e Integration Hub.
 - [`docs/guia-entorno-local.md`](guia-entorno-local.md) — Entorno Local Reproducible con Contenedores (F8-11): Docker Compose con SQL Server, Redis, Kafka KRaft, OTel Collector, Jaeger y scripts de administración multiplataforma.
+- [`docs/guia-cli-diagnostico.md`](guia-cli-diagnostico.md) — CLI de Diagnóstico Accionable (F8-12): herramienta `BitCode.Diagnostics` y scripts `scripts/doctor.ps1`/`doctor.sh` para pre-flight check de .NET SDK, Node, Docker, variables y conectividad a infraestructura.
