@@ -176,3 +176,4 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 - [`tests/BitCode.Architecture.Tests`](../tests/BitCode.Architecture.Tests) — Suite de pruebas de arquitectura y fitness functions (F8-08): hace cumplir automáticamente las fronteras Clean/Onion, CQRS, convenciones y reglas duras con NetArchTest.
 - [`docs/guia-portal-tecnico.md`](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): visualizador y catálogo interactivo de documentación, ADRs, OpenAPI y scaffolding.
 - [`docs/golden-paths.md`](golden-paths.md) — Golden Paths de Desarrollo (F8-10): rutas canónicas y código de referencia para CRUD/CQRS, Workflow, Events (Outbox+Kafka+Inbox), Documents e Integration Hub.
+- [`docs/guia-entorno-local.md`](guia-entorno-local.md) — Entorno Local Reproducible con Contenedores (F8-11): Docker Compose con SQL Server, Redis, Kafka KRaft, OTel Collector, Jaeger y scripts de administración multiplataforma.

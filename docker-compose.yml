@@ -1,0 +1,132 @@
+# =============================================================================
+# BitCode.Framework — Entorno Local de Desarrollo Reproducible (F8-11)
+# =============================================================================
+#
+# Provee todas las dependencias de infraestructura necesarias para ejecutar y
+# probar la plataforma en local con un único comando:
+#   docker compose up -d
+#
+# Servicios provistos:
+#   - sqlserver: SQL Server 2022 (puerto 1433)
+#   - redis: Redis 7.2 (puerto 6379)
+#   - kafka: Apache Kafka 7.6 en modo KRaft (puerto 9092)
+#   - otel-collector: OpenTelemetry Collector (puertos OTLP 4317/4318, health 13133)
+#   - jaeger: UI y almacenamiento local de trazas (puerto UI 16686, OTLP 4317)
+# =============================================================================
+
+name: bitcode-dev
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. SQL Server 2022 — Persistencia y Multi-Tenancy
+  # ---------------------------------------------------------------------------
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bitcode-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Password123!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Password123!' -C -Q 'SELECT 1' || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'Password123!' -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ---------------------------------------------------------------------------
+  # 2. Redis 7 — HybridCache L2 y Rate Limiting Distribuido
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: bitcode-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # 3. Apache Kafka (KRaft mode) — Event-Driven Architecture y Outbox Relay
+  # ---------------------------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: bitcode-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: "4L622nShTUiBenYh semester"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # 4. Jaeger — Visualizador de Trazas Distribuidas
+  # ---------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.55
+    container_name: bitcode-jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686" # UI web
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  # ---------------------------------------------------------------------------
+  # 5. OpenTelemetry Collector — Telemetría Unificada
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.95.0
+    container_name: bitcode-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./docker/otel-collector-local.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "13133:13133" # Health check
+    depends_on:
+      - jaeger
+    healthcheck:
+      test: ["CMD", "/otelcol-contrib", "validate", "--config=/etc/otelcol-contrib/config.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  sqlserver-data:
+    name: bitcode-sqlserver-data
+  redis-data:
+    name: bitcode-redis-data
+  kafka-data:
+    name: bitcode-kafka-data
