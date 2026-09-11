@@ -64,6 +64,7 @@
     <Project Path="tools/RegionalFailoverHarness/RegionalFailoverHarness.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/BitCode.Architecture.Tests/BitCode.Architecture.Tests.csproj" />
     <Project Path="tests/BitCode.Gateway.Tests/BitCode.Gateway.Tests.csproj" />
     <Project Path="tests/BitCode.Migrations.Tests/BitCode.Migrations.Tests.csproj" />
     <Project Path="tests/Shared.Application.Tests/Shared.Application.Tests.csproj" />

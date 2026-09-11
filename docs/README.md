@@ -18,6 +18,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 ## Guías
 
+- [guia-portal-tecnico.md](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): aplicación interactiva SPA con búsqueda instantánea, visor de 100+ docs, 19 ADRs, catálogo OpenAPI y scaffolding.
 - [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
 - [guia-migraciones.md](guia-migraciones.md) — ciclo de vida de migraciones EF Core (F8-07): patrón Expand-and-Contract para despliegues zero-downtime, tooling CLI `BitCode.Migrations` (validación, status, forward rollout, rollback ensayado y scripts SQL idempotentes).

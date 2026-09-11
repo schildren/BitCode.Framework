@@ -108,6 +108,12 @@ jobs:
         run: npm run contracts:verify
         working-directory: frontend
 
+      # F8-09 (docs/guia-portal-tecnico.md): verifica que los metadatos y documentación
+      # del Portal Técnico se compilen correctamente desde docs/, ADRs y OpenAPI specs.
+      - name: Verificar compilación del portal técnico (portal:build)
+        run: npm run portal:build
+        working-directory: frontend
+
   dependency-scan:
     needs: build
     runs-on: ubuntu-latest

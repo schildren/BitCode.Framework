@@ -13,7 +13,9 @@
     "contracts:export": "dotnet run --project ../samples/OpenApiExport",
     "contracts:generate": "node scripts/generate-contracts.mjs",
     "contracts:refresh": "npm run contracts:export && npm run contracts:generate",
-    "contracts:verify": "node scripts/verify-contracts.mjs"
+    "contracts:verify": "node scripts/verify-contracts.mjs",
+    "portal:build": "node ../portal/build-portal.mjs",
+    "portal:serve": "node ../portal/serve.mjs"
   },
   "dependencies": {
     "@angular/cdk": "^22.1.5",

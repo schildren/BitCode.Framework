@@ -173,3 +173,5 @@ Derivadas de decisiones de diseño ya tomadas en fases anteriores — apartarse 
 - [`samples/Sample.IdentityAdmin.Api`](../samples/Sample.IdentityAdmin.Api) — aplicación de referencia que consume `BitCode.Platform.Identity` (Fase 6, módulo 1).
 - [`samples/Sample.Organization.Api`](../samples/Sample.Organization.Api) — aplicación de referencia que consume `BitCode.Platform.Organization` (Fase 6, módulo 2).
 - [`docs/guia-migraciones.md`](guia-migraciones.md) — ciclo de vida de migraciones EF Core (F8-07): patrón Expand-and-Contract para despliegues zero-downtime, tooling CLI `BitCode.Migrations` (validación, status, forward rollout, rollback ensayado y scripts SQL idempotentes).
+- [`tests/BitCode.Architecture.Tests`](../tests/BitCode.Architecture.Tests) — Suite de pruebas de arquitectura y fitness functions (F8-08): hace cumplir automáticamente las fronteras Clean/Onion, CQRS, convenciones y reglas duras con NetArchTest.
+- [`docs/guia-portal-tecnico.md`](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): visualizador y catálogo interactivo de documentación, ADRs, OpenAPI y scaffolding.
