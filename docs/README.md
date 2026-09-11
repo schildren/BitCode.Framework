@@ -18,6 +18,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 ## Guías
 
+- [golden-paths.md](golden-paths.md) — Golden Paths de Desarrollo (F8-10): rutas canónicas y código de referencia para CRUD/CQRS, Workflow, Events (Outbox+Kafka+Inbox), Documents e Integration Hub.
 - [guia-portal-tecnico.md](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): aplicación interactiva SPA con búsqueda instantánea, visor de 100+ docs, 19 ADRs, catálogo OpenAPI y scaffolding.
 - [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.

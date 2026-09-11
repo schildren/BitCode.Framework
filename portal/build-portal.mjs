@@ -251,22 +251,124 @@ export class CatalogoViewComponent implements OnInit {
 }`
     },
     {
-      id: 'scaffold-architecture-test',
+      id: 'golden-path-crud',
       type: 'example',
-      category: 'Testing de Gobernanza',
-      title: 'Regla de Arquitectura con NetArchTest',
-      description: 'Patrón para asegurar que las capas de Dominio y Aplicación no se contaminen con dependencias de infraestructura.',
-      code: `[Fact]
-public void Domain_Must_Not_Reference_Infrastructure()
-{
-    var domainAssembly = typeof(DomainEntity).Assembly;
-    var result = Types.InAssembly(domainAssembly)
-        .ShouldNot()
-        .HaveDependencyOnAny("BitCode.Framework.Shared.Infrastructure.Persistence", "Microsoft.EntityFrameworkCore")
-        .GetResult();
+      category: 'Golden Path: CRUD & CQRS',
+      title: 'Vertical Slice CQRS con Idempotencia y AsNoTracking',
+      description: 'Implementación canónica de comando de escritura con Idempotency-Key y consulta de solo lectura mediante IReadRepository.',
+      code: `// 1. Comando con Idempotencia
+public record CrearProductoCommand(string Nombre, decimal Precio) : ICommand<Guid>, IIdempotentCommand;
 
-    result.IsSuccessful.Should().BeTrue("El dominio debe permanecer puro e independiente de la persistencia.");
+public class CrearProductoCommandHandler(IRepository<Producto, Guid> repository)
+    : IRequestHandler<CrearProductoCommand, Result<Guid>>
+{
+    public async Task<Result<Guid>> Handle(CrearProductoCommand request, CancellationToken ct)
+    {
+        var producto = new Producto(Guid.NewGuid(), request.Nombre, request.Precio);
+        await repository.AddAsync(producto, ct);
+        return producto.Id; // TransactionBehavior persiste automáticamente
+    }
+}
+
+// 2. Consulta de solo lectura (AsNoTracking automático)
+public record ObtenerProductoQuery(Guid Id) : IQuery<ProductoResponse>;
+
+public class ObtenerProductoQueryHandler(IReadRepository<Producto, Guid> repository)
+    : IRequestHandler<ObtenerProductoQuery, Result<ProductoResponse>>
+{
+    public async Task<Result<ProductoResponse>> Handle(ObtenerProductoQuery request, CancellationToken ct)
+    {
+        var p = await repository.GetByIdAsync(request.Id, ct);
+        return p is null 
+            ? Result<ProductoResponse>.Failure("Producto.NoEncontrado", "No existe.")
+            : new ProductoResponse(p.Id, p.Nombre, p.Precio);
+    }
 }`
+    },
+    {
+      id: 'golden-path-workflow',
+      type: 'example',
+      category: 'Golden Path: Workflow',
+      title: 'Inicio y Resolución de Tareas de Workflow',
+      description: 'Llamada al motor de workflow para orquestar instancias asociadas a entidades de negocio y resolver aprobaciones humanas.',
+      code: `// 1. Iniciar instancia de workflow
+var iniciarCmd = new IniciarInstanciaCommand(
+    WorkflowDefinitionCodigo: "APROBACION_GASTOS",
+    EntidadTipo: "Gasto",
+    EntidadId: gastoId.ToString(),
+    VariablesIniciales: new Dictionary<string, object> { ["Monto"] = 4500 }
+);
+var instanciaId = await sender.Send(iniciarCmd, ct);
+
+// 2. Completar tarea humana con ownership validado
+var resolverCmd = new ResolverTareaCommand(
+    InstanciaId: instanciaId.Value,
+    Accion: "Aprobar",
+    Comentarios: "Conforme a política de viáticos"
+);
+var result = await sender.Send(resolverCmd, ct);`
+    },
+    {
+      id: 'golden-path-events',
+      type: 'example',
+      category: 'Golden Path: Events (EDA)',
+      title: 'Outbox Transaccional y Consumidor Kafka con Inbox',
+      description: 'Publicación desacoplada consistente mediante Outbox y consumo seguro con de-duplicación Inbox.',
+      code: `// 1. Evento de integración
+public record PedidoCreadoIntegrationEvent(
+    Guid EventId,
+    DateTime OccurredOnUtc,
+    Guid PedidoId,
+    decimal Total
+) : IntegrationEvent(EventId, OccurredOnUtc, "Ventas.PedidoCreado", 1);
+
+// 2. Consumidor coordinado con Inbox
+public class PedidoCreadoConsumer(IFacturacionService facturacion)
+    : IEventConsumer<PedidoCreadoIntegrationEvent>
+{
+    public async Task ConsumeAsync(PedidoCreadoIntegrationEvent evento, CancellationToken ct)
+    {
+        await facturacion.GenerarFacturaAsync(evento.PedidoId, evento.Total, ct);
+    }
+}`
+    },
+    {
+      id: 'golden-path-documents',
+      type: 'example',
+      category: 'Golden Path: Documents',
+      title: 'Ingesta Multipart con Hash SHA-256 y Antivirus',
+      description: 'Flujo seguro de recepción de documentos con escaneo de amenazas y almacenamiento desacoplado de blobs.',
+      code: `app.MapPost("/api/v1/documentos/{id:guid}/versiones", async (
+    Guid id, 
+    IFormFile archivo, 
+    ISender sender, 
+    CancellationToken ct) =>
+{
+    using var stream = archivo.OpenReadStream();
+    var cmd = new SubirVersionDocumentoCommand(
+        DocumentoId: id,
+        NombreArchivo: archivo.FileName,
+        ContentType: archivo.ContentType,
+        Contenido: stream
+    );
+    var result = await sender.Send(cmd, ct);
+    return result.ToOkOrProblem();
+}).DisableAntiforgery();`
+    },
+    {
+      id: 'golden-path-integration-hub',
+      type: 'example',
+      category: 'Golden Path: Integration Hub',
+      title: 'Encolado Asíncrono de Peticiones Salientes a Terceros',
+      description: 'Envío hacia APIs externas con mapeo dinámico de campos y almacenamiento seguro de API keys en ISecretProvider.',
+      code: `var enviarCmd = new EnviarSolicitudIntegracionCommand(
+    ConectorCodigo: "ERP_FINANZAS",
+    PayloadInternoJson: JsonSerializer.Serialize(new { 
+        ComprobanteId = guid, 
+        MontoNeto = 12500.00 
+    })
+);
+var result = await sender.Send(enviarCmd, ct);`
     }
   ];
 }

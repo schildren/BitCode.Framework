@@ -38,6 +38,9 @@
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.FeatureManagement\BitCode.Platform.FeatureManagement.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Documents\BitCode.Platform.Documents.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.IntegrationHub\BitCode.Platform.IntegrationHub.csproj" />
+    <ProjectReference Include="..\..\samples\Sample.Api\Sample.Api.csproj" />
+    <ProjectReference Include="..\..\samples\Sample.Eventing\Sample.Eventing.csproj" />
   </ItemGroup>
 
 </Project>
