@@ -18,6 +18,7 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 ## Guías
 
+- [guia-release-automation.md](guia-release-automation.md) — Automatización de Releases y Provenance (F8-13): pipeline unificado GitHub Actions (`release.yml`), generación automática de `CHANGELOG.md`, versionado SemVer sincronizado, firma Authenticode y atestaciones de procedencia SLSA.
 - [guia-cli-diagnostico.md](guia-cli-diagnostico.md) — CLI de Diagnóstico Accionable (F8-12): herramienta `BitCode.Diagnostics` y scripts `scripts/doctor.ps1`/`doctor.sh` para pre-flight check de .NET SDK, Node, Docker, variables y conectividad a infraestructura.
 - [guia-entorno-local.md](guia-entorno-local.md) — Entorno Local Reproducible con Contenedores (F8-11): Docker Compose con SQL Server 2022, Redis, Kafka (KRaft), OTel Collector y Jaeger, scripts `scripts/dev-env.ps1`/`dev-env.sh` y guía de onboarding en 5 minutos.
 - [golden-paths.md](golden-paths.md) — Golden Paths de Desarrollo (F8-10): rutas canónicas y código de referencia para CRUD/CQRS, Workflow, Events (Outbox+Kafka+Inbox), Documents e Integration Hub.
