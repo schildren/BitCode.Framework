@@ -81,11 +81,23 @@ jobs:
           cat RELEASE_NOTES.md
           echo "version=${GITHUB_REF_NAME:-v-candidata}" >> "$GITHUB_OUTPUT"
 
+      # F8-14: Generar SBOM CycloneDX 1.5, License Report y THIRD-PARTY-NOTICES
+      - name: Generar SBOM y Third-Party Notices
+        run: node scripts/generate-sbom-notices.mjs
+
       - name: Subir artefacto de notas de release
         uses: actions/upload-artifact@v4
         with:
           name: release-notes
           path: RELEASE_NOTES.md
+
+      - name: Subir artefactos SBOM y Notices
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-artifacts
+          path: |
+            artifacts/sbom/*
+            THIRD-PARTY-NOTICES.md
 
   pack-sign-publish-nuget:
     name: NuGet (MinVer, Pack, Sign, Provenance, Publish)
@@ -220,6 +232,12 @@ jobs:
           name: npm-artifacts
           path: ./release-assets/npm
 
+      - name: Descargar artefactos SBOM y Notices
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-artifacts
+          path: ./release-assets/compliance
+
       - name: Crear GitHub Release oficial
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -234,6 +252,7 @@ jobs:
           gh release create "$TAG" \
             ./release-assets/nuget/*.nupkg \
             ./release-assets/npm/*.tgz \
+            ./release-assets/compliance/* \
             --title "BitCode Framework $TAG" \
             --notes-file RELEASE_NOTES.md \
             $PRERELEASE_FLAG

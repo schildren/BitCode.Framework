@@ -150,6 +150,22 @@ jobs:
           name: dependency-vulnerability-report
           path: vulnerability-report.txt
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # F8-14 (docs/guia-sbom-notices.md): Genera y valida Software Bill of Materials (SBOM)
+      # en formato CycloneDX 1.5, audita licencias permisivas y actualiza THIRD-PARTY-NOTICES.
+      - name: Generar y verificar SBOM y cumplimiento de licencias
+        run: node scripts/generate-sbom-notices.mjs
+
+      - name: Publicar artefactos SBOM y License Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-and-license-reports
+          path: artifacts/sbom/*
+
   container-scan:
     needs: build
     runs-on: ubuntu-latest

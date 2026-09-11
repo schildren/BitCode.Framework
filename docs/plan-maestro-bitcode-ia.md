@@ -836,11 +836,11 @@ La ejecución de la plantilla empresarial deberá producir:
 
 #### Gate de salida
 
-- [ ] Una persona nueva puede levantar el entorno siguiendo la guía.
-- [ ] La plantilla supera build y pruebas sin edición manual.
-- [ ] Los paquetes tienen versionado, firma y provenance.
-- [ ] El pipeline produce SBOM, license report y vulnerabilidades.
-- [ ] Los golden paths están cubiertos por pruebas de humo.
+- [x] Una persona nueva puede levantar el entorno siguiendo la guía.
+- [x] La plantilla supera build y pruebas sin edición manual.
+- [x] Los paquetes tienen versionado, firma y provenance.
+- [x] El pipeline produce SBOM, license report y vulnerabilidades.
+- [x] Los golden paths están cubiertos por pruebas de humo.
 
 #### Hito
 
