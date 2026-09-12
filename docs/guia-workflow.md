@@ -829,6 +829,123 @@ infraestructura actual (mismo hallazgo honesto de F9-06).
   `ADR-0020`); se proponen como criterios COMPARATIVOS (antes/después) en vez de inventar un SLA sin
   evidencia.
 
+## Resiliencia (F9-09)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-09, "Resiliencia") pide "probar latencia, timeout,
+circuit breaker y bulkhead" contra el módulo piloto, con criterio de aceptación literal **"Fallo
+aislado"**: que un fallo del servicio extraído (Workflow, F9-05/F9-06) no se propague al resto de la
+plataforma servida por el mismo Gateway.
+
+### Punto de fallo real identificado
+
+Se inspeccionó el código en busca de llamadas HTTP salientes reales hacia Workflow (`grep -rl
+"HttpClient" src/Platform`): **ningún otro módulo de plataforma llama a Workflow por HTTP** — los tres
+consumidores reales (TaskInbox, Notifications, Reporting) lo consumen exclusivamente vía eventos de
+integración (Kafka/Outbox/Inbox), no por request/response síncrono. El único punto de fallo síncrono real
+de Workflow como servicio extraído es, por lo tanto, **el Gateway (F4-08, YARP) proxyando hacia el host
+independiente de Workflow** (F9-05/F9-06, cluster `sample-workflow-api-cluster`) — el mismo candidato que
+ya señalaba el análisis previo de F9-01.
+
+### Qué mecanismo de resiliencia HTTP YA existe en el framework (y por qué no aplica acá)
+
+`Shared.Infrastructure.Http.Resilience` (F1-26, ADR-0013) es una pipeline Polly completa con timeout por
+intento y total, retry con backoff exponencial y jitter, circuit breaker (ratio de fallos sobre ventana
+deslizante) y un bulkhead (límite de concurrencia por cliente + cola opcional) — ver
+`HttpResilienceOptions.cs`. Hoy se aplica a dos clientes HTTP tipados salientes de un módulo hacia otro:
+`DashboardReportingHttpClient` (Dashboard → Reporting) e `IntegrationOutboundHttpClient` (IntegrationHub →
+sistemas externos), ambos vía `AddResilientHttpClient<TClient>`. **No se aplica, ni puede aplicarse sin
+cambios de código, al camino del Gateway hacia Workflow**: el Gateway no usa `HttpClient`/`IHttpClientFactory`
+para proxyar — YARP gestiona su propio `HttpMessageInvoker` (`SocketsHttpHandler`) por cluster,
+configurado desde `ReverseProxy:Clusters:<id>:HttpClient`/`HttpRequest`, un mecanismo separado del de
+`Shared.Infrastructure.Http.Resilience`.
+
+### Gap encontrado y cerrado: timeout explícito del cluster de Workflow
+
+Se verificó, leyendo `src/BitCode.Gateway/appsettings.json` (contenido antes de esta tarea) y las pruebas
+de F9-06, que **ningún cluster de YARP tenía configurado `HttpRequest.ActivityTimeout`** — sin ese valor,
+YARP no aplica ningún timeout propio a la llamada saliente hacia el destino (queda sujeto solo a
+timeouts de nivel TCP/keep-alive, potencialmente indefinidos desde la perspectiva del llamador). Se
+agregó, exclusivamente al cluster de Workflow (alcance de esta tarea, módulo piloto):
+
+```json
+"sample-workflow-api-cluster": {
+  "HttpRequest": {
+    "ActivityTimeout": "00:00:05"
+  },
+  "Destinations": { "destination1": { "Address": "http://sample-workflow-api/" } }
+}
+```
+
+5 segundos es un valor de referencia razonable para un backend interno de la misma red (no una API
+externa de terceros, donde un timeout mayor sería más apropiado) — cualquier despliegue real debería
+ajustarlo contra el SLA real de Workflow, que hoy no existe (misma limitación estructural ya documentada
+en `ADR-0020`). **`sample-api-cluster` (el host base de Fase 4) queda con el mismo gap, sin resolver por
+esta tarea**: el alcance de F9-09 es el módulo piloto (Workflow); extender el mismo timeout al resto de
+clusters es una mejora de bajo riesgo recomendada para una tarea de endurecimiento general del Gateway,
+fuera de esta tarea puntual.
+
+### Circuit breaker y bulkhead: ausencia honesta, no simulada
+
+YARP, en la versión integrada por este framework, **no expone un circuit breaker ni un bulkhead propios a
+nivel de cluster/ruta** — solo `HttpRequest` (timeout, versión HTTP) y `HttpClient` (configuración del
+`SocketsHttpHandler`: TLS, proxy, `MaxConnectionsPerServer`, sin semántica de "abrir el circuito tras N
+fallos"). No existe en este repo ningún gancho de extensibilidad de YARP ya cableado (por ejemplo, un
+`IForwarderHttpClientFactory` custom que envuelva el `HttpMessageInvoker` en una pipeline Polly) contra el
+cual verificar un circuit breaker real. Agregar uno sin verificarlo de punta a punta contra el Gateway real
+sería exactamente lo que este ciclo de trabajo prohíbe (declarar una mitigación no comprobada) — se prioriza,
+como pide explícitamente esta tarea, el timeout (alcanzable y verificado con evidencia real) sobre un
+circuit breaker inventado. Esto queda documentado como limitación conocida, no oculta.
+
+Lo que sí es cierto, y **no depende de tener un circuit breaker**, es el criterio de aceptación central de
+F9-09 ("Fallo aislado"): cada cluster de YARP tiene su propio `HttpMessageInvoker`/pool de conexiones —
+una falla sostenida contra el cluster de Workflow no consume ni degrada el `HttpMessageInvoker` del
+cluster de `sample-api`, son recursos completamente independientes dentro del mismo proceso de Gateway.
+Eso es lo que las pruebas de esta sección verifican con evidencia real, no solo se asume por lectura de
+código.
+
+### Verificación real ejecutada
+
+`GatewayWorkflowResilienceIntegrationTests`
+(`tests/BitCode.Gateway.Tests/Integration/GatewayWorkflowResilienceIntegrationTests.cs`), contra el
+Gateway real (Kestrel vía `WebApplicationFactory<Program>`) proxyando a backends HTTP reales (mismo patrón
+que `GatewayWorkflowRoutingIntegrationTests`, F9-06):
+
+- **Timeout**: un backend real (`GatewayWorkflowSlowTestBackend`) que responde tras 8 segundos de retraso
+  deliberado, con `ReverseProxy:Clusters:sample-workflow-api-cluster:HttpRequest:ActivityTimeout`
+  configurado en 2 segundos — el Gateway devuelve `504 Gateway Timeout` (código real observado en la
+  ejecución, generado por YARP internamente al disparar `RequestTimedOut`) en ~2 segundos, nunca esperando
+  los 8 segundos completos del backend. Confirma que el timeout configurado corta la espera de verdad, no
+  solo que la config está presente.
+- **Fallo aislado (criterio central)**: con ninguna dirección real escuchando en el destino configurado
+  para Workflow (equivalente exacto de `docker stop sample-workflow-api` contra el puerto documentado en
+  F9-06) — (a) `GET /api/v1/workflows/` devuelve `502 Bad Gateway` (código real observado, generado por
+  YARP al no poder conectar — "connection refused") en ~2 segundos, un error controlado, no un cuelgue; y
+  (b) `GET /api/echo` (ruta preexistente hacia `sample-api`, servida por el MISMO proceso de Gateway)
+  sigue respondiendo `200 OK` en unos pocos milisegundos, sin ninguna degradación medible — la caída total
+  de Workflow no afectó en absoluto al resto de la plataforma.
+
+Verificación manual adicional contra Docker real (mismo patrón que F9-05/F9-06): con `sample-workflow-api`
+corriendo como contenedor standalone y el Gateway apuntándole, se ejecutó `docker stop sample-workflow-api`
+mientras se repetían requests contra `/api/v1/workflows/...` (que empezaron a fallar con `502`, código
+consistente con el observado en la prueba automatizada) y, en paralelo, contra `/api/echo` (que siguió
+respondiendo `200` con la misma latencia de antes del incidente) — confirmando contra infraestructura real,
+no solo contra `WebApplicationFactory`, el mismo resultado de aislamiento.
+
+### Limitaciones honestas de esta tarea
+
+- **No hay circuit breaker ni bulkhead reales para el camino del Gateway → Workflow** — ver arriba. Queda
+  como trabajo futuro explícito si se necesitara evitar seguir golpeando repetidamente un backend caído
+  (hoy cada request individual sí falla rápido y aislado, pero el Gateway seguirá intentando conectar en
+  cada nuevo request mientras el backend siga caído, sin "descansar" el intento como haría un circuit
+  breaker real).
+- **El timeout de 5 segundos en producción es solo un valor de referencia**, no derivado de un SLA medido
+  (no existe tráfico productivo real de Workflow, misma limitación estructural de `ADR-0020`).
+- **No se probó bulkhead** (límite de concurrencia) porque YARP no expone ese control a nivel de cluster
+  en la versión integrada — no hay nada que verificar sin agregar código nuevo no solicitado por esta
+  tarea puntual.
+- **`sample-api-cluster` no recibió el mismo timeout** — gap conocido, documentado arriba, fuera del
+  alcance de F9-09 (que es sobre el módulo piloto).
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
@@ -858,6 +975,13 @@ vía Kestrel/`WebApplicationFactory` proxyando a backends HTTP reales) cubre: `4
 proxyar, routing correcto hacia el backend de Workflow (nunca hacia `sample-api`) con token válido, y que
 la ruta preexistente de `sample-api` sigue funcionando sin regresión — ver sección "Routing (F9-06)"
 arriba para el detalle completo, incluida la verificación manual de la reversión contra el Gateway real.
+
+`GatewayWorkflowResilienceIntegrationTests` (F9-09, `tests/BitCode.Gateway.Tests/Integration/`, Gateway
+real vía Kestrel/`WebApplicationFactory` proxyando a backends HTTP reales) cubre: timeout explícito
+(`504`) contra un backend deliberadamente lento cuando `HttpRequest.ActivityTimeout` está configurado, y
+el criterio central "Fallo aislado" — con el backend de Workflow completamente caído, la ruta preexistente
+de `sample-api` sigue respondiendo `200` sin degradación — ver sección "Resiliencia (F9-09)" arriba para
+el detalle completo, incluida la verificación manual contra Docker real.
 
 **F9-07 (Strangler rollout):** no se agregó ninguna prueba automatizada nueva — el "Plan de rollout" es,
 por criterio de aceptación literal ("Sin big bang"), un documento/procedimiento, no un componente de
