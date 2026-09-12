@@ -1,0 +1,53 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Web.Idempotency.HttpContextIdempotencyKeyProvider
+BitCode.Framework.Shared.Infrastructure.Web.Idempotency.HttpContextIdempotencyKeyProvider.HttpContextIdempotencyKeyProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor! httpContextAccessor) -> void
+BitCode.Framework.Shared.Infrastructure.Web.Idempotency.HttpContextIdempotencyKeyProvider.IdempotencyKey.get -> string?
+BitCode.Framework.Shared.Infrastructure.Web.Exceptions.GlobalExceptionHandler
+BitCode.Framework.Shared.Infrastructure.Web.Exceptions.GlobalExceptionHandler.GlobalExceptionHandler(Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Web.Exceptions.GlobalExceptionHandler!>! logger) -> void
+BitCode.Framework.Shared.Infrastructure.Web.Exceptions.GlobalExceptionHandler.TryHandleAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.Exception! exception, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+BitCode.Framework.Shared.Infrastructure.Web.Modularity.IWebFrameworkModule
+BitCode.Framework.Shared.Infrastructure.Web.Modularity.IWebFrameworkModule.ConfigureApplication(Microsoft.AspNetCore.Builder.WebApplication! app) -> void
+BitCode.Framework.Shared.Infrastructure.Web.Modularity.WebApplicationModularityExtensions
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.HttpContextTenantProvider(Microsoft.AspNetCore.Http.IHttpContextAccessor! httpContextAccessor) -> void
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.HttpContextTenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware.TenantLogEnrichmentMiddleware(Microsoft.AspNetCore.Http.RequestDelegate! next) -> void
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantLogEnrichmentMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext! context, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantContextApplicationBuilderExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.MultiTenancy.TenantContextApplicationBuilderExtensions.UseTenantContextLogging(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
+BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions
+BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.Modularity.WebApplicationModularityExtensions.UseModules(this Microsoft.AspNetCore.Builder.WebApplication! app) -> Microsoft.AspNetCore.Builder.WebApplication!
+static BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions.ToOkOrProblem<TValue>(this BitCode.Framework.Shared.Kernel.Result<TValue>! result) -> Microsoft.AspNetCore.Http.IResult!
+static BitCode.Framework.Shared.Infrastructure.Web.Results.ResultExtensions.ToProblemDetails(this BitCode.Framework.Shared.Kernel.Result! result) -> Microsoft.AspNetCore.Http.IResult!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddHttpContextIdempotencyKeyProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddHttpContextTenantProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedExceptionHandling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedHealthChecks(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Web.HealthChecks.HealthCheckEndpointRouteBuilderExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.HealthChecks.HealthCheckEndpointRouteBuilderExtensions.MapSharedHealthChecks(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Shared.Infrastructure.Web.WebServiceCollectionExtensions.AddSharedApiVersioning(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Web.OpenApi.OpenApiServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.OpenApi.OpenApiServiceCollectionExtensions.AddSharedOpenApiForApiVersion(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, int majorVersion, System.Action<Microsoft.AspNetCore.OpenApi.OpenApiOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Web.OpenApi.OpenApiSecuritySchemeOptionsExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.OpenApi.OpenApiSecuritySchemeOptionsExtensions.AddJwtBearerSecurityScheme(this Microsoft.AspNetCore.OpenApi.OpenApiOptions! options) -> Microsoft.AspNetCore.OpenApi.OpenApiOptions!
+BitCode.Framework.Shared.Infrastructure.Web.Security.Oidc.OidcAuthorizationCodeEndpointRouteBuilderExtensions
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Oidc.OidcAuthorizationCodeEndpointRouteBuilderExtensions.MapSharedOidcAuthorizationCodeLogin(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, System.Func<Microsoft.AspNetCore.Http.HttpContext!, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse!, string?, System.Threading.CancellationToken, System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult!>!>! onSignedIn, string! loginPath = "/auth/login", string! callbackPath = "/auth/callback") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAccessTokenRequestTransform
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAccessTokenRequestTransform.BffAccessTokenRequestTransform() -> void
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAuthenticationDefaults
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAuthenticationServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffLogoutEndpointRouteBuilderExtensions
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffOidcSignInHandler
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffProxyEndpointRouteBuilderExtensions
+BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffProxyServiceCollectionExtensions
+const BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAuthenticationDefaults.Scheme = "BitCode.Bff" -> string!
+override BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAccessTokenRequestTransform.ApplyAsync(Yarp.ReverseProxy.Transforms.RequestTransformContext! context) -> System.Threading.Tasks.ValueTask
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffAuthenticationServiceCollectionExtensions.AddSharedBffCookieAuthentication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffLogoutEndpointRouteBuilderExtensions.MapSharedBffLogout(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! logoutPath = "/auth/logout") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffOidcSignInHandler.HandleAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, BitCode.Framework.Shared.Infrastructure.Security.Oidc.AuthorizationCode.OidcTokenResponse! tokens, string? returnUrl, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Microsoft.AspNetCore.Http.IResult!>!
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffProxyEndpointRouteBuilderExtensions.MapSharedBffProxy(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffProxyServiceCollectionExtensions.AddSharedBffProxy(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Web.Security.Bff.BffLogoutEndpointRouteBuilderExtensions.MapSharedBffLogoutAllDevices(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! logoutAllDevicesPath = "/auth/logout-all") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!

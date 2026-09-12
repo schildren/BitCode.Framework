@@ -1,0 +1,166 @@
+#nullable enable
+BitCode.Framework.Platform.Catalogs.Actors.ICatalogsActorContext
+BitCode.Framework.Platform.Catalogs.Actors.ICatalogsActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Catalogs.Actors.ICatalogsActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.Catalogo(System.Guid id, string! codigo, string! nombre, string? descripcion) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.Codigo.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.CreatedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.CreatedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.DeletedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.DeletedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.Descripcion.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.IsDeleted.get -> bool
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.IsDeleted.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.ModifiedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.Nombre.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo.TenantId.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.CatalogoItem(System.Guid id, System.Guid catalogoVersionId, string! codigo, string! etiqueta, string? valor, int orden) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.CatalogoVersionId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.Codigo.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.Etiqueta.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.Orden.get -> int
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.TenantId.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem.Valor.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CatalogoId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CatalogoVersion(System.Guid id, System.Guid catalogoId, int numero) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CerrarVigencia(System.DateTime hasta) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CreatedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.CreatedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.Estado.get -> BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.ModifiedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.Numero.get -> int
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.PublicadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.Publicar(System.DateTime vigenteDesde, System.DateTime? vigenteHasta) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.TenantId.set -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.VigenteDesde.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion.VigenteHasta.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado.Borrador = 0 -> BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado.Publicada = 1 -> BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionEstado
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.CatalogoId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.CatalogoId.init -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.CatalogoVersionId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.CatalogoVersionId.init -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.CatalogoVersionPublicadaIntegrationEvent(System.Guid CatalogoVersionId, System.Guid CatalogoId, int Numero, System.DateTime VigenteDesde, System.DateTime? VigenteHasta) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Deconstruct(out System.Guid CatalogoVersionId, out System.Guid CatalogoId, out int Numero, out System.DateTime VigenteDesde, out System.DateTime? VigenteHasta) -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Equals(BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Numero.get -> int
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Numero.init -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.VigenteDesde.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.VigenteDesde.init -> void
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.VigenteHasta.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.VigenteHasta.init -> void
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.CatalogoItems.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoItem!>!
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.CatalogoVersiones.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersion!>!
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.Catalogos.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Catalogs.Catalogos.Catalogo!>!
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.CatalogsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Catalogs.CatalogsDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.ParametroVigencias.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia!>!
+BitCode.Framework.Platform.Catalogs.CatalogsDbContext.Parametros.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Catalogs.Parametros.Parametro!>!
+BitCode.Framework.Platform.Catalogs.CatalogsEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Catalogs.CatalogsPermissions
+BitCode.Framework.Platform.Catalogs.CatalogsServiceCollectionExtensions
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.Codigo.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.CreatedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.CreatedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.DeletedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.DeletedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.Descripcion.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.IsDeleted.get -> bool
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.IsDeleted.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.ModifiedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.Nombre.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.Parametro(System.Guid id, string! codigo, string! nombre, string? descripcion) -> void
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.Parametro.TenantId.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.CreatedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.CreatedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ModifiedBy.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ParametroId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.ParametroVigencia(System.Guid id, System.Guid parametroId, string! valor, System.DateTime vigenteDesde, System.DateTime? vigenteHasta) -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.TenantId.set -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.Valor.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.VigenteDesde.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigencia.VigenteHasta.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Deconstruct(out System.Guid ParametroVigenciaId, out System.Guid ParametroId, out string! Valor, out System.DateTime VigenteDesde, out System.DateTime? VigenteHasta) -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Equals(BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ParametroId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ParametroId.init -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ParametroVigenciaCreadaIntegrationEvent(System.Guid ParametroVigenciaId, System.Guid ParametroId, string! Valor, System.DateTime VigenteDesde, System.DateTime? VigenteHasta) -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ParametroVigenciaId.get -> System.Guid
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ParametroVigenciaId.init -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Valor.get -> string!
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Valor.init -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.VigenteDesde.get -> System.DateTime
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.VigenteDesde.init -> void
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.VigenteHasta.get -> System.DateTime?
+BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.VigenteHasta.init -> void
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.CatalogosCrear = "catalogos.catalogos.crear" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.CatalogosVer = "catalogos.catalogos.ver" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.ParametrosCrear = "catalogos.parametros.crear" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.ParametrosVer = "catalogos.parametros.ver" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.VersionesCrear = "catalogos.versiones.crear" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.VersionesPublicar = "catalogos.versiones.publicar" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.VigenciasCrear = "catalogos.parametros.vigencias.crear" -> string!
+const BitCode.Framework.Platform.Catalogs.CatalogsPermissions.VigenciasVer = "catalogos.parametros.vigencias.ver" -> string!
+override BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent!
+override BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent!
+override BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.ToString() -> string!
+override sealed BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent? left, BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent? left, BitCode.Framework.Platform.Catalogs.Catalogos.CatalogoVersionPublicadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Catalogs.CatalogsEndpointRouteBuilderExtensions.MapCatalogsEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Catalogs.CatalogsServiceCollectionExtensions.AddSharedCatalogs(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent? left, BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent? left, BitCode.Framework.Platform.Catalogs.Parametros.ParametroVigenciaCreadaIntegrationEvent? right) -> bool

@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # F4-08: paquete básico, sin overlays por ambiente (ver kustomization.yaml) -- valor único conservador,
+  # no un piso de HPA como en k8s/sample-api/base/deployment.yaml (F4-06 no está en el alcance de esta
+  # tarea para el Gateway). Un consumidor real agrega HPA/PDB/spread siguiendo el mismo patrón que ya
+  # existe para sample-api antes de ir a producción.
+  replicas: 2
+  # F4-13 (Despliegue gradual): mismo criterio y mismos valores que k8s/sample-api/base/deployment.yaml
+  # -- ver el comentario ahí para el detalle completo (zero downtime real vía readiness gate +
+  # maxUnavailable: 0). Con `replicas: 2` (piso fijo, sin HPA -- F4-08 no cubre F4-06 para el Gateway),
+  # `maxUnavailable: 0` garantiza que el rollout nunca baja de las 2 réplicas sirviendo tráfico.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gateway
+        app.kubernetes.io/part-of: bitcode-framework
+    spec:
+      # F4-03 (Stateless), mismo criterio que sample-api: sin volúmenes de estado local requeridos,
+      # cualquier pod es reemplazable -- el Gateway no tiene ningún estado LOCAL propio (ni siquiera
+      # cache en disco). El contador de rate limiting (F4-08, cierre de pendiente) SÍ puede vivir en un
+      # Redis compartido si el proyecto consumidor configura "Caching__RedisConnectionString" (ver
+      # secret.example.yaml/configmap.yaml) -- ese estado vive en Redis, no en el pod, así que no rompe
+      # "pod reemplazable": cualquier réplica puede caerse/recrearse sin perder el contador agregado. Sin
+      # esa configuración, el Gateway sigue funcionando sin ningún estado propio, con el rate limiting en
+      # memoria por réplica (fallback documentado en RateLimiting/GatewayRateLimitingServiceCollectionExtensions.cs).
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: gateway
+          image: bitcode/gateway:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: gateway-config
+            # Referencia externa: el Secret "gateway-secrets" (Jwt__SecretKey) NO se define en este
+            # repositorio -- ver secret.example.yaml para las claves esperadas (plantilla, no se aplica).
+            - secretRef:
+                name: gateway-secrets
+          # Mismo patrón que k8s/sample-api/base/deployment.yaml (F4-04): startupProbe/livenessProbe
+          # contra /health/live (liveness propio del Gateway, Program.cs -- NUNCA depende de que el/los
+          # backend(s) proxyados estén disponibles, mismo criterio que /health/live de F1-25). El
+          # Gateway no expone un /health/ready propio en esta tarea: no tiene ninguna dependencia
+          # crítica externa propia que verificar (no habla con SQL Server/Redis) -- proxyar hacia un
+          # backend caído no es un problema de READINESS del Gateway mismo, YARP simplemente devuelve
+          # 502/504 para esa ruta puntual sin que el Gateway deje de aceptar tráfico para las demás.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # F4-05 (Shutdown), mismo mecanismo que sample-api: drenar tráfico antes del SIGTERM.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 10
+          resources:
+            # El Gateway es I/O-bound (proxy + validación de JWT), sin trabajo de CPU pesado propio --
+            # valores conservadores, ajustables por perfil de tráfico real (F4-14, capacity tests).
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1654
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: gateway
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: gateway
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

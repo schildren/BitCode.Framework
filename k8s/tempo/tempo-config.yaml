@@ -1,0 +1,60 @@
+# BitCode.Framework — configuración de Grafana Tempo (cierre de pendiente F4-10, backend de trazas).
+#
+# Fuente única de verdad: este archivo se referencia por nombre desde kustomization.yaml
+# (configMapGenerator, files: [tempo-config.yaml]) -- el ConfigMap final que Kubernetes aplica se genera
+# a partir de ESTE archivo, sin duplicar el contenido en un manifiesto YAML aparte. Mismo patrón que
+# k8s/otel-collector/otel-collector-config.yaml.
+#
+# Modo "single binary" (todos los componentes de Tempo -- distributor/ingester/querier/compactor -- en
+# un único proceso/Pod, SIN separar en microservicios): suficiente para el alcance de "backend mínimo de
+# trazas self-hosted" de este cierre de pendiente -- ver docs/guia-otel-collector.md sección 4 para la
+# justificación completa de por qué Tempo (y no Jaeger/un SaaS) y por qué no se separa en microservicios
+# todavía.
+
+server:
+  http_listen_port: 3200
+
+# Recibe OTLP directamente del OTel Collector (k8s/otel-collector/, exporter "otlp/tempo") -- mismos dos
+# protocolos/puertos que ya expone el receiver "otlp" del propio Collector (grpc 4317 / http 4318), pero
+# acá aplicados a Tempo actuando como backend final, no como intermediario.
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+ingester:
+  trace_idle_period: 10s
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # Retención corta a propósito -- este cierre de pendiente NO define una política de retención
+    # productiva (eso es una decisión de costo/capacidad de almacenamiento separada, fuera de alcance
+    # acá); 24h alcanza para diagnóstico de corto plazo sin acumular un volumen de datos sin límite en el
+    # volumen local (emptyDir, ver storage.trace.backend abajo).
+    block_retention: 24h
+
+# Backend "local": el filesystem del propio Pod, montado como emptyDir (deployment.yaml) -- NO un
+# PersistentVolumeClaim. Trade-off documentado explícitamente, no oculto: reiniciar/reemplazar el Pod de
+# Tempo pierde las trazas ya almacenadas (mismo trade-off que ya declara "debug" como exporter del
+# Collector, ver otel-collector-config.yaml) -- aceptable para el alcance de "backend mínimo de trazas
+# self-hosted, sin réplicas" de este cierre de pendiente. Agregar un PersistentVolumeClaim (y decidir
+# StorageClass/tamaño/backup) es un cambio de infraestructura separado, para cuando este backend pase a
+# ser la fuente de verdad operativa de un cluster productivo real -- ver docs/guia-otel-collector.md.
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
+
+# "overrides" con los defaults del propio Tempo (sin límites custom) -- no hay necesidad de ajustar
+# ingestion rate limits para el volumen de tráfico de este cierre de pendiente (validación + smoke test,
+# no carga productiva real).
+overrides:
+  defaults: {}

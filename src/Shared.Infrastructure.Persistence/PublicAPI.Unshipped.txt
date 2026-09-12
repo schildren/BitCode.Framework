@@ -1,0 +1,214 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Concurrency.ConcurrencyModelConfigurator.ApplyConcurrencyTokens(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.Add(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.EfIdempotencyStore(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.FindAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.PurgeExpiredAsync(System.DateTime utcNow, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.EfIdempotencyStore.Remove(BitCode.Framework.Shared.Domain.Idempotency.IdempotencyKey! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.IdempotencyModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Idempotency.IdempotencyModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.AuditableEntitySaveChangesInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SoftDeleteInterceptor(BitCode.Framework.Shared.Domain.Security.ICurrentUserProvider! currentUserProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.TenantSaveChangesInterceptor(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChangesInterceptor
+BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChangesInterceptor.OutboxSaveChangesInterceptor(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.EfInboxStore(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.FindAsync(string! messageId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.Inbox.InboxMessage?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.Add(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.EfInboxStore.Discard(BitCode.Framework.Shared.Domain.Inbox.InboxMessage! record) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.InboxModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.Inbox.InboxModelConfigurator.Configure(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantIndexModelConfigurator.ApplyTenantIndexes(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.MultiTenantDbContext(Microsoft.EntityFrameworkCore.DbContextOptions! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.NullTenantProvider() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.NullTenantProvider.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.TenantContext(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.IsMultiTenancyEnabled.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.TenantContext.TenantId.get -> System.Guid?
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.Create(Microsoft.EntityFrameworkCore.DbContext! context, bool designTime) -> object!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.PerInstanceModelCacheKeyFactory.PerInstanceModelCacheKeyFactory() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver.SharedDatabaseShardResolver() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SharedDatabaseShardResolver.ResolveShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider.SingleConnectionStringShardProvider(string! connectionString) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.SingleConnectionStringShardProvider.GetConnectionStringAsync(BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<string!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver.TenantShardMapResolver(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantShardMapStore! shardMapStore) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.TenantShardMapResolver.ResolveShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.InMemoryTenantShardMapStore() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.Assign(System.Guid tenantId, BitCode.Framework.Shared.Domain.MultiTenancy.ShardId shardId) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryTenantShardMapStore.TryGetShardAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.ShardId?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantDatabaseMigrator
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantDatabaseMigrator.DedicatedTenantDatabaseMigrator(BitCode.Framework.Shared.Domain.MultiTenancy.IDedicatedTenantDatabaseCatalog! catalog, BitCode.Framework.Shared.Domain.MultiTenancy.IShardResolver! shardResolver, BitCode.Framework.Shared.Domain.MultiTenancy.IShardConnectionStringProvider! connectionStringProvider) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantDatabaseMigrator.MigrateAllAsync(System.Func<string!, System.Threading.CancellationToken, System.Threading.Tasks.Task!>! migrateDatabaseAsync, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.AllSucceeded.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!>! Results) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.DedicatedTenantMigrationReport(System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!>! Results) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Equals(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Failures.get -> System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Results.get -> System.Collections.Generic.IReadOnlyList<BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Results.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Deconstruct(out System.Guid TenantId, out bool Succeeded, out System.Exception? Error) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.DedicatedTenantMigrationResult(System.Guid TenantId, bool Succeeded, System.Exception? Error) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Equals(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? other) -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Error.get -> System.Exception?
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Error.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Succeeded.get -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Succeeded.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.TenantId.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryDedicatedTenantDatabaseCatalog
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryDedicatedTenantDatabaseCatalog.GetDedicatedTenantIdsAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyCollection<System.Guid>!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryDedicatedTenantDatabaseCatalog.InMemoryDedicatedTenantDatabaseCatalog() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.InMemoryDedicatedTenantDatabaseCatalog.Register(System.Guid tenantId) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.ToString() -> string!
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.operator !=(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport.operator ==(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationReport? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Failure(System.Guid tenantId, System.Exception! error) -> BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.Success(System.Guid tenantId) -> BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult!
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.operator !=(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult.operator ==(BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Sharding.DedicatedTenantMigrationResult? right) -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.InMemoryTenantRegionMapStore() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.Assign(System.Guid tenantId, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId regionId) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.InMemoryTenantRegionMapStore.TryGetOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver.TenantRegionOwnershipResolver(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantRegionMapStore! regionMapStore) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.TenantRegionOwnershipResolver.ResolveOwnerRegionAsync(System.Guid tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Domain.MultiTenancy.RegionId>!
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider.StaticCurrentRegionProvider(BitCode.Framework.Shared.Domain.MultiTenancy.RegionId currentRegion) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.StaticCurrentRegionProvider.CurrentRegion.get -> BitCode.Framework.Shared.Domain.MultiTenancy.RegionId
+BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.RegionalOwnershipServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.Regions.RegionalOwnershipServiceCollectionExtensions.AddRegionalOwnership(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, BitCode.Framework.Shared.Domain.MultiTenancy.RegionId currentRegion) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbContext.get -> Microsoft.EntityFrameworkCore.DbContext!
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.DbSet.get -> Microsoft.EntityFrameworkCore.DbSet<TEntity!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.RepositoryBase(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider.NullCurrentUserProvider() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Security.NullCurrentUserProvider.UserId.get -> string?
+BitCode.Framework.Shared.Infrastructure.Persistence.Specifications.SpecificationEvaluator<T>
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.BeginTransactionAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.DisposeAsync() -> System.Threading.Tasks.ValueTask
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+BitCode.Framework.Shared.Infrastructure.Persistence.UnitOfWork.UnitOfWork(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.AuditableEntitySaveChangesInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.SoftDeleteInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.TenantSaveChangesInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChangesInterceptor.SavingChanges(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result) -> Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>
+override BitCode.Framework.Shared.Infrastructure.Persistence.Interceptors.OutboxSaveChangesInterceptor.SavingChangesAsync(Microsoft.EntityFrameworkCore.Diagnostics.DbContextEventData! eventData, Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int> result, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Microsoft.EntityFrameworkCore.Diagnostics.InterceptionResult<int>>
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.OnConfiguring(Microsoft.EntityFrameworkCore.DbContextOptionsBuilder! optionsBuilder) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenantDbContext.OnModelCreating(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder) -> void
+static BitCode.Framework.Shared.Infrastructure.Persistence.MultiTenancy.MultiTenancyModelConfigurator.ApplyGlobalFilters(Microsoft.EntityFrameworkCore.ModelBuilder! modelBuilder, System.Guid tenantId, bool isMultiTenancyEnabled) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceOptions
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceOptions.CommandTimeoutSeconds.get -> int?
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceOptions.CommandTimeoutSeconds.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceOptions.PersistenceOptions() -> void
+static BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions.AddSharedPersistence<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceServiceCollectionExtensions.AddSharedPersistence<TContext>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString, System.Action<BitCode.Framework.Shared.Infrastructure.Persistence.PersistenceOptions!>! configureOptions) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Infrastructure.Persistence.Specifications.SpecificationEvaluator<T>.GetQuery(System.Linq.IQueryable<T!>! inputQuery, BitCode.Framework.Shared.Domain.Specifications.ISpecification<T!>! specification) -> System.Linq.IQueryable<T!>!
+static BitCode.Framework.Shared.Infrastructure.Persistence.Specifications.SpecificationEvaluator<T>.GetQuery(System.Linq.IQueryable<T!>! inputQuery, BitCode.Framework.Shared.Domain.Specifications.ISpecification<T!>! specification, bool applyPaging) -> System.Linq.IQueryable<T!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.AnyAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.CountAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.GetByIdAsync(TId id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TEntity?>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListAsync<TResult>(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Linq.Expressions.Expression<System.Func<TEntity!, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TResult>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListPagedAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, int page, int pageSize, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListPagedAsync<TResult>(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Linq.Expressions.Expression<System.Func<TEntity!, TResult>!>! selector, int page, int pageSize, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TResult>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.Remove(TEntity! entity) -> void
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.Update(TEntity! entity) -> void
+static BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.NormalizePaging(int page, int pageSize) -> (int Page, int PageSize)
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListPagedAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, BitCode.Framework.Shared.Kernel.PageRequest! pageRequest, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TEntity!>!>!
+virtual BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.RepositoryBase<TEntity, TId>.ListPagedAsync<TResult>(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Linq.Expressions.Expression<System.Func<TEntity!, TResult>!>! selector, BitCode.Framework.Shared.Kernel.PageRequest! pageRequest, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TResult>!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>
+BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ReadOnlyRepositoryBase(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.GetByIdAsync(TId id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TEntity?>!
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ListAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ListAsync<TResult>(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Linq.Expressions.Expression<System.Func<TEntity!, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TResult>!>!
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ListPagedAsync(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, int page, int pageSize, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TEntity!>!>!
+override BitCode.Framework.Shared.Infrastructure.Persistence.Repositories.ReadOnlyRepositoryBase<TEntity, TId>.ListPagedAsync<TResult>(BitCode.Framework.Shared.Domain.Specifications.ISpecification<TEntity!>! specification, System.Linq.Expressions.Expression<System.Func<TEntity!, TResult>!>! selector, int page, int pageSize, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.PagedResult<TResult>!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.IHotPathQueryExecutor
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.IHotPathQueryExecutor.ListAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TResult!>!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.IHotPathQueryExecutor.SingleOrDefaultAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor.HotPathQueryExecutor(Microsoft.EntityFrameworkCore.DbContext! dbContext) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor.ListAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TResult!>!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.HotPaths.HotPathQueryExecutor.SingleOrDefaultAsync<TResult>(BitCode.Framework.Shared.Domain.HotPaths.IHotPathQuery<TResult!>! query, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult?>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor.OutboxBatchProcessor(Microsoft.EntityFrameworkCore.DbContext! context, BitCode.Framework.Shared.Application.Eventing.IEventPublisher! eventPublisher, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions! options, BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier! failureClassifier, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor!>! logger, BitCode.Framework.Shared.Application.Eventing.IDeadLetterPublisher? deadLetterPublisher = null) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchProcessor.ProcessBatchAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!>!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.OutboxBatchResult(int Claimed, int Published, int SkippedInternal, int Failed, int Exhausted = 0) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Claimed.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Claimed.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Published.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Published.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.SkippedInternal.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.SkippedInternal.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Failed.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Failed.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Exhausted.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Exhausted.init -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Deconstruct(out int Claimed, out int Published, out int SkippedInternal, out int Failed, out int Exhausted) -> void
+static readonly BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Empty -> BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.<Clone>$() -> BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Equals(BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? other) -> bool
+override BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.GetHashCode() -> int
+override BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.ToString() -> string!
+static BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.operator ==(BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? right) -> bool
+static BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult.operator !=(BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? left, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxBatchResult? right) -> bool
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.OutboxPublisherOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.BatchSize.get -> int
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.BatchSize.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.PollingInterval.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.PollingInterval.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.LockDuration.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.LockDuration.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.WorkerId.get -> string!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.WorkerId.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.Retry.get -> BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions.Retry.set -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService.OutboxPublisherBackgroundService(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory, BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions! options, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherBackgroundService!>! logger) -> void
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherServiceCollectionExtensions
+static BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherServiceCollectionExtensions.AddSharedOutboxPublisher(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxPublisherOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxDiagnostics
+const BitCode.Framework.Shared.Infrastructure.Persistence.Outbox.OutboxDiagnostics.MeterName = "BitCode.Framework.Persistence.Outbox" -> string!

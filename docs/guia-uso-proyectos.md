@@ -2,6 +2,17 @@
 
 Guía práctica, paso a paso, para arrancar un proyecto **consumidor** del framework desde cero. Para nomenclatura y reglas duras ya establecidas, ver [`convenciones.md`](convenciones.md); para el detalle de diseño de cada pieza, ver los documentos de fase en [`README.md`](README.md). El proyecto [`samples/Sample.Api`](../samples/Sample.Api) es la referencia viva de todo lo descrito aquí.
 
+## 0. Atajo: `dotnet new bitcode-app` (F8-01)
+
+Las secciones 1 a 4 de esta guía describen cómo armar cada pieza a mano. `dotnet new bitcode-app` (Fase 8, `templates/app`) genera esas mismas piezas ya cableadas -- una aplicación base REALMENTE ejecutable, no un esqueleto vacío -- para no repetir el boilerplate:
+
+```bash
+dotnet new install ./templates/app
+dotnet new bitcode-app -n MiApp.Api -o samples/MiApp.Api --SharedSourceRoot ../../src
+```
+
+Genera `Program.cs`/`InfrastructureModule.cs`/`AppDbContext.cs` con persistencia multi-tenant, pipeline CQRS + validación + transacciones, versionado de API (`/api/v1/...`), OpenAPI, health checks y observabilidad ya configurados, más un feature de ejemplo (`Elementos/`, mismo patrón que `samples/Sample.Api/Productos`) para copiar o reemplazar por el dominio real. El parámetro `--SharedSourceRoot` (default `../../src`, asumiendo que el proyecto se genera dos niveles bajo la raíz del repo, ej. `samples/MiApp.Api/`) acepta una ruta absoluta si el proyecto se genera fuera del árbol de este repositorio -- el framework todavía no publica sus paquetes en un feed NuGet (ver sección 1 más abajo y F8-05, pendiente). Verificado de punta a punta (build real + arranque contra un SQL Server real + CRUD de ejemplo) en `tests/Templates.Tests/AppTemplateVerificationTests.cs`.
+
 ## 1. Referenciar el framework
 
 Hoy se consume por `ProjectReference` directa (aún no hay paquetes NuGet publicados — ver [`fase-8-documentacion-adopcion.md`](fase-8-documentacion-adopcion.md)). En el `.csproj` del proyecto Web, referenciar solo los proyectos que el consumidor necesita:
@@ -75,11 +86,17 @@ public partial class Program;
 
 `AddModules`/`UseModules` (Fase 5) descubren por reflexión todas las clases `IFrameworkModule`/`IWebFrameworkModule` del assembly, resuelven el orden por `[DependsOn]` y llaman `ConfigureServices`/`ConfigureApplication` en ese orden.
 
-**Migraciones, no `EnsureCreated`:** `Sample.Api` usa `EnsureCreatedAsync()` porque es un piloto/demo. Un proyecto real debe usar EF Core Migrations:
+**Migraciones, no `EnsureCreated`:** `Sample.Api` usa `EnsureCreatedAsync()` solo como bootstrap de test/demo. Un proyecto real debe usar EF Core Migrations junto con el tooling oficial `BitCode.Migrations` (F8-07, ver [`guia-migraciones.md`](guia-migraciones.md)) para garantizar despliegues zero-downtime mediante el patrón Expand-and-Contract:
 
 ```bash
+# 1. Generar la migración aditiva
 dotnet ef migrations add InicialMiApp --project MiApp.Api
-dotnet ef database update --project MiApp.Api
+
+# 2. Validar que no contenga operaciones destructivas (bloquea en CI/CD si viola expand-and-contract)
+dotnet run --project tools/BitCode.Migrations -- validate --assembly "bin/Debug/net10.0/MiApp.Api.dll"
+
+# 3. Aplicar el forward rollout a la base de datos (típicamente desde un Job de Kubernetes pre-deploy)
+dotnet run --project tools/BitCode.Migrations -- migrate --connection-string $CONNECTION_STRING --assembly "bin/Debug/net10.0/MiApp.Api.dll" --context "MiAppDbContext"
 ```
 
 ## 5. Agregar un feature (CQRS)
@@ -118,7 +135,7 @@ Reglas a respetar (detalle completo en [`convenciones.md`](convenciones.md)):
 | Jobs recurrentes | `Shared.Infrastructure.BackgroundJobs` | `services.AddSharedBackgroundJobs(q => q.AddJob<MiJob>(j => j.WithIdentity("mi-job")).AddTrigger(t => t.ForJob("mi-job").WithCronSchedule("0 0 * * * ?")))` | Ninguna adicional |
 | Proteger un endpoint por permiso | (parte de `Shared.Infrastructure.Security`) | — | `.RequireAuthorization("entidad.accion")` en el endpoint |
 
-Cachear con `HybridCache.GetOrCreateAsync`: recordar que la escritura a Redis L2 es asíncrona — no asumir consistencia inmediata entre instancias (Fase 4).
+Cachear datos de negocio (sensibles a tenant) con `ITenantAwareCache.GetOrCreateAsync` (F1-16) — no `HybridCache` directamente: compone el `TenantId` en la clave para que dos tenants nunca compartan una entrada de cache por casualidad de usar la misma clave lógica. Para datos que no son sensibles a tenant (metadata/configuración global), `HybridCache.GetOrCreateAsync` directo sigue siendo correcto. En ambos casos, recordar que la escritura a Redis L2 es asíncrona — no asumir consistencia inmediata entre instancias (Fase 4).
 
 ## 7. `appsettings.json` mínimo
 
@@ -155,7 +172,125 @@ dotnet test --filter "FullyQualifiedName!~Integration"   # rápidos, sin Docker
 dotnet test --filter "FullyQualifiedName~Integration"    # requieren Docker
 ```
 
-## 9. Checklist de arranque
+## 9. Consumo autenticado del feed NuGet (F8-05)
+
+`docs/adr/0018-registry-nuget-github-packages.md` deja configurado (no activado todavía -- ver ese
+ADR para los bloqueos pendientes) un feed propio del framework en **GitHub Packages**:
+`https://nuget.pkg.github.com/schildren/index.json`. Esta sección documenta cómo se consumirá desde
+un repositorio externo una vez que exista al menos una versión real publicada; hoy (mientras las
+secciones 1 a 9 de esta guía sigan siendo la única vía real) sigue aplicando `ProjectReference`.
+
+### 9.1 Variables de entorno esperadas
+
+El repositorio ya trae un `NuGet.Config` en la raíz con la fuente `bitcode-github` registrada y sus
+credenciales resueltas **solo** por variable de entorno (nunca embebidas en el archivo):
+
+| Variable | Contenido |
+|---|---|
+| `NUGET_GITHUB_ACTOR` | Usuario de GitHub del consumidor (o cualquier valor no vacío si se usa un token de tipo "fine-grained" sin usuario asociado a validar). |
+| `NUGET_GITHUB_TOKEN` | Personal Access Token de GitHub con scope `read:packages` (mínimo necesario para restaurar; nunca `write:packages` en un consumidor que solo restaura). |
+
+Un proyecto consumidor que sea otro repositorio del propio framework agrega el mismo bloque
+`packageSourceCredentials` en su propio `NuGet.Config` (o usa el de este repo como referencia) --
+`NuGet.Config` no es exclusivo de este repositorio, cada consumidor externo necesita su propia copia.
+
+### 9.2 Comando de login/restore
+
+GitHub Packages para NuGet no tiene un comando de "login" separado -- la autenticación va en el
+propio `nuget.config`/`NuGet.Config` del proyecto consumidor (sección 9.1). El flujo real es:
+
+```bash
+# 1) Definir las variables de entorno (nunca commitear el token)
+export NUGET_GITHUB_ACTOR="tu-usuario-github"
+export NUGET_GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+# 2) Restaurar normalmente -- NuGet resuelve la fuente bitcode-github usando esas variables
+dotnet restore
+```
+
+En GitHub Actions, un workflow consumidor no necesita generar el PAT manualmente para *publicar*
+(ver `docs/adr/0018-registry-nuget-github-packages.md`, razón #2), pero para *restaurar* paquetes de
+otro repositorio privado del mismo framework sí necesita un token con `read:packages` guardado como
+secret del repositorio consumidor (`secrets.NUGET_GITHUB_TOKEN` o el nombre que ese repositorio
+adopte) -- `secrets.GITHUB_TOKEN` del propio job solo tiene alcance sobre el repositorio en el que
+corre, no sobre paquetes publicados desde otro repositorio.
+
+### 9.3 Troubleshooting básico
+
+- **`error NU1301: No se pudieron cargar los datos del servicio de origen` / 401/403 contra
+  `bitcode-github`:** `NUGET_GITHUB_ACTOR`/`NUGET_GITHUB_TOKEN` no están definidas en el entorno, o el
+  token no tiene scope `read:packages`, o expiró. Verificar con `echo $NUGET_GITHUB_TOKEN` (nunca
+  loguear el valor completo en CI) y regenerar el PAT si hace falta.
+- **`dotnet restore` funciona para paquetes de `nuget.org` pero falla apenas se agrega una
+  `PackageReference` a un paquete `BitCode.Framework.*`:** confirmar que el proyecto realmente tiene
+  el `NuGet.Config` con la fuente `bitcode-github` en su árbol de directorios (NuGet resuelve el
+  `NuGet.Config` más cercano hacia arriba desde el proyecto, igual que `Directory.Build.props`) --
+  copiarlo desde la raíz de este repositorio si el consumidor vive en otro repositorio.
+- **El paquete restaura pero `dotnet nuget verify` falla sobre su firma:** no instalar ese paquete en
+  un pipeline de producción -- reportarlo, no es un problema de configuración del consumidor sino una
+  firma inválida del propio paquete (ver `docs/adr/0018-registry-nuget-github-packages.md`, "Política
+  de firma").
+- **Ninguna versión aparece publicada todavía:** esperado mientras el ADR 0008 (licencias) siga
+  `Proposed` y no exista un primer tag real empujado -- ver
+  `docs/adr/0018-registry-nuget-github-packages.md`, sección "Contexto". Seguir usando
+  `ProjectReference` (secciones 1 a 9 de esta guía) hasta entonces.
+
+## 10. Consumo autenticado del feed npm (F8-06)
+
+`docs/adr/0019-registry-npm-github-packages.md` deja configurado (no activado todavía -- ver ese ADR
+para los bloqueos pendientes) un feed propio de los 7 paquetes Angular del framework
+(`@bitcode/{auth,core,documents,forms,grid,ui,workflow}`) en **GitHub Packages**:
+`https://npm.pkg.github.com`. Esta sección documenta cómo se consumirá desde un proyecto Angular externo
+una vez que exista al menos una versión real publicada; hoy el propio monorepo frontend consume estos
+paquetes vía npm workspaces (symlinks a `frontend/packages/*`, no una dependencia publicada).
+
+### 10.1 `.npmrc` de ejemplo (consumidor externo)
+
+```ini
+# Registro por defecto sin cambios -- solo el scope @bitcode se resuelve contra GitHub Packages.
+@bitcode:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Ese archivo va en la raíz del proyecto consumidor (mismo mecanismo de resolución de npm que
+`NuGet.Config`/`Directory.Build.props`: busca hacia arriba desde el directorio actual). Nunca commitear
+un token real -- el `.npmrc` de ejemplo de arriba solo referencia una variable de entorno.
+
+### 10.2 Variable de entorno y comando de instalación
+
+| Variable | Contenido |
+|---|---|
+| `NODE_AUTH_TOKEN` | Personal Access Token de GitHub con scope `read:packages` (mínimo necesario para instalar; nunca `write:packages` en un consumidor que solo instala). |
+
+```bash
+# 1) Definir la variable de entorno (nunca commitear el token)
+export NODE_AUTH_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+# 2) Instalar normalmente -- npm resuelve el scope @bitcode usando esa variable
+npm install @bitcode/core @bitcode/ui
+```
+
+En GitHub Actions, un workflow consumidor que instale paquetes `@bitcode/*` de otro repositorio privado
+del mismo framework necesita un token con `read:packages` guardado como secret del repositorio
+consumidor (`secrets.NODE_AUTH_TOKEN` o el nombre que ese repositorio adopte) -- `secrets.GITHUB_TOKEN`
+del propio job solo tiene alcance sobre el repositorio en el que corre, no sobre paquetes publicados
+desde otro repositorio (mismo límite que ya documenta la sección 9.2 para NuGet).
+
+### 10.3 Troubleshooting básico
+
+- **`404 Not Found - GET https://npm.pkg.github.com/@bitcode%2f...` / 401/403:** `NODE_AUTH_TOKEN` no
+  está definida en el entorno, el token no tiene scope `read:packages`, expiró, o el paquete todavía no
+  tiene ninguna versión publicada (ver más abajo).
+- **`npm install` funciona para el resto de las dependencias pero falla apenas se agrega un paquete
+  `@bitcode/*`:** confirmar que el proyecto realmente tiene el `.npmrc` (sección 10.1) en su árbol de
+  directorios -- copiarlo desde `frontend/.npmrc` de este repositorio si el consumidor vive en otro
+  repositorio.
+- **Ninguna versión aparece publicada todavía:** esperado mientras el ADR 0008 (licencias) siga
+  `Proposed` y no exista un primer tag real empujado -- ver
+  `docs/adr/0019-registry-npm-github-packages.md`, sección "Contexto". Seguir consumiendo estos paquetes
+  vía npm workspaces dentro del propio monorepo (`frontend/`) hasta entonces.
+
+## 11. Checklist de arranque
 
 - [ ] Referenciar solo los proyectos `Shared.*` que se van a usar.
 - [ ] `DbContext` hereda de `MultiTenantDbContext` (o `MultiTenantIdentityDbContext<,>`).
@@ -165,3 +300,5 @@ dotnet test --filter "FullyQualifiedName~Integration"    # requieren Docker
 - [ ] Cada feature es una carpeta con su `IWebFrameworkModule` y `[DependsOn(typeof(InfrastructureModule))]`.
 - [ ] `appsettings.json` tiene solo las secciones de los `AddSharedX` registrados.
 - [ ] Tests de integración marcados y corriendo contra `Shared.Testing`.
+- [ ] Si se consume un paquete `BitCode.Framework.*` real desde el feed (en vez de `ProjectReference`): `NUGET_GITHUB_ACTOR`/`NUGET_GITHUB_TOKEN` definidas y `NuGet.Config` propio con la fuente `bitcode-github` (sección 9).
+- [ ] Si se consume un paquete `@bitcode/*` real desde el feed npm (en vez de npm workspaces): `NODE_AUTH_TOKEN` definida y `.npmrc` propio con el scope `@bitcode` (sección 10).

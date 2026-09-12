@@ -1,0 +1,39 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sample-api
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # F4-07 (PDB y spread), criterio "Pérdida de nodo sin caída": el PodDisruptionBudget acota
+  # disrupciones VOLUNTARIAS (`kubectl drain`, upgrade de nodo/cluster, autoscaler de cluster
+  # desalojando un nodo) -- NO protege contra la pérdida INVOLUNTARIA de un nodo (crash, falla de
+  # hardware); esa parte del criterio de aceptación la cubre `topologySpreadConstraints`
+  # (`deployment.yaml`), que evita que todas las réplicas terminen en el mismo nodo/zona en primer
+  # lugar. Ambos mecanismos son complementarios, no intercambiables.
+  #
+  # Se usa `maxUnavailable` (no `minAvailable`) en los tres ambientes -- un único campo, nunca ambos a
+  # la vez: la API rechaza un PodDisruptionBudget que declare `minAvailable` y `maxUnavailable`
+  # simultáneamente, así que cada overlay solo pisa el VALOR de `maxUnavailable`, nunca cambia de
+  # campo (evita que un merge estratégico de Kustomize deje los dos campos presentes a la vez).
+  #
+  # El valor base (`maxUnavailable: 1`) es el default de dev, igual que `resources`/HPA/spread arriba:
+  # con `minReplicas: 1` (ver overlays/dev/deployment-patch.yaml y overlays/dev/hpa-patch.yaml), un PDB
+  # con `minAvailable: 1` bloquearía CUALQUIER drain/upgrade de nodo indefinidamente (evacuar la única
+  # réplica dejaría 0 disponibles, por debajo del mínimo exigido) -- inaceptable en un cluster de
+  # desarrollo de un solo nodo, donde bloquear el drenado de ESE nodo equivale a bloquear cualquier
+  # mantenimiento del cluster completo. `maxUnavailable: 1` con una sola réplica permite que esa réplica
+  # se desaloje (Kubernetes calcula `disruptionsAllowed = maxUnavailable` cuando hay 1 réplica deseada),
+  # sin por eso dejar de declarar la política explícitamente (mismo criterio que ya usa
+  # `overlays/dev/hpa-patch.yaml`: declarar el valor por ambiente en vez de heredarlo en silencio).
+  #
+  # overlays/staging/pdb-patch.yaml y overlays/prod/pdb-patch.yaml mantienen el mismo campo
+  # (`maxUnavailable: 1`) pero con un piso de réplicas mayor (2 y 3 respectivamente) -- el mismo valor
+  # numérico ya se vuelve más estricto por sí solo a medida que sube el piso de réplicas: en staging
+  # garantiza al menos 1 réplica disponible durante una disrupción voluntaria, en prod al menos 2. Ver
+  # el comentario de cada patch para el detalle.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sample-api
+  maxUnavailable: 1

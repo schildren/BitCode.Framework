@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <!-- Golden path mínimo de un host BitCode.Framework (ver docs/convenciones.md): persistencia
+         multi-tenant, pipeline CQRS/validación/transacciones, modularidad, Minimal API + OpenAPI
+         versionado y observabilidad, el mismo set que samples/Sample.Api usa como referencia. -->
+    <ProjectReference Include="../../src/Shared.Infrastructure.Persistence/Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="../../src/Shared.Application/Shared.Application.csproj" />
+    <ProjectReference Include="../../src/Shared.Infrastructure.Web/Shared.Infrastructure.Web.csproj" />
+    <ProjectReference Include="../../src/Shared.Modularity/Shared.Modularity.csproj" />
+    <ProjectReference Include="../../src/Shared.Infrastructure.Observability/Shared.Infrastructure.Observability.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Feature Management -- Fase 6, módulo 4 del Plan Maestro BitCode: administración de
+      feature flags con persistencia propia (FeatureFlag), segmentación de audiencia (Segmento: por
+      tenant o por porcentaje) y rollout (asociación FeatureFlag-Segmento) con un motor de evaluación
+      real (EvaluarFeatureFlagQuery), con auditoría, RBAC/ABAC e idempotencia en las mutaciones expuestas
+      por API, y eventos de dominio/integración reales sobre agregados propios del módulo. Capa de
+      ADMINISTRACIÓN sobre feature flags -- no reemplaza el mecanismo de hot-reload en runtime de F4-12
+      (Shared.Infrastructure.Security.FeatureFlags), ver docs/guia-feature-management.md.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+</Project>

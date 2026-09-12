@@ -1,0 +1,40 @@
+.bc-task-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-4, 1rem);
+}
+
+.bc-task-actions__resolver {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-2, 0.5rem);
+}
+
+.bc-task-actions__comentario {
+  min-height: 4rem;
+  padding: var(--bc-space-2, 0.5rem);
+  border: 1px solid var(--bc-color-border, #ccc);
+  border-radius: var(--bc-radius-sm, 4px);
+}
+
+.bc-task-actions__buttons {
+  display: flex;
+  gap: var(--bc-space-2, 0.5rem);
+}
+
+.bc-task-actions__button {
+  padding: var(--bc-space-2, 0.5rem) var(--bc-space-4, 1rem);
+  border-radius: var(--bc-radius-sm, 4px);
+  border: 1px solid var(--bc-color-border, #ccc);
+  cursor: pointer;
+}
+
+.bc-task-actions__error {
+  border: 1px solid var(--bc-color-danger, #c0392b);
+  border-radius: var(--bc-radius-sm, 4px);
+  padding: var(--bc-space-2, 0.5rem);
+}
+
+.bc-task-actions__delegar-title {
+  margin: 0 0 var(--bc-space-2, 0.5rem);
+}

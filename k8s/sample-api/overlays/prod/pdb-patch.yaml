@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sample-api
+spec:
+  # prod: minReplicas 3 (ver deployment-patch.yaml / hpa-patch.yaml) -- maxUnavailable:1 garantiza que,
+  # durante una disrupción voluntaria (drain, upgrade), al menos 2 de las 3 réplicas sigan disponibles
+  # en todo momento (ver el comentario completo en base/pdb.yaml). Mismo valor NUMÉRICO que dev/staging,
+  # pero con el piso de réplicas más alto de los tres ambientes es también el más estricto en la
+  # práctica -- no se sube a `maxUnavailable: 2`/`minAvailable` mayor sin evidencia real de que un solo
+  # drain necesite mover más de 1 réplica a la vez; F4-14 (Capacity tests) es el lugar para revisar este
+  # valor contra un cluster real si hiciera falta.
+  maxUnavailable: 1

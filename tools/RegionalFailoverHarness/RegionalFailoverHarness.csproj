@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>BitCode.Framework.Tools.RegionalFailoverHarness</RootNamespace>
+    <Nullable>enable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- RegionId (F5-02, Shared.Domain): se reutiliza el tipo del framework para el identificador de
+         región en vez de un string suelto, aunque el resto del harness (mapa tenant/región, log de
+         auditoría) es deliberadamente standalone. Ver docs/failover-automatizado-fase5.md sección 2
+         para la justificación de por qué esta herramienta no depende de Shared.Infrastructure.Persistence
+         ni de BitCode.Gateway en runtime (misma razón que tools/QuartzHaRecoveryHarness: dos PROCESOS DE
+         SO reales, cada uno arrancado de forma independiente). -->
+    <ProjectReference Include="..\..\src\Shared.Domain\Shared.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

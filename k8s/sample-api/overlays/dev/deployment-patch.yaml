@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-api
+spec:
+  # F4-06 (HPA): este valor es el piso (minReplicas del HPA, ver hpa-patch.yaml) -- dev arranca con
+  # una única réplica y el HPA la sube hasta 3 solo si la CPU lo justifica.
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: sample-api
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

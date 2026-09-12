@@ -1,0 +1,140 @@
+# BitCode.Framework — configuración del OpenTelemetry Collector (F4-10, Fase 4 del Plan Maestro).
+#
+# Fuente única de verdad: este archivo se referencia por nombre desde kustomization.yaml
+# (configMapGenerator, files: [otel-collector-config.yaml]) — el ConfigMap final que Kubernetes aplica
+# se genera a partir de ESTE archivo, sin duplicar el contenido en un manifiesto YAML aparte. También es
+# el mismo archivo que se valida directamente contra el binario real del Collector fuera de Kubernetes
+# (ver docs/guia-otel-collector.md sección de validación, `otelcol-contrib validate --config=...` y
+# arranque real con Docker).
+#
+# Patrón: apps (Sample.Api, BitCode.Gateway) -> OTel Collector (este pipeline, rol "agente/gateway"
+# combinado en un único Deployment por ahora, sin separar agente-por-nodo de gateway-central todavía) ->
+# backend(s) de observabilidad. TRAZAS: exportan a Grafana Tempo real (k8s/tempo/, exporter
+# "otlp/tempo"), además de "debug" para diagnóstico -- ver docs/guia-otel-collector.md sección 4 para la
+# justificación de esta elección de backend (cierre de un TODO que F4-10 dejó explícitamente pendiente).
+# MÉTRICAS/LOGS: sin un backend real desplegado todavía (Prometheus/Mimir, Loki u otro) -- el único
+# exporter activo en esos dos pipelines sigue siendo "debug" (nombre actual del exporter que en
+# versiones más viejas del Collector se llamaba "logging" -- mismo propósito, imprime el payload
+# recibido en stdout del propio Collector). Ver la sección "exporters" más abajo para el TODO explícito
+# de métricas/logs, deliberadamente fuera de alcance de este cierre de pendiente.
+
+extensions:
+  # Expone GET /health en el puerto 13133 — usado por livenessProbe/readinessProbe del Deployment
+  # (k8s/otel-collector/deployment.yaml). Extensión oficial del propio Collector, sin dependencias
+  # externas.
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      # gRPC (4317): protocolo por defecto que ya usan tracing.AddOtlpExporter/metrics.AddOtlpExporter
+      # (Shared.Infrastructure.Observability, F3-10/F4-10) y el sink Serilog.Sinks.OpenTelemetry
+      # (F4-10) de Sample.Api/BitCode.Gateway -- ver OpenTelemetryOptions.OtlpEndpoint.
+      grpc:
+        endpoint: 0.0.0.0:4317
+      # HTTP (4318): mismo receiver OTLP, protocolo HTTP/protobuf -- no lo usa hoy ningún proyecto de
+      # este repositorio (todos exportan por gRPC), pero se deja habilitado por ser el segundo protocolo
+      # estándar de OTLP (útil para un cliente futuro que no pueda hablar gRPC, p. ej. detrás de un proxy
+      # que solo permite HTTP/1.1).
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # SIEMPRE primero en la lista de processors de cada pipeline (recomendación oficial del Collector):
+  # protege al propio proceso del Collector contra un pico de tráfico que agote su memoria antes de que
+  # el resto del pipeline (batch, exporters) llegue a procesarlo -- sin este processor, un Collector sin
+  # límite de memoria configurado puede terminar en OOMKill del Pod bajo carga, perdiendo TODO lo que
+  # tenía en el buffer, no solo el exceso.
+  memory_limiter:
+    check_interval: 1s
+    # Debe quedar por debajo de `resources.limits.memory` del contenedor (deployment.yaml, 400Mi) con
+    # margen real para el resto del runtime Go (GC, buffers de red) -- no es "el límite del Pod", es el
+    # límite que este processor fuerza ANTES de llegar a que Kubernetes mate el proceso.
+    limit_mib: 300
+    spike_limit_mib: 75
+  # Agrupa spans/métricas/logs individuales en lotes antes de exportar -- reduce drásticamente el número
+  # de requests salientes hacia el/los exporter(s) reales (ver el TODO de la sección "exporters"),
+  # comparado con exportar cada señal individual apenas llega.
+  batch:
+    timeout: 5s
+    send_batch_size: 8192
+  # Ejemplo de processor "resource" NO destructivo -- agrega un atributo de resource nuevo
+  # ("bitcode.collector.name") sin tocar los que ya trae cada señal desde el origen. Se incluye acá
+  # deliberadamente para dejar EXPLÍCITO (no implícito) que ninguno de los atributos de "telemetría
+  # mínima" que ya setea la app (service.instance.id/deployment.environment vía
+  # ObservabilityServiceCollectionExtensions, tenant_id como tag de Activity vía
+  # TenantLogEnrichmentMiddleware, ambos F4-10) se pierde al pasar por este pipeline -- ningún processor
+  # de esta lista (memory_limiter/batch/resource) filtra ni sobrescribe atributos existentes; "resource"
+  # con `action: upsert` sobre una clave nueva ("bitcode.collector.name") nunca pisa una clave que ya
+  # traiga la señal.
+  resource:
+    attributes:
+      - key: bitcode.collector.name
+        value: "otel-collector"
+        action: upsert
+
+exporters:
+  # Se mantiene activo junto a "otlp/tempo" (traces) -- útil para diagnóstico rápido del propio Collector
+  # sin tener que consultar la API de Tempo (p. ej. confirmar que una señal llegó al receiver aunque
+  # Tempo esté caído/mal configurado). No persiste nada -- reiniciar el Pod pierde toda la telemetría ya
+  # "exportada" acá; eso es exactamente lo que SÍ resuelve "otlp/tempo" para trazas (ver abajo).
+  debug:
+    verbosity: detailed
+
+  # Backend REAL de trazas (cierre del TODO que dejó F4-10): Grafana Tempo, desplegado en el mismo
+  # cluster (k8s/tempo/, namespace "bitcode-observability", mismo namespace que este Collector). Elección
+  # documentada con el mismo rigor que otras decisiones técnicas de la Fase 4 (p. ej. Kustomize sobre
+  # Helm, F4-02) en docs/guia-otel-collector.md sección 4 -- resumen: Tempo es OSS (sin costo de
+  # licencia), habla OTLP nativo (el mismo protocolo que ya expone el receiver de este Collector, sin
+  # traducir a un formato propietario), y tiene menor huella operativa que Jaeger para este alcance (no
+  # requiere Elasticsearch/Cassandra como dependencia obligatoria de storage -- Tempo en modo
+  # "single binary" solo necesita un filesystem local). Coherente con el resto del stack de este
+  # framework, todo self-hosted (SQL Server, Redis, Kafka).
+  #
+  # Solo cubre TRAZAS -- ver el pipeline "traces" más abajo. Métricas (Prometheus/Mimir) y logs (Loki u
+  # otro) quedan EXPLÍCITAMENTE fuera de este cierre de pendiente (no se despliegan, no se simulan como
+  # resueltos) -- sus pipelines siguen exportando solo a "debug", igual que antes de este cambio. Ver el
+  # TODO actualizado más abajo.
+  otlp/tempo:
+    endpoint: tempo.bitcode-observability.svc.cluster.local:4317
+    tls:
+      # Tráfico intra-cluster, mismo criterio que ya documentaba el ejemplo comentado que reemplaza este
+      # exporter: en un cluster productivo real, reemplazar por TLS real (docs/politica-seguridad-kafka.md
+      # sección de TLS es la referencia de patrón, aunque sea para Kafka -- mismo principio de no exponer
+      # tráfico interno en texto plano). No se resuelve acá: mTLS intra-cluster es una decisión de
+      # infraestructura de red separada (p. ej. un service mesh), fuera del alcance de este cierre de
+      # pendiente puntual.
+      insecure: true
+
+  # -----------------------------------------------------------------------------------------------
+  # TODO: métricas (Prometheus/Mimir) y logs (Loki u otro) siguen sin un backend real desplegado -- fuera
+  # de alcance de este cierre de pendiente (que resolvió específicamente TRAZAS vía Tempo, ver arriba).
+  # Ejemplo de exporter real, EN COMENTARIO, listo para descomentar el día que se apruebe/despliegue un
+  # backend de métricas (agregaría el exporter acá Y su nombre a `service.pipelines.metrics.exporters`
+  # más abajo, junto a o en reemplazo de `debug`):
+  #
+  # prometheusremotewrite:
+  #   endpoint: http://prometheus.observability.svc.cluster.local:9090/api/v1/write
+  #   tls:
+  #     insecure: true
+  # -----------------------------------------------------------------------------------------------
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug, otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [debug]
+  telemetry:
+    logs:
+      level: info

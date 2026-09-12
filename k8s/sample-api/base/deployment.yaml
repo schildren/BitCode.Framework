@@ -1,0 +1,249 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-api
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # replicas se fija por overlay de ambiente (dev/staging/prod), no acá — ver
+  # kustomization.yaml de cada overlay (patch de "replicas"). Desde F4-06, este valor es el PISO
+  # (minReplicas) que también declara el HPA de ese mismo overlay (hpa-patch.yaml) -- el HPA (ver
+  # hpa.yaml) toma el control del campo `replicas` en un cluster real con metrics-server, escalando
+  # entre `minReplicas` y `maxReplicas` según CPU; este valor sigue siendo el que se aplica en el
+  # primer despliegue o si el HPA no está disponible.
+  replicas: 1
+  # F4-13 (Despliegue gradual), criterio "Zero downtime comprobado": `RollingUpdate` explícito, no el
+  # comportamiento por defecto implícito de `apps/v1 Deployment` (que ya es `RollingUpdate` con
+  # `maxSurge: 25%`/`maxUnavailable: 25%` si `strategy` no se declara) -- se fija acá para que el
+  # criterio de aceptación no dependa de un default que puede cambiar entre versiones de Kubernetes ni
+  # de la lectura implícita del manifiesto. `maxUnavailable: 0` reemplaza cada réplica creando el pod
+  # NUEVO primero y esperando a que su `readinessProbe` (F4-04, `/health/ready`) pase antes de terminar
+  # el pod VIEJO -- sin esto, un rollout normal (`maxUnavailable: 25%` por defecto) tolera sacar réplicas
+  # de servicio ANTES de que la reemplazante esté lista, lo que sí puede degradar disponibilidad bajo
+  # carga con pocas réplicas (p. ej. `minReplicas: 1` en dev). `maxSurge: 1` permite UN pod extra
+  # temporal por vez durante el rollout (no más, para no disparar de golpe el uso de `resources.requests`
+  # del namespace) -- combinado con `maxUnavailable: 0`, el rollout siempre mantiene al menos la cantidad
+  # de réplicas deseada SIRVIENDO tráfico durante toda la transición, sin exceder el piso ni crear más de
+  # un pod de más a la vez. Ver `docs/politica-despliegue-gradual.md` para el análisis completo (rolling
+  # vs. canary/blue-green) y la evidencia de validación de este campo (sección "F4-13").
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sample-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sample-api
+        app.kubernetes.io/part-of: bitcode-framework
+    spec:
+      # F4-03 (Stateless): sin volúmenes de estado local requeridos, sin
+      # affinity a un nodo específico — cualquier pod es reemplazable.
+      # F4-05 (Shutdown): presupuesto de apagado prolijo = preStop sleep (10s, ver
+      # lifecycle.preStop más abajo) + margen real para drenar trabajo en curso antes del SIGKILL final:
+      #   - Requests HTTP en vuelo: ASP.NET Core/Kestrel ya maneja el drenado por defecto al recibir
+      #     SIGTERM (IHostApplicationLifetime.ApplicationStopping), acotado por HostOptions.ShutdownTimeout
+      #     (5s por defecto del host genérico si el proyecto consumidor no lo cambia).
+      #   - Jobs de Quartz en curso: AddSharedBackgroundJobs (Shared.Infrastructure.BackgroundJobs) ya
+      #     registra AddQuartzHostedService con WaitForJobsToComplete=true — pero esa espera también está
+      #     acotada por el mismo HostOptions.ShutdownTimeout del host.
+      #   - OutboxPublisherBackgroundService / loop de KafkaEventConsumer<TEvent> (Fase 3): ya respetan
+      #     el CancellationToken de shutdown fila por fila / mensaje por mensaje (no hay lote a medio
+      #     confirmar que se pierda), pero terminar la fila/mensaje EN CURSO también compite por el mismo
+      #     presupuesto de HostOptions.ShutdownTimeout.
+      # Este Deployment base (sample-api) no registra hoy ningún consumer/Outbox/Quartz (ver
+      # docs/politica-manifiestos-kubernetes.md sección "F4-05"), así que 40s alcanza de sobra para
+      # requests HTTP. Un proyecto real que SÍ registre trabajo en segundo plano de vida más larga debe
+      # (a) subir este valor y (b) subir HostOptions.ShutdownTimeout en su propio Program.cs
+      # (`builder.Host.ConfigureHostOptions(o => o.ShutdownTimeout = ...)`) para que el default de 5s no
+      # corte ese trabajo antes de que este mayor presupuesto del Pod expire — ver la guía referenciada.
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: sample-api
+          # El tag real se fija por overlay vía kustomization.yaml -> images:
+          # (dev/staging apuntan a un tag mutable de pre-release, prod exige
+          # un tag inmutable versionado — ver overlays/prod/kustomization.yaml).
+          image: bitcode/sample-api:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            # Configuración no sensible (ASPNETCORE_ENVIRONMENT, logging, etc.).
+            - configMapRef:
+                name: sample-api-config
+            # Referencia externa: el Secret "sample-api-secrets" (cadena de
+            # conexión SQL Server, Secrets:Vault:Token si aplica, etc.) NO se
+            # define en este repositorio. Lo provisiona cada clúster/ambiente
+            # por su propio mecanismo (External Secrets Operator contra Vault
+            # -- docs/adr/0014-secretos-proveedor-vault-propuesto.md --, o
+            # sealed-secrets/CI en un pipeline de despliegue con acceso al
+            # secret store real). Ver overlays/*/secret.example.yaml para las
+            # claves esperadas (plantilla, sin valores reales, no se aplica).
+            - secretRef:
+                name: sample-api-secrets
+          # F4-12 (cierre del gap de hot-reload, docs/politica-configuracion-y-feature-flags.md sección
+          # 2.4): "sample-api-featureflags" (featureflags-configmap.yaml) montado como VOLUMEN de archivo
+          # -- a diferencia de "envFrom" arriba, Kubernetes SÍ actualiza el contenido de un volumen de
+          # ConfigMap dentro de un pod ya corriendo cuando el ConfigMap cambia (con el delay de
+          # propagación del kubelet, ver el comentario del ConfigMap). Program.cs monta esto con
+          # "builder.Configuration.AddJsonFile(\"/app/config/featureflags.json\", optional: true,
+          # reloadOnChange: true)" -- reloadOnChange dispara el change token que
+          # IOptionsMonitor<FeatureFlagsOptions> necesita para notificar sin reiniciar el proceso.
+          volumeMounts:
+            - name: featureflags-config
+              mountPath: /app/config
+              readOnly: true
+          # -----------------------------------------------------------------
+          # F4-04: startupProbe / livenessProbe / readinessProbe contra los
+          # endpoints de F1-25 (Shared.Infrastructure.Web, ver
+          # docs/guia-health-checks.md). Los tres apuntan por nombre de puerto
+          # ("http", containerPort 8080) — la imagen "chiseled" (F4-01) no
+          # tiene shell/curl, así que solo httpGet es viable (no exec).
+          #
+          # startupProbe -> /health/live: mismo endpoint que livenessProbe, es
+          # el patrón recomendado por Kubernetes para permitir un arranque
+          # lento (acá, SampleDbContext.Database.EnsureCreatedAsync() en
+          # Program.cs, que corre ANTES de que Kestrel empiece a escuchar)
+          # sin que livenessProbe mate el contenedor a mitad de esa
+          # inicialización. No depende de SQL Server/Redis (mismo Predicate
+          # que descarta todos los checks) — solo confirma que el proceso
+          # .NET puede responder HTTP. Da hasta 60s (30 x 2s) antes de que
+          # Kubernetes considere el startup fallido y reinicie el pod; en la
+          # práctica Kestrel no acepta conexiones hasta que EnsureCreatedAsync
+          # termina, así que el primer intento exitoso ya implica init
+          # completa.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          # livenessProbe -> /health/live: SOLO indica "el proceso .NET está
+          # vivo y puede responder". Nunca evalúa SQL Server/Redis (ver
+          # HealthCheckEndpointRouteBuilderExtensions, Predicate = _ => false)
+          # -- una caída de una dependencia externa no crítica para el
+          # proceso NO debe disparar un restart (criterio de aceptación de
+          # esta fila: "sin bucles de reinicio por dependencia no crítica").
+          # Reinicia el pod solo tras 3 fallos consecutivos (30s sin
+          # respuesta) de un proceso que ya pasó el startupProbe.
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # readinessProbe -> /health/ready: SÍ refleja el estado de las
+          # dependencias críticas (SQL Server siempre; Redis si el proyecto
+          # configuró Caching:RedisConnectionString) -- 503 si alguna está
+          # caída. Un readinessProbe fallido saca el pod del Service (deja de
+          # recibir tráfico) SIN reiniciarlo -- Kubernetes solo actúa sobre
+          # livenessProbe/startupProbe para reinicios.
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # -----------------------------------------------------------------
+          # F4-05 (Shutdown): drenar tráfico ANTES de que el proceso reciba SIGTERM. La salida de un Pod
+          # del Service (kube-proxy deja de enrutarle tráfico nuevo) y el envío de SIGTERM al proceso son
+          # dos eventos EN PARALELO disparados por el mismo Pod entrando en estado "Terminating" -- sin
+          # este hook, un balanceador/Ingress que todavía no propagó la baja del Endpoint puede seguir
+          # enviando requests nuevos a un proceso que ya dejó de escuchar (o que ya terminó). El hook
+          # retrasa el envío de SIGTERM lo suficiente para que esa propagación ya haya ocurrido.
+          #
+          # `sleep` nativo del kubelet (acción estable desde Kubernetes 1.29, "sleep action" de
+          # lifecycle hooks: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) —
+          # NO `exec` con un comando `sleep` de shell: la imagen "chiseled" (F4-01) no tiene `/bin/sh` ni
+          # ningún binario de coreutils (ver docs/politica-contenedores.md sección 3.2), mismo motivo por
+          # el que los tres probes de arriba son `httpGet` y nunca `exec`. El kubelet ejecuta este sleep
+          # por su cuenta, sin necesitar nada dentro del contenedor.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 10
+          resources:
+            # Valores base conservadores; cada overlay los sobreescribe con un
+            # patch acorde al perfil de carga esperado del ambiente.
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          securityContext:
+            # La imagen base ya corre non-root (UID 1654, ver
+            # docs/politica-contenedores.md sección 3.4); se refuerza acá a
+            # nivel Pod/Container para que el Deployment sea explícito y no
+            # dependa únicamente de lo que defina la imagen.
+            runAsNonRoot: true
+            runAsUser: 1654
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # dotnet publish self-contained=false escribe en /tmp; revisar al habilitar F4-05 si se puede endurecer.
+            capabilities:
+              drop:
+                - ALL
+      # -------------------------------------------------------------------
+      # F4-07 (PDB y spread), criterio "Pérdida de nodo sin caída":
+      # `topologySpreadConstraints` distribuye las réplicas de este Deployment entre nodos (siempre) y
+      # zonas de disponibilidad (cuando el cluster las expone vía el label estándar
+      # `topology.kubernetes.io/zone` en cada Node) para que la pérdida de UN nodo (o zona) no derribe
+      # todas las réplicas a la vez -- complementa al `PodDisruptionBudget` (`base/pdb.yaml`), que cubre
+      # disrupciones VOLUNTARIAS (drain, upgrade) pero no dice nada sobre CÓMO el scheduler distribuye
+      # los pods en primer lugar. Se usa `topologySpreadConstraints` (no `podAntiAffinity`): expresa
+      # "balancear lo más parejo posible" con `maxSkew`, en vez del "nunca compartir nodo/zona"
+      # binario de una anti-affinity `requiredDuringScheduling` -- con `maxReplicas` del HPA superando
+      # a menudo la cantidad de nodos/zonas reales (ver F4-06, hasta 10 réplicas en prod), una
+      # anti-affinity estricta dejaría réplicas del HPA sin poder programarse; `maxSkew: 1` sigue
+      # repartiendo parejo sin ese bloqueo total.
+      #
+      # Los valores de este `base/deployment.yaml` son el default de dev (mismo criterio que
+      # `resources`/HPA: el ambiente que menos se aparta del piso) -- `whenUnsatisfiable: ScheduleAnyway`
+      # en AMBOS ejes porque un cluster de desarrollo típico (1 solo nodo, sin labels de zona reales)
+      # jamás podría satisfacer un `DoNotSchedule` -- eso dejaría el/los pod(s) de dev perpetuamente
+      # `Pending` por un objetivo de alta disponibilidad que ese cluster no tiene con qué cumplir.
+      # `overlays/staging/deployment-patch.yaml` y `overlays/prod/deployment-patch.yaml` lo endurecen a
+      # `DoNotSchedule` para el eje de nodo (y, en prod, también el de zona) -- ver el comentario en cada
+      # patch para el detalle y el riesgo documentado de esa decisión por ambiente. La lista hace merge
+      # estratégico por `topologyKey` (mismo mecanismo que `containers` hace merge por `name`), así que
+      # cada overlay solo necesita repetir el `topologyKey` que quiere tocar, sin reescribir `maxSkew`/
+      # `labelSelector`.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
+      # F4-12 (cierre del gap de hot-reload): volumen de archivo respaldado por el ConfigMap
+      # "sample-api-featureflags" -- "items" acota el volumen a UNA sola clave del ConfigMap
+      # ("featureflags.json") materializada como archivo del mismo nombre en el directorio de
+      # "volumeMounts" de arriba. Deliberadamente SIN "subPath" en el volumeMount: un ConfigMap montado
+      # con subPath no se actualiza cuando el ConfigMap cambia (limitación de Kubernetes, el symlink
+      # atómico que el kubelet usa para propagar la actualización no aplica a subPath) -- montar el
+      # directorio completo es lo que permite el hot-reload real.
+      volumes:
+        - name: featureflags-config
+          configMap:
+            name: sample-api-featureflags
+            items:
+              - key: featureflags.json
+                path: featureflags.json
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

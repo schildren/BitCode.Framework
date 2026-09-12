@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <!-- F3-04: KafkaEventConsumer<TEvent> ahora resuelve IInboxMessageProcessor/IEventConsumer<TEvent>
+         de un IServiceScopeFactory por mensaje; estos tests arman un contenedor mínimo con
+         InMemoryInboxMessageProcessor para ejercitarlo sin depender de SQL Server real. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

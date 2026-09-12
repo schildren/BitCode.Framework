@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: sample-api
+spec:
+  # dev: minReplicas 1 (ver deployment-patch.yaml / hpa-patch.yaml) -- maxUnavailable:1 permite
+  # desalojar la única réplica durante un drain/upgrade de nodo en vez de bloquearlo indefinidamente
+  # (ver el comentario completo en base/pdb.yaml). Mismo valor que el default de base, repetido acá de
+  # forma explícita -- mismo criterio que overlays/dev/hpa-patch.yaml.
+  maxUnavailable: 1

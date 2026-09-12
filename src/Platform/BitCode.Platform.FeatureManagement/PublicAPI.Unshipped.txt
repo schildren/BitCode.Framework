@@ -1,0 +1,212 @@
+#nullable enable
+BitCode.Framework.Platform.FeatureManagement.Actors.IFeatureManagementActorContext
+BitCode.Framework.Platform.FeatureManagement.Actors.IFeatureManagementActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.FeatureManagement.Actors.IFeatureManagementActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse!
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Activo.get -> bool
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Activo.init -> void
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Deconstruct(out string! Nombre, out bool Activo, out string! Motivo) -> void
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Equals(BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.FeatureFlagEvaluationResponse(string! Nombre, bool Activo, string! Motivo) -> void
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Motivo.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Motivo.init -> void
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Nombre.init -> void
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext.FeatureFlags.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag!>!
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext.FeatureManagementDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext.Rollouts.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout!>!
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementDbContext.Segmentos.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento!>!
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions
+BitCode.Framework.Platform.FeatureManagement.FeatureManagementServiceCollectionExtensions
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.Activar() -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.Activo.get -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.CreatedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.CreatedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.DeletedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.DeletedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.Desactivar() -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.Descripcion.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.FeatureFlag(System.Guid id, string! nombre, string? descripcion) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.IsDeleted.get -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.IsDeleted.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.ModifiedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.ModifiedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.TenantId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlag.TenantId.set -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Deconstruct(out System.Guid FeatureFlagId, out string! Nombre) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Equals(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.FeatureFlagActivadoIntegrationEvent(System.Guid FeatureFlagId, string! Nombre) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.FeatureFlagId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.FeatureFlagId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Nombre.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Deconstruct(out System.Guid FeatureFlagId, out string! Nombre) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Equals(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.FeatureFlagDesactivadoIntegrationEvent(System.Guid FeatureFlagId, string! Nombre) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.FeatureFlagId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.FeatureFlagId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Nombre.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Activo.get -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Activo.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Deconstruct(out System.Guid Id, out string! Nombre, out string? Descripcion, out bool Activo) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Descripcion.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Descripcion.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Equals(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.FeatureFlagResponse(System.Guid Id, string! Nombre, string? Descripcion, bool Activo) -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Id.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Id.init -> void
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Nombre.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.CreatedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.CreatedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.FeatureFlagId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.ModifiedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.ModifiedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.Rollout(System.Guid id, System.Guid featureFlagId, System.Guid segmentoId) -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.SegmentoId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.TenantId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.Rollout.TenantId.set -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.Deconstruct(out System.Guid RolloutId, out System.Guid FeatureFlagId, out System.Guid SegmentoId) -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.Equals(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.FeatureFlagId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.FeatureFlagId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.RolloutId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.RolloutId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.RolloutIniciadoIntegrationEvent(System.Guid RolloutId, System.Guid FeatureFlagId, System.Guid SegmentoId) -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.SegmentoId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.SegmentoId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse!
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.Deconstruct(out System.Guid Id, out System.Guid FeatureFlagId, out System.Guid SegmentoId) -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.Equals(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.FeatureFlagId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.FeatureFlagId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.Id.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.Id.init -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.RolloutResponse(System.Guid Id, System.Guid FeatureFlagId, System.Guid SegmentoId) -> void
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.SegmentoId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.SegmentoId.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CreatedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CreatedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.ModifiedBy.get -> string?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.ModifiedBy.set -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.Porcentaje.get -> int?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.TenantId.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.TenantId.set -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.TenantIdCriterio.get -> System.Guid?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.Tipo.get -> BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse!
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Deconstruct(out System.Guid Id, out string! Nombre, out BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo Tipo, out System.Guid? TenantIdCriterio, out int? Porcentaje) -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Equals(BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse? other) -> bool
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Id.get -> System.Guid
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Id.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Nombre.get -> string!
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Nombre.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Porcentaje.get -> int?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Porcentaje.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.SegmentoResponse(System.Guid Id, string! Nombre, BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo Tipo, System.Guid? TenantIdCriterio, int? Porcentaje) -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.TenantIdCriterio.get -> System.Guid?
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.TenantIdCriterio.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Tipo.get -> BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Tipo.init -> void
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo.PorPorcentaje = 1 -> BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo
+BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo.PorTenant = 0 -> BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoTipo
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.FlagsActivar = "featuremanagement.flags.activar" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.FlagsCrear = "featuremanagement.flags.crear" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.FlagsDesactivar = "featuremanagement.flags.desactivar" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.FlagsEvaluar = "featuremanagement.flags.evaluar" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.FlagsVer = "featuremanagement.flags.ver" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.RolloutsCrear = "featuremanagement.rollouts.crear" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.RolloutsVer = "featuremanagement.rollouts.ver" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.SegmentosCrear = "featuremanagement.segmentos.crear" -> string!
+const BitCode.Framework.Platform.FeatureManagement.FeatureManagementPermissions.SegmentosVer = "featuremanagement.segmentos.ver" -> string!
+override BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent!
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent!
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent!
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.ToString() -> string!
+override BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.GetHashCode() -> int
+override BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.ToString() -> string!
+override sealed BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.operator !=(BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse? left, BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse.operator ==(BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse? left, BitCode.Framework.Platform.FeatureManagement.Evaluacion.FeatureFlagEvaluationResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.FeatureManagementEndpointRouteBuilderExtensions.MapFeatureManagementEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.FeatureManagement.FeatureManagementServiceCollectionExtensions.AddSharedFeatureManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.operator !=(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent.operator ==(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagActivadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.operator !=(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent.operator ==(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagDesactivadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.operator !=(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse.operator ==(BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse? left, BitCode.Framework.Platform.FeatureManagement.Flags.FeatureFlagResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.operator !=(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent.operator ==(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent? left, BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutIniciadoIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.operator !=(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse? left, BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse.operator ==(BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse? left, BitCode.Framework.Platform.FeatureManagement.Rollouts.RolloutResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CrearPorPorcentaje(System.Guid id, string! nombre, int porcentaje) -> BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento!>!
+static BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento.CrearPorTenant(System.Guid id, string! nombre, System.Guid tenantIdCriterio) -> BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Platform.FeatureManagement.Segmentos.Segmento!>!
+static BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.operator !=(BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse? left, BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse? right) -> bool
+static BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse.operator ==(BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse? left, BitCode.Framework.Platform.FeatureManagement.Segmentos.SegmentoResponse? right) -> bool

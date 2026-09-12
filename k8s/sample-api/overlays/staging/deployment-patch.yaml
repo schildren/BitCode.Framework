@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-api
+spec:
+  # F4-06 (HPA): este valor es el piso (minReplicas del HPA, ver hpa-patch.yaml) -- staging arranca
+  # con 2 réplicas fijas para validar comportamiento multi-pod, y el HPA la sube hasta 6 según CPU.
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: sample-api
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+      # F4-07 (PDB y spread): endurece el eje de NODO heredado de base/deployment.yaml
+      # (`topologyKey: kubernetes.io/hostname`) de `ScheduleAnyway` a `DoNotSchedule` -- un cluster de
+      # staging real ya tiene más de un nodo (a diferencia de dev), así que vale la pena que el
+      # scheduler RECHACE (no solo intente) ubicar una 2ª réplica en un nodo que ya tiene una, mientras
+      # exista otro nodo disponible que respete `maxSkew: 1`. El eje de ZONA
+      # (`topology.kubernetes.io/zone`) se deja en `ScheduleAnyway` (repetido igual que en base) porque
+      # no está confirmado que el cluster de staging real abarque más de una zona de disponibilidad --
+      # forzar `DoNotSchedule` ahí sin esa garantía dejaría réplicas `Pending` indefinidamente si el
+      # cluster real es de zona única.
+      #
+      # NOTA de implementación: se redeclara la lista COMPLETA (`$patch: replace` + los 2 elementos,
+      # `maxSkew`/`labelSelector` incluidos) en vez de repetir solo el `topologyKey` a tocar -- se probó
+      # primero un patch parcial confiando en el merge estratégico por `topologyKey` (mismo mecanismo
+      # que `containers` hace merge por `name`), pero `kubectl kustomize` (verificado en este entorno,
+      # kubectl 1.34.1 / Kustomize v5.7.1) NO fusionó por esa clave: concatenó el elemento del patch
+      # como una entrada nueva, dejando 4 entradas con `kubernetes.io/hostname` duplicado (una
+      # `DoNotSchedule` del patch y otra `ScheduleAnyway` heredada de base) en vez de 2 -- un resultado
+      # semánticamente roto que un `kubeconform` sintáctico no detecta (es válido contra el esquema,
+      # solo incoherente en la práctica). `$patch: replace` fuerza a Kustomize a reemplazar la lista
+      # entera con la de este patch en vez de intentar fusionarla, evitando ese problema de raíz sin
+      # depender de un comportamiento de merge que no se pudo confirmar confiable en este entorno.
+      topologySpreadConstraints:
+        - $patch: replace
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: sample-api

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bitcode-sample-api-prod
+  labels:
+    app.kubernetes.io/part-of: bitcode-framework
+    environment: prod

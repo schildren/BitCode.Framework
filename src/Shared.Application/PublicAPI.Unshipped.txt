@@ -1,0 +1,120 @@
+#nullable enable
+BitCode.Framework.Shared.Application.Eventing.IHasPartitionKey
+BitCode.Framework.Shared.Application.Eventing.IHasPartitionKey.PartitionKey.get -> string!
+BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse>.IdempotencyBehavior(BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyKeyProvider! idempotencyKeyProvider, BitCode.Framework.Shared.Domain.Idempotency.IIdempotencyStore! idempotencyStore, BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions! options, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.IdempotencyBehavior<TRequest, TResponse!>!>! logger) -> void
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.LoggingBehavior<TRequest, TResponse!>!>! logger, BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions? options = null) -> void
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions.LoggingBehaviorOptions() -> void
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions.SlowRequestThresholdMilliseconds.get -> long
+BitCode.Framework.Shared.Application.Behaviors.LoggingBehaviorOptions.SlowRequestThresholdMilliseconds.set -> void
+BitCode.Framework.Shared.Application.Behaviors.TransactionBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.TransactionBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.TransactionBehavior<TRequest, TResponse>.TransactionBehavior(BitCode.Framework.Shared.Domain.Persistence.IUnitOfWork! unitOfWork, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.TransactionBehavior<TRequest, TResponse!>!>! logger) -> void
+BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.ValidationBehavior<TRequest, TResponse>.ValidationBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>!>! validators) -> void
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.IdempotencyOptions() -> void
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.RetentionPeriod.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions.RetentionPeriod.set -> void
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider.IdempotencyKey.get -> string?
+BitCode.Framework.Shared.Application.Idempotency.NullIdempotencyKeyProvider.NullIdempotencyKeyProvider() -> void
+BitCode.Framework.Shared.Application.Messaging.IBaseCommand
+BitCode.Framework.Shared.Application.Messaging.ICommand
+BitCode.Framework.Shared.Application.Messaging.ICommand<TResponse>
+BitCode.Framework.Shared.Application.Messaging.IIdempotentCommand
+BitCode.Framework.Shared.Application.Messaging.IQuery<TResponse>
+BitCode.Framework.Shared.Application.Messaging.ITransactionalCommand
+BitCode.Framework.Shared.Application.Messaging.IRegionalCommand
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>.Handle(TRequest request, MediatR.RequestHandlerDelegate<TResponse!>! next, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse!>!
+BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse>.RegionalOwnershipBehavior(BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext, BitCode.Framework.Shared.Domain.MultiTenancy.IRegionalOwnershipResolver! ownershipResolver, BitCode.Framework.Shared.Domain.MultiTenancy.ICurrentRegionProvider! currentRegionProvider, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Behaviors.RegionalOwnershipBehavior<TRequest, TResponse!>!>! logger) -> void
+BitCode.Framework.Shared.Application.Regions.RegionalOwnershipErrors
+static BitCode.Framework.Shared.Application.Regions.RegionalOwnershipErrors.WrongRegion(System.Guid tenantId, string! ownerRegion, string! currentRegion) -> BitCode.Framework.Shared.Kernel.Error!
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Processed = 0 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome.Discarded = 1 -> BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome
+BitCode.Framework.Shared.Application.Inbox.IInboxMessageProcessor
+BitCode.Framework.Shared.Application.Inbox.IInboxMessageProcessor.ProcessAsync(string! messageId, string! messageType, string! payload, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>! handler, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome>!
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor.InboxMessageProcessor(BitCode.Framework.Shared.Domain.Inbox.IInboxStore! inboxStore, BitCode.Framework.Shared.Domain.Persistence.IUnitOfWork! unitOfWork, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor!>! logger) -> void
+BitCode.Framework.Shared.Application.Inbox.InboxMessageProcessor.ProcessAsync(string! messageId, string! messageType, string! payload, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.Task!>! handler, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Application.Inbox.InboxProcessOutcome>!
+static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Shared.Application.ApplicationServiceCollectionExtensions.AddSharedApplication(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Application.Idempotency.IdempotencyOptions!>! configureIdempotency, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyRequired -> BitCode.Framework.Shared.Kernel.Error!
+static readonly BitCode.Framework.Shared.Application.Idempotency.IdempotencyErrors.KeyReused -> BitCode.Framework.Shared.Kernel.Error!
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.OccurredOnUtc.get -> System.DateTime
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.IntegrationEvent() -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.IntegrationEvent(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent! original) -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventId.init -> void
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.OccurredOnUtc.get -> System.DateTime
+BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.OccurredOnUtc.init -> void
+abstract BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EventType.get -> string!
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.SchemaVersion.get -> int
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.EqualityContract.get -> System.Type!
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.Equals(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? other) -> bool
+virtual BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.PrintMembers(System.Text.StringBuilder! builder) -> bool
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.ToString() -> string!
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.Equals(object? obj) -> bool
+abstract BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.<Clone>$() -> BitCode.Framework.Shared.Application.Eventing.IntegrationEvent!
+static BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.operator !=(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? left, BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? right) -> bool
+static BitCode.Framework.Shared.Application.Eventing.IntegrationEvent.operator ==(BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? left, BitCode.Framework.Shared.Application.Eventing.IntegrationEvent? right) -> bool
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent! integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.IEventPublisher.PublishAsync(System.Collections.Generic.IEnumerable<BitCode.Framework.Shared.Application.Eventing.IIntegrationEvent!>! integrationEvents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>
+BitCode.Framework.Shared.Application.Eventing.IEventConsumer<TEvent>.ConsumeAsync(TEvent integrationEvent, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier.DefaultEventPublishFailureClassifier() -> void
+BitCode.Framework.Shared.Application.Eventing.DefaultEventPublishFailureClassifier.Classify(System.Exception! exception) -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.EventProcessingExhaustedException(string! messageId, string! eventType, int attempts, System.Exception! innerException) -> void
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.MessageId.get -> string!
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.EventType.get -> string!
+BitCode.Framework.Shared.Application.Eventing.EventProcessingExhaustedException.Attempts.get -> int
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind.Transient = 0 -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind.Permanent = 1 -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff
+static BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff.CalculateDelay(int attemptNumber, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! options, System.Random? random = null) -> System.TimeSpan
+static BitCode.Framework.Shared.Application.Eventing.EventRetryBackoff.IsExhausted(int attemptsSoFar, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! options) -> bool
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.EventRetryPolicyOptions() -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxAttempts.get -> int
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxAttempts.set -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.BaseDelay.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.BaseDelay.set -> void
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxDelay.get -> System.TimeSpan
+BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions.MaxDelay.set -> void
+BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier
+BitCode.Framework.Shared.Application.Eventing.IEventPublishFailureClassifier.Classify(System.Exception! exception) -> BitCode.Framework.Shared.Application.Eventing.EventPublishFailureKind
+BitCode.Framework.Shared.Application.Eventing.IDeadLetterPublisher
+BitCode.Framework.Shared.Application.Eventing.IDeadLetterPublisher.PublishAsync(BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope! envelope, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.DeadLetterEnvelope() -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.EventType.get -> string!
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.EventType.init -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Payload.get -> byte[]!
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Payload.init -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Reason.get -> string!
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Reason.init -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Attempts.get -> int
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.Attempts.init -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.ExhaustedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.ExhaustedAtUtc.init -> void
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.SourceMessageId.get -> string?
+BitCode.Framework.Shared.Application.Eventing.DeadLetterEnvelope.SourceMessageId.init -> void

@@ -1,0 +1,21 @@
+#nullable enable
+BitCode.Framework.Platform.Identity.Actors.IIdentityAdministrationActorContext
+BitCode.Framework.Platform.Identity.Actors.IIdentityAdministrationActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Identity.Actors.IIdentityAdministrationActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Identity.IdentityAdministrationDbContext
+BitCode.Framework.Platform.Identity.IdentityAdministrationDbContext.IdentityAdministrationDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Identity.IdentityAdministrationDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Identity.IdentityAdministrationEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions
+BitCode.Framework.Platform.Identity.IdentityAdministrationServiceCollectionExtensions
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.RolesCrear = "identidad.roles.crear" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.RolesPermisosAdministrar = "identidad.roles.permisos.administrar" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.RolesVer = "identidad.roles.ver" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.SesionesRevocar = "identidad.sesiones.revocar" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.SesionesVer = "identidad.sesiones.ver" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.UsuariosCrear = "identidad.usuarios.crear" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.UsuariosDesactivar = "identidad.usuarios.desactivar" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.UsuariosRolesAsignar = "identidad.usuarios.roles.asignar" -> string!
+const BitCode.Framework.Platform.Identity.IdentityAdministrationPermissions.UsuariosVer = "identidad.usuarios.ver" -> string!
+static BitCode.Framework.Platform.Identity.IdentityAdministrationEndpointRouteBuilderExtensions.MapIdentityAdministrationEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Identity.IdentityAdministrationServiceCollectionExtensions.AddSharedIdentityAdministration(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Identity.IdentityAdministrationServiceCollectionExtensions.AddSharedIdentityAdministrationPersistence(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! connectionString) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

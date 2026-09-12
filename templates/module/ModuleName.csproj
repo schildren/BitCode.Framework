@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Módulo generado por "dotnet new bitcode-module" (BitCode.Framework): bounded context
+      instalable dentro de una app host vía ProjectReference, con el mismo patrón que
+      src/Platform/BitCode.Platform.*/ (ver docs/convenciones.md, sección "Namespaces de módulos de
+      Platform"): dueño exclusivo de su propio esquema (ModuleNameDbContext), su propio catálogo de
+      permisos (ModuleNamePermissions) y su propia superficie pública (ModuleNameServiceCollectionExtensions
+      / ModuleNameEndpointRouteBuilderExtensions); ningún otro módulo debe referenciar sus tipos internos
+      ni leer/escribir su esquema directamente.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Único límite de dependencia permitido: Shared.* (framework transversal). Un módulo NUNCA
+         referencia otro módulo de negocio (ni Platform.* ni un módulo de otro bounded context); si dos
+         módulos necesitan comunicarse, es a través de un evento de integración (Outbox/Inbox, F1-24) o de
+         la API HTTP pública del otro módulo, nunca por ProjectReference directo. ModuleName.Tests/
+         ModuleBoundaryTests.cs verifica esto por reflexión sobre el ensamblado compilado. -->
+    <ProjectReference Include="../../src/Shared.Kernel/Shared.Kernel.csproj" />
+    <ProjectReference Include="../../src/Shared.Domain/Shared.Domain.csproj" />
+    <ProjectReference Include="../../src/Shared.Application/Shared.Application.csproj" />
+    <ProjectReference Include="../../src/Shared.Infrastructure.Persistence/Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="../../src/Shared.Infrastructure.Web/Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ModuleName.Tests/ es un proyecto propio anidado dentro de este directorio: el glob por defecto
+         del SDK (**/*.cs) no excluye automáticamente subdirectorios con su propio .csproj, así que hay
+         que excluirlo explícitamente para que este proyecto no vuelva a compilar los archivos de pruebas
+         dentro de sí mismo. -->
+    <Compile Remove="ModuleName.Tests/**/*.cs" />
+    <EmbeddedResource Remove="ModuleName.Tests/**" />
+    <None Remove="ModuleName.Tests/**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

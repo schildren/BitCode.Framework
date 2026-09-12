@@ -14,16 +14,15 @@ public class PermissionAuthorizationHandlerTests
         new([requirement], user, null);
 
     [Fact]
-    public async Task HandleRequirementAsync_UserHasPermission_Succeeds()
+    public async Task HandleRequirementAsync_EvaluatorGrantsPermission_Succeeds()
     {
-        var userId = Guid.NewGuid();
-        var permissionService = Substitute.For<IPermissionService>();
-        permissionService.GetPermissionsForUserAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(["productos.crear"]);
-        var handler = new PermissionAuthorizationHandler(permissionService);
-        var requirement = new PermissionRequirement("productos.crear");
+        var evaluator = Substitute.For<IPermissionEvaluator>();
         var user = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"));
+            [new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())], "Test"));
+        evaluator.EvaluateAsync(user, Arg.Any<CancellationToken>())
+            .Returns(new EffectivePermissions([new PermissionGrant("productos.crear", PermissionGrantSources.LocalIdentityRoles)]));
+        var handler = new PermissionAuthorizationHandler(evaluator);
+        var requirement = new PermissionRequirement("productos.crear");
         var context = CreateContext(requirement, user);
 
         await handler.HandleAsync(context);
@@ -32,16 +31,15 @@ public class PermissionAuthorizationHandlerTests
     }
 
     [Fact]
-    public async Task HandleRequirementAsync_UserLacksPermission_DoesNotSucceed()
+    public async Task HandleRequirementAsync_EvaluatorDoesNotGrantPermission_DoesNotSucceed()
     {
-        var userId = Guid.NewGuid();
-        var permissionService = Substitute.For<IPermissionService>();
-        permissionService.GetPermissionsForUserAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(["productos.editar"]);
-        var handler = new PermissionAuthorizationHandler(permissionService);
-        var requirement = new PermissionRequirement("productos.crear");
+        var evaluator = Substitute.For<IPermissionEvaluator>();
         var user = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"));
+            [new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())], "Test"));
+        evaluator.EvaluateAsync(user, Arg.Any<CancellationToken>())
+            .Returns(new EffectivePermissions([new PermissionGrant("productos.editar", PermissionGrantSources.LocalIdentityRoles)]));
+        var handler = new PermissionAuthorizationHandler(evaluator);
+        var requirement = new PermissionRequirement("productos.crear");
         var context = CreateContext(requirement, user);
 
         await handler.HandleAsync(context);
@@ -50,17 +48,18 @@ public class PermissionAuthorizationHandlerTests
     }
 
     [Fact]
-    public async Task HandleRequirementAsync_UserWithoutIdentifierClaim_DoesNotSucceed()
+    public async Task HandleRequirementAsync_EvaluatorReturnsEmpty_DoesNotSucceed()
     {
-        var permissionService = Substitute.For<IPermissionService>();
-        var handler = new PermissionAuthorizationHandler(permissionService);
-        var requirement = new PermissionRequirement("productos.crear");
+        var evaluator = Substitute.For<IPermissionEvaluator>();
         var anonymousUser = new ClaimsPrincipal(new ClaimsIdentity());
+        evaluator.EvaluateAsync(anonymousUser, Arg.Any<CancellationToken>())
+            .Returns(EffectivePermissions.Empty);
+        var handler = new PermissionAuthorizationHandler(evaluator);
+        var requirement = new PermissionRequirement("productos.crear");
         var context = CreateContext(requirement, anonymousUser);
 
         await handler.HandleAsync(context);
 
         context.HasSucceeded.Should().BeFalse();
-        await permissionService.DidNotReceive().GetPermissionsForUserAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

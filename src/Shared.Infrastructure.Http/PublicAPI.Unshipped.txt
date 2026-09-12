@@ -1,0 +1,33 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Http.HttpServiceCollectionExtensions
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.AttemptTimeout.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.AttemptTimeout.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerBreakDuration.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerBreakDuration.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerFailureRatio.get -> double
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerFailureRatio.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerMinimumThroughput.get -> int
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerMinimumThroughput.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerSamplingDuration.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.CircuitBreakerSamplingDuration.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.ConcurrencyQueueLimit.get -> int
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.ConcurrencyQueueLimit.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.HttpResilienceOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.MaxConcurrentRequests.get -> int
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.MaxConcurrentRequests.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.RetryBaseDelay.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.RetryBaseDelay.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.RetryMaxAttempts.get -> int
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.RetryMaxAttempts.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.TotalTimeout.get -> System.TimeSpan
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.TotalTimeout.set -> void
+BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpRetrySafety
+const BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions.DefaultSectionName = "HttpResilience" -> string!
+const BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpRetrySafety.IdempotencyKeyHeaderName = "Idempotency-Key" -> string!
+static BitCode.Framework.Shared.Infrastructure.Http.HttpServiceCollectionExtensions.AddResilientHttpClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static BitCode.Framework.Shared.Infrastructure.Http.HttpServiceCollectionExtensions.AddResilientHttpClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration, string? sectionName = null) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static BitCode.Framework.Shared.Infrastructure.Http.HttpServiceCollectionExtensions.AddResilientHttpClient<TClient>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions!>! configureOptions) -> Microsoft.Extensions.DependencyInjection.IHttpClientBuilder!
+static BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpRetrySafety.IsSafeToRetry(System.Net.Http.HttpRequestMessage? request) -> bool
+static BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpRetrySafety.MarkSafeToRetry(this System.Net.Http.HttpRequestMessage! request) -> System.Net.Http.HttpRequestMessage!
+static readonly BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpRetrySafety.SafeToRetryOptionKey -> System.Net.Http.HttpRequestOptionsKey<bool>

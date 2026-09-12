@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Workflow -- Fase 6, módulo 6 del Plan Maestro BitCode: máquina de estados de negocio
+      versionada (WorkflowDefinition -&gt; WorkflowVersion -&gt; State/Transition/Rule), instancias en
+      curso (Instance) con tareas humanas (Task/Assignment), aprobación/rechazo, delegación, escalamiento
+      por SLA (Quartz HA) e historial de negocio append-only (History), con auditoría, RBAC e idempotencia
+      en las mutaciones expuestas por API, y eventos de dominio/integración reales sobre agregados propios
+      del módulo. Primer alcance explícito del Plan Maestro (sección "Épica de Workflow"): sin diseñador
+      BPMN, sin DSL visual de bajo código, sin orquestación distribuida general.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.BackgroundJobs\Shared.Infrastructure.BackgroundJobs.csproj" />
+    <!-- Fase 9 (F9-02, "Contract boundary"): los 6 eventos de integración públicos de este módulo
+         (TareaAsignada/Aprobada/RechazadaIntegrationEvent, WorkflowInstanciaIniciada/
+         FinalizadaIntegrationEvent, WorkflowVersionPublicadaIntegrationEvent) viven ahora en este
+         ensamblado de SOLO contratos, referenciado tanto por este módulo (que los levanta) como por sus
+         consumidores (Task Inbox, Notifications, Reporting), que ya NO referencian este proyecto
+         completo, ver `src/Platform/BitCode.Platform.Workflow.Contracts` y
+         `docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`. -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
+  </ItemGroup>
+
+</Project>

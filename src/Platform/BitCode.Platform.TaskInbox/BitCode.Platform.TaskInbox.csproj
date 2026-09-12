@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Task Inbox: Fase 6, módulo 7 del Plan Maestro BitCode: bandeja de tareas propia
+      (read-model, patrón Inbox de F1-24/F3-04) que consume los eventos de integración públicos de
+      Workflow (Fase 6, módulo 6): `Workflow.TareaAsignada`, `Workflow.TareaAprobada`,
+      `Workflow.TareaRechazada`; para ofrecer una bandeja enriquecida con filtros y "marcar como
+      leída", sin acceder jamás a `WorkflowDbContext` ni reimplementar la mutación de una
+      `WorkflowTask` (que sigue siendo responsabilidad exclusiva de los comandos públicos de Workflow).
+      Ver `docs/guia-taskinbox.md` para el detalle honesto de qué separa este read-model del write-model
+      de Workflow y qué limitaciones reales trae esa separación.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <!-- Fase 9 (F9-02, "Contract boundary"): esta librería referencia SOLO el ensamblado de contratos
+         de Workflow (BitCode.Platform.Workflow.Contracts) para reutilizar sus tres eventos de
+         integración PÚBLICOS (TareaAsignadaIntegrationEvent/TareaAprobadaIntegrationEvent/
+         TareaRechazadaIntegrationEvent) como contrato de entrada de sus propios IEventConsumer(T),
+         YA NO tiene ProjectReference directo al ensamblado completo de BitCode.Platform.Workflow (motor
+         de estados, WorkflowDbContext, comandos/queries internos), condición fijada por
+         docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md antes de continuar con Fase 9
+         sobre Workflow como módulo piloto. Ver docs/guia-taskinbox.md, sección "Límite de bounded
+         context", y docs/guia-inbox-consumer.md, sección "Boundary de contratos (F9-02)". -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
+</Project>

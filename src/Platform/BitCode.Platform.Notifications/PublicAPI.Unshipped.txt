@@ -1,0 +1,237 @@
+#nullable enable
+BitCode.Framework.Platform.Notifications.Actors.INotificationsActorContext
+BitCode.Framework.Platform.Notifications.Actors.INotificationsActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Notifications.Actors.INotificationsActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Notifications.Actors.INotificationsActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.Notifications.Envio.Canales.INotificationChannelSender
+BitCode.Framework.Platform.Notifications.Envio.Canales.INotificationChannelSender.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.Canales.INotificationChannelSender.SendAsync(BitCode.Framework.Platform.Notifications.Envio.Notification! notification, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult!>!
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome.Exitoso = 0 -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome.FalloPermanente = 2 -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome.FalloTransitorio = 1 -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.<Clone>$() -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult!
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Deconstruct(out BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome Outcome, out string? ErrorMensaje) -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Equals(BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult? other) -> bool
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.ErrorMensaje.init -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.NotificationSendResult(BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome Outcome, string? ErrorMensaje = null) -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Outcome.get -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendOutcome
+BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Outcome.init -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.EnableSsl.get -> bool
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.EnableSsl.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.FromAddress.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.FromAddress.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Host.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Host.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Password.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Password.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Port.get -> int
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.Port.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.SmtpOptions() -> void
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.UserName.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions.UserName.set -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.<Clone>$() -> BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest!
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Canal.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.CodigoPlantilla.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.CodigoPlantilla.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Datos.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Datos.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Deconstruct(out System.Guid DestinatarioUserId, out string? DestinatarioContacto, out System.Guid? DisparadoPorUserId, out string! CodigoPlantilla, out BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal, out string! Locale, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Datos) -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DestinatarioContacto.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DestinatarioContacto.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DestinatarioUserId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DestinatarioUserId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DisparadoPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.DisparadoPorUserId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.EnviarNotificacionRequest(System.Guid DestinatarioUserId, string? DestinatarioContacto, System.Guid? DisparadoPorUserId, string! CodigoPlantilla, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal, string! Locale, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Datos) -> void
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Equals(BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest? other) -> bool
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Locale.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Locale.init -> void
+BitCode.Framework.Platform.Notifications.Envio.INotificationSender
+BitCode.Framework.Platform.Notifications.Envio.INotificationSender.EnviarAsync(BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Shared.Kernel.Result<System.Guid>!>!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Canal.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.CodigoPlantilla.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.CodigoPlantilla.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Deconstruct(out System.Guid NotificationId, out System.Guid DestinatarioUserId, out string! CodigoPlantilla, out BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal) -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.DestinatarioUserId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.DestinatarioUserId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Equals(BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.NotificacionEnviadaIntegrationEvent(System.Guid NotificationId, System.Guid DestinatarioUserId, string! CodigoPlantilla, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal) -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.NotificationId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.NotificationId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Canal.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.CodigoPlantilla.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.CodigoPlantilla.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Deconstruct(out System.Guid NotificationId, out System.Guid DestinatarioUserId, out string! CodigoPlantilla, out BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal, out string! UltimoErrorMensaje) -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.DestinatarioUserId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.DestinatarioUserId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Equals(BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.NotificacionFallidaIntegrationEvent(System.Guid NotificationId, System.Guid DestinatarioUserId, string! CodigoPlantilla, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel Canal, string! UltimoErrorMensaje) -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.NotificationId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.NotificationId.init -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.UltimoErrorMensaje.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.UltimoErrorMensaje.init -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification
+BitCode.Framework.Platform.Notifications.Envio.Notification.Asunto.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Notification.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.Notification.CodigoPlantilla.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.Notification.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Notifications.Envio.Notification.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.CreatedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Notification.CreatedBy.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.Cuerpo.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.Notification.DestinatarioContacto.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Notification.DestinatarioUserId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.Notification.DisparadoPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.Notifications.Envio.Notification.EnviadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Envio.Notification.Estado.get -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.Notification.IntentosRealizados.get -> int
+BitCode.Framework.Platform.Notifications.Envio.Notification.LeidoAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Envio.Notification.Locale.get -> string!
+BitCode.Framework.Platform.Notifications.Envio.Notification.MarcarComoLeida(System.Guid actorUserId) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Notifications.Envio.Notification.MarcarOmitidaPorPreferencia() -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Envio.Notification.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.Notification.ModifiedBy.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.Notification(System.Guid id, System.Guid destinatarioUserId, string? destinatarioContacto, System.Guid? disparadoPorUserId, string! codigoPlantilla, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel canal, string! locale, string? asunto, string! cuerpo) -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.ProximoReintentoUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Envio.Notification.RegistrarEnvioExitoso(System.DateTime atUtc) -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.RegistrarEnvioFallidoPermanente(string! error) -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.RegistrarEnvioFallidoTransitorio(string! error, System.DateTime atUtc, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! retryOptions) -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.Notifications.Envio.Notification.RowVersion.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.Notification.TenantId.set -> void
+BitCode.Framework.Platform.Notifications.Envio.Notification.UltimoErrorMensaje.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.IntentoNumero.get -> int
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.NotificationDelivery(System.Guid id, System.Guid notificationId, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel canal, int intentoNumero, BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado resultado, string? errorMensaje) -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.NotificationId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.Resultado.get -> BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.TenantId.set -> void
+BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery.TimestampUtc.get -> System.DateTime
+BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado.Exitoso = 0 -> BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado.FalloPermanente = 2 -> BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado.FalloTransitorio = 1 -> BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado.OmitidoPorPreferencia = 3 -> BitCode.Framework.Platform.Notifications.Envio.NotificationDeliveryResultado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado.Enviada = 1 -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado.Fallida = 4 -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado.OmitidaPorPreferencia = 2 -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado.PendienteDeEnvio = 0 -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.Envio.NotificationEstado.PendienteDeReintento = 3 -> BitCode.Framework.Platform.Notifications.Envio.NotificationEstado
+BitCode.Framework.Platform.Notifications.NotificationsDbContext
+BitCode.Framework.Platform.Notifications.NotificationsDbContext.NotificationDeliveries.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Notifications.Envio.NotificationDelivery!>!
+BitCode.Framework.Platform.Notifications.NotificationsDbContext.NotificationTemplates.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate!>!
+BitCode.Framework.Platform.Notifications.NotificationsDbContext.Notifications.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Notifications.Envio.Notification!>!
+BitCode.Framework.Platform.Notifications.NotificationsDbContext.NotificationsDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Notifications.NotificationsDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Notifications.NotificationsDbContext.UserNotificationPreferences.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference!>!
+BitCode.Framework.Platform.Notifications.NotificationsEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Notifications.NotificationsOptions
+BitCode.Framework.Platform.Notifications.NotificationsOptions.NotificationsOptions() -> void
+BitCode.Framework.Platform.Notifications.NotificationsOptions.Retry.get -> BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions!
+BitCode.Framework.Platform.Notifications.NotificationsOptions.Retry.set -> void
+BitCode.Framework.Platform.Notifications.NotificationsPermissions
+BitCode.Framework.Platform.Notifications.NotificationsServiceCollectionExtensions
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel.Email = 0 -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel.InApp = 1 -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Activa.get -> bool
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Activar() -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Asunto.get -> string?
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Codigo.get -> string!
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.CreatedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.CreatedBy.set -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Cuerpo.get -> string!
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Desactivar() -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.Locale.get -> string!
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.ModifiedBy.set -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.NotificationTemplate(System.Guid id, string! codigo, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel canal, string! locale, string? asunto, string! cuerpo) -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplate.TenantId.set -> void
+BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplateRenderer
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.Canal.get -> BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.CodigoPlantilla.get -> string!
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.CreatedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.CreatedBy.set -> void
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.ModifiedBy.set -> void
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.TenantId.set -> void
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.UserId.get -> System.Guid
+BitCode.Framework.Platform.Notifications.Preferencias.UserNotificationPreference.UserNotificationPreference(System.Guid id, System.Guid userId, string! codigoPlantilla, BitCode.Framework.Platform.Notifications.Plantillas.NotificationChannel canal) -> void
+BitCode.Framework.Platform.Notifications.Retry.NotificationRetryJob
+BitCode.Framework.Platform.Notifications.Retry.NotificationRetryJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.Notifications.Retry.NotificationRetryJob.NotificationRetryJob(BitCode.Framework.Platform.Notifications.NotificationsDbContext! dbContext, System.Collections.Generic.IEnumerable<BitCode.Framework.Platform.Notifications.Envio.Canales.INotificationChannelSender!>! channelSenders, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Platform.Notifications.NotificationsOptions!>! options) -> void
+BitCode.Framework.Platform.Notifications.Retry.NotificationRetryJob.ReintentarPendientesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+const BitCode.Framework.Platform.Notifications.NotificationsPermissions.NotificacionesEnviar = "notifications.notificaciones.enviar" -> string!
+const BitCode.Framework.Platform.Notifications.NotificationsPermissions.NotificacionesMarcarLeida = "notifications.notificaciones.marcarleida" -> string!
+const BitCode.Framework.Platform.Notifications.NotificationsPermissions.NotificacionesVer = "notifications.notificaciones.ver" -> string!
+const BitCode.Framework.Platform.Notifications.NotificationsPermissions.PlantillasAdministrar = "notifications.plantillas.administrar" -> string!
+const BitCode.Framework.Platform.Notifications.NotificationsPermissions.PreferenciasAdministrar = "notifications.preferencias.administrar" -> string!
+override BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.GetHashCode() -> int
+override BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.ToString() -> string!
+override BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.GetHashCode() -> int
+override BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.ToString() -> string!
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent!
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent!
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.ToString() -> string!
+override sealed BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.Exitoso() -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult!
+static BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.FalloPermanente(string! errorMensaje) -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult!
+static BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.FalloTransitorio(string! errorMensaje) -> BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult!
+static BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.operator !=(BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult? left, BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult.operator ==(BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult? left, BitCode.Framework.Platform.Notifications.Envio.Canales.NotificationSendResult? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.operator !=(BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest? left, BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest.operator ==(BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest? left, BitCode.Framework.Platform.Notifications.Envio.EnviarNotificacionRequest? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent? left, BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent? left, BitCode.Framework.Platform.Notifications.Envio.NotificacionEnviadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.operator !=(BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent.operator ==(BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent? left, BitCode.Framework.Platform.Notifications.Envio.NotificacionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Notifications.NotificationsEndpointRouteBuilderExtensions.MapNotificationsEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Notifications.NotificationsServiceCollectionExtensions.AddSharedNotifications(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Platform.Notifications.Envio.Canales.SmtpOptions!>! configureSmtp, System.Action<BitCode.Framework.Platform.Notifications.NotificationsOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Notifications.Plantillas.NotificationTemplateRenderer.Render(string! plantilla, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! datos) -> string!

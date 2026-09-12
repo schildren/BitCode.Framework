@@ -1,0 +1,45 @@
+<div class="bc-document-upload">
+  <label class="bc-document-upload__label" for="bc-document-upload-input">Seleccionar archivo</label>
+  <input
+    id="bc-document-upload-input"
+    type="file"
+    class="bc-document-upload__input"
+    (change)="onFileSelected($event)"
+    [disabled]="status() === 'uploading'"
+  />
+
+  @if (selectedFileName(); as fileName) {
+    <p class="bc-document-upload__filename">{{ fileName }}</p>
+  }
+
+  <button
+    type="button"
+    class="bc-document-upload__button"
+    [disabled]="!selectedFileName() || status() === 'uploading'"
+    (click)="upload()"
+  >
+    {{ status() === 'uploading' ? 'Subiendo…' : 'Subir' }}
+  </button>
+
+  @if (status() === 'uploading') {
+    <div class="bc-document-upload__progress" role="progressbar" [attr.aria-valuenow]="percent()" aria-valuemin="0" aria-valuemax="100">
+      <div class="bc-document-upload__progress-bar" [style.width.%]="percent()"></div>
+      <span class="bc-document-upload__progress-label">{{ percent() }}%</span>
+    </div>
+  }
+
+  @if (error(); as uiError) {
+    <div class="bc-document-upload__error" role="alert">
+      <p class="bc-document-upload__error-message">{{ uiError.userMessage }}</p>
+      <p class="bc-document-upload__error-correlation">
+        Código de correlación: {{ uiError.correlationId ?? 'no disponible' }}
+      </p>
+      @if (uiError.technicalDetail) {
+        <details class="bc-document-upload__error-detail">
+          <summary>Detalle técnico</summary>
+          <p>{{ uiError.technicalDetail }}</p>
+        </details>
+      }
+    </div>
+  }
+</div>

@@ -19,6 +19,19 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
     {
         var traceId = Activity.Current?.Id ?? httpContext.TraceIdentifier;
 
+        // F1-10 (timeouts y cancelación): si el cliente cerró la conexión o canceló el request antes
+        // de que terminara, no hay forma de escribir una respuesta a esa conexión (y no tiene sentido
+        // hacerlo). Tratar esto como un error 500 lo confunde con una falla real del servidor y
+        // ensucia los dashboards de errores con cancelaciones esperadas del cliente — se loguea en un
+        // nivel bajo y se evita escribir sobre una conexión ya abortada.
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            logger.LogInformation(
+                "Request cancelado por el cliente antes de finalizar. TraceId: {TraceId}",
+                traceId);
+            return true;
+        }
+
         logger.LogError(exception, "Excepción no manejada. TraceId: {TraceId}", traceId);
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;

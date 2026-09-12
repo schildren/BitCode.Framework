@@ -1,0 +1,109 @@
+// Design tokens de BitCode (F7-02, @bitcode/ui). Misma decisión que `@bitcode/grid` (`grid.scss`): se
+// referencia por ruta relativa al código FUENTE del paquete, no vía import de npm, porque el workspace
+// (npm workspaces) symlinkea `@bitcode/ui` a su carpeta fuente, no a `dist/packages/ui` -- ver
+// docs/guia-frontend-workspace.md, sección 7.5/7.6.
+@use '../../../../ui/src/styles/tokens.css';
+
+.bc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-4);
+  font-family: var(--bc-font-family-sans);
+  color: var(--bc-color-text-primary);
+  max-width: 480px;
+}
+
+.bc-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-1);
+}
+
+.bc-form__field--checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+
+.bc-form__label {
+  font-size: var(--bc-font-size-sm);
+  font-weight: var(--bc-font-weight-medium);
+}
+
+.bc-form__control {
+  border: 1px solid var(--bc-color-border);
+  border-radius: var(--bc-radius-sm);
+  padding: var(--bc-space-1) var(--bc-space-2);
+  font-size: var(--bc-font-size-sm);
+  font-family: inherit;
+  color: var(--bc-color-text-primary);
+  background: var(--bc-color-surface);
+
+  &[aria-invalid='true'] {
+    border-color: var(--bc-color-error);
+  }
+}
+
+textarea.bc-form__control {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.bc-form__checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bc-space-2);
+  font-size: var(--bc-font-size-sm);
+}
+
+.bc-form__hint {
+  font-size: var(--bc-font-size-xs);
+  color: var(--bc-color-text-secondary);
+  margin: 0;
+}
+
+.bc-form__error {
+  font-size: var(--bc-font-size-xs);
+  color: var(--bc-color-error);
+  margin: 0;
+}
+
+.bc-form__submit-error {
+  border: 1px solid var(--bc-color-error);
+  border-radius: var(--bc-radius-md);
+  padding: var(--bc-space-3);
+  color: var(--bc-color-error);
+}
+
+.bc-form__submit-error-message {
+  font-weight: var(--bc-font-weight-medium);
+  margin: 0 0 var(--bc-space-1) 0;
+}
+
+.bc-form__submit-error-correlation {
+  font-size: var(--bc-font-size-xs);
+  color: var(--bc-color-text-secondary);
+  margin: 0;
+}
+
+.bc-form__actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.bc-form__submit {
+  border: 1px solid var(--bc-color-brand-primary);
+  background: var(--bc-color-brand-primary);
+  color: var(--bc-color-on-brand-primary);
+  border-radius: var(--bc-radius-sm);
+  padding: var(--bc-space-1) var(--bc-space-3);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--bc-color-brand-primary-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--bc-opacity-disabled);
+  }
+}

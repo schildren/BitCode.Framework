@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: bitcode-sample-api-staging
+
+labels:
+  - pairs:
+      environment: staging
+    includeSelectors: false
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+patches:
+  - path: configmap-patch.yaml
+  - path: deployment-patch.yaml
+  - path: hpa-patch.yaml
+  - path: pdb-patch.yaml
+
+images:
+  # Staging: tag inmutable versionado por build de CI (ej. commit SHA corto o
+  # SemVer pre-release), nunca "latest"/"dev" -- mismo principio de
+  # reproducibilidad que docs/politica-contenedores.md sección 3.3 aplica a
+  # las imágenes base del Containerfile.
+  - name: bitcode/sample-api
+    newTag: "0.1.0"

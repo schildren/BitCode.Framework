@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BitCode.Framework",
+  "classifications": ["Common", "Module", "BitCode.Framework"],
+  "identity": "BitCode.Framework.Templates.Module",
+  "name": "BitCode Framework - Módulo (bounded context con límites y pruebas)",
+  "shortName": "bitcode-module",
+  "sourceName": "ModuleName",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "SharedSourceRoot": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "../../src",
+      "defaultValue": "../../src",
+      "description": "Ruta relativa (desde el directorio de salida del proyecto de módulo generado) hacia la carpeta src/ del framework. El valor por defecto asume que el módulo se genera dos niveles bajo la raíz del repo (ej. modules/MiModulo/), igual que el resto de los proyectos de referencia -- BitCode.Framework todavía no publica sus paquetes en un feed NuGet (F8-05, pendiente), así que ProjectReference relativo es la forma real de consumir el framework hoy. Cuando F8-05 esté resuelto, un consumidor externo puede pasar --SharedSourceRoot con una ruta propia o reemplazar directamente las referencias por PackageReference."
+    },
+    "Namespace": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "MyApp.Modules",
+      "defaultValue": "MyApp.Modules",
+      "description": "Namespace raíz del módulo generado (el nombre del módulo, tomado de -n/--name, se agrega como identificador de clases pero no se concatena automáticamente al namespace -- pasá algo como \"MiEmpresa.Modules.Inventario\" si querés que el namespace refleje el nombre del módulo)."
+    }
+  }
+}

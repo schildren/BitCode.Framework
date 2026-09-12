@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Import and Export: Fase 6, módulo 10 del Plan Maestro BitCode: validación, lotes,
+      progreso, errores y reanudación (dependencia declarada: Documents y Events). Motor CSV genérico de
+      importación/exportación por lotes con checkpoint persistido para reanudación tras una caída del
+      proceso -- NO reutiliza `IDocumentBlobStore`/`FileSystemDocumentBlobStore` de Documents (evita acoplar
+      dos bounded contexts para reusar solo una clase de almacenamiento), define su propia abstracción
+      mínima de almacenamiento transitorio. Ver `docs/guia-import-export.md` para el detalle honesto de esa
+      decisión y de qué tan "real" es cada pieza.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.10.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Quartz" Version="3.13.1" />
+  </ItemGroup>
+
+</Project>

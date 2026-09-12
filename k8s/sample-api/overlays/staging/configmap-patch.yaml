@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-api-config
+data:
+  ASPNETCORE_ENVIRONMENT: "Staging"
+  Logging__LogLevel__Default: "Information"

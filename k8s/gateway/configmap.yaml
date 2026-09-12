@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: bitcode-framework
+data:
+  ASPNETCORE_HTTP_PORTS: "8080"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  OpenTelemetry__ServiceName: "BitCode.Gateway"
+  # F4-10: antes de esta tarea, el Gateway no exportaba a ningún collector (AddSharedObservability ya
+  # estaba cableado desde F4-08, pero "OpenTelemetry__OtlpEndpoint" nunca se seteó acá -- generaba
+  # trazas/métricas en memoria sin exportarlas a ningún lado). Apunta al Service ClusterIP del OTel
+  # Collector centralizado (k8s/otel-collector/, namespace propio "bitcode-observability") vía FQDN
+  # completo -- mismo criterio que k8s/sample-api/base/configmap.yaml, ver el comentario ahí para el
+  # detalle de por qué FQDN completo y no el nombre corto.
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector.bitcode-observability.svc.cluster.local:4317"
+  Jwt__Issuer: "BitCode.Framework"
+  Jwt__Audience: "BitCode.Framework.Clients"
+  RateLimiting__PermitLimit: "100"
+  RateLimiting__WindowSeconds: "10"
+  RateLimiting__QueueLimit: "0"
+  # Rate limiting distribuido (F4-08, cierre de pendiente): sin "Caching__RedisConnectionString"
+  # configurado (NO se declara acá -- no hay Redis desplegado como manifiesto en este repositorio,
+  # ver k8s/, mismo criterio que el resto de k8s/ nunca asume un backend externo no provisto), el
+  # Gateway cae al rate limiting en memoria por réplica (limitación conocida: con "replicas: 2" de
+  # este Deployment, el límite efectivo es 2 * RateLimiting__PermitLimit). Un despliegue real con más
+  # de una réplica que necesite el límite AGREGADO real agrega acá (o en un overlay/Secret, según el
+  # ambiente) la clave "Caching__RedisConnectionString" apuntando a un Redis/Valkey real -- mismo
+  # patrón de configuración que "Caching:RedisConnectionString" ya usa el resto del framework
+  # (Shared.Infrastructure.Caching, F4-03).
+  # Límite de tamaño de request body (F4-09), defensa en profundidad de aplicación -- ver también
+  # ingress.yaml (nginx.ingress.kubernetes.io/proxy-body-size), la primera línea de defensa perimetral
+  # con el mismo valor (10 MiB). docs/politica-perimetral-waf.md documenta la relación entre ambos.
+  RequestLimits__MaxRequestBodySizeBytes: "10485760"
+  # Routing (F4-08): destino real del cluster "sample-api-cluster" -- ClusterIP del Service
+  # sample-api (k8s/sample-api/base/service.yaml), resoluble por DNS interno del cluster
+  # ("sample-api.<namespace>.svc.cluster.local" o simplemente "sample-api" dentro del mismo
+  # namespace). Un proyecto consumidor real agrega acá una entrada de ReverseProxy__Routes__/
+  # ReverseProxy__Clusters__ por cada backend adicional que el Gateway deba exponer.
+  ReverseProxy__Routes__sample-api__ClusterId: "sample-api-cluster"
+  ReverseProxy__Routes__sample-api__Match__Path: "/api/{**catch-all}"
+  ReverseProxy__Clusters__sample-api-cluster__Destinations__destination1__Address: "http://sample-api/"

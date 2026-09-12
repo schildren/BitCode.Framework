@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using BitCode.Framework.Shared.Domain.Persistence;
 using BitCode.Framework.Shared.Domain.Specifications;
 using BitCode.Framework.Shared.Infrastructure.Persistence.Specifications;
@@ -32,6 +33,78 @@ public class RepositoryBase<TEntity, TId>(DbContext dbContext) : IRepository<TEn
         ISpecification<TEntity> specification,
         CancellationToken cancellationToken = default) =>
         await SpecificationEvaluator<TEntity>.GetQuery(DbSet, specification).ToListAsync(cancellationToken);
+
+    public virtual async Task<IReadOnlyList<TResult>> ListAsync<TResult>(
+        ISpecification<TEntity> specification,
+        Expression<Func<TEntity, TResult>> selector,
+        CancellationToken cancellationToken = default) =>
+        await SpecificationEvaluator<TEntity>.GetQuery(DbSet, specification)
+            .Select(selector)
+            .ToListAsync(cancellationToken);
+
+    public virtual async Task<PagedResult<TEntity>> ListPagedAsync(
+        ISpecification<TEntity> specification,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (normalizedPage, normalizedPageSize) = NormalizePaging(page, pageSize);
+
+        var filteredQuery = SpecificationEvaluator<TEntity>.GetQuery(DbSet, specification, applyPaging: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var items = await filteredQuery
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TEntity>(items, normalizedPage, normalizedPageSize, totalCount);
+    }
+
+    public virtual async Task<PagedResult<TResult>> ListPagedAsync<TResult>(
+        ISpecification<TEntity> specification,
+        Expression<Func<TEntity, TResult>> selector,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (normalizedPage, normalizedPageSize) = NormalizePaging(page, pageSize);
+
+        var filteredQuery = SpecificationEvaluator<TEntity>.GetQuery(DbSet, specification, applyPaging: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var items = await filteredQuery
+            .Skip((normalizedPage - 1) * normalizedPageSize)
+            .Take(normalizedPageSize)
+            .Select(selector)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TResult>(items, normalizedPage, normalizedPageSize, totalCount);
+    }
+
+    /// <summary>
+    /// Recorte defensivo de última línea (F1-21): protege la base de datos incluso si algo llegó a
+    /// llamar a este método con un <c>page</c>/<c>pageSize</c> crudo sin pasar por
+    /// <see cref="PageRequest.Create"/> (el punto de validación principal, que nunca trunca en
+    /// silencio: devuelve un <see cref="Result{TValue}"/> fallido con un error de validación claro).
+    /// Este recorte SÍ trunca en silencio a propósito — es una red de seguridad de infraestructura,
+    /// no la experiencia esperada para un cliente HTTP; todo endpoint de listado debe construir un
+    /// <see cref="PageRequest"/> antes de llegar aquí para que un <c>pageSize</c> fuera de rango se
+    /// reporte como error 400 en vez de aplicar este límite sin avisar.
+    /// </summary>
+    protected static (int Page, int PageSize) NormalizePaging(int page, int pageSize) =>
+        (page < 1 ? 1 : page, pageSize < 1 ? 1 : pageSize > PageRequest.DefaultMaxPageSize ? PageRequest.DefaultMaxPageSize : pageSize);
+
+    public virtual Task<PagedResult<TEntity>> ListPagedAsync(
+        ISpecification<TEntity> specification,
+        PageRequest pageRequest,
+        CancellationToken cancellationToken = default) =>
+        ListPagedAsync(specification, pageRequest.Page, pageRequest.PageSize, cancellationToken);
+
+    public virtual Task<PagedResult<TResult>> ListPagedAsync<TResult>(
+        ISpecification<TEntity> specification,
+        Expression<Func<TEntity, TResult>> selector,
+        PageRequest pageRequest,
+        CancellationToken cancellationToken = default) =>
+        ListPagedAsync(specification, selector, pageRequest.Page, pageRequest.PageSize, cancellationToken);
 
     public virtual async Task<int> CountAsync(
         ISpecification<TEntity> specification,

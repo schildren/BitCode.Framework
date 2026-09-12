@@ -138,6 +138,52 @@ public class MultiTenantDbContextIntegrationTests(SqlServerContainerFixture fixt
         visibleToA.Should().NotContain(e => e.Name == "Entidad-B");
     }
 
+    /// <summary>
+    /// F1-12 — criterio de aceptación literal "cero fuga entre tenants": no alcanza con que un
+    /// listado (<c>ToListAsync</c>) oculte filas de otro tenant; un acceso puntual por Id (el camino
+    /// que usa un <c>Obtener{Entidad}Query</c>/<c>Actualizar{Entidad}Command</c> real vía
+    /// <c>IRepository.GetByIdAsync</c>) también debe comportarse como si la fila de Tenant B no
+    /// existiera para un contexto resuelto como Tenant A — nunca una excepción distinta que revele
+    /// que la fila sí existe (eso también sería una fuga de información), sino exactamente lo mismo
+    /// que un Id inexistente: null.
+    /// </summary>
+    [Fact]
+    public async Task MultiTenancy_GetByIdOfOtherTenantEntity_BehavesAsIfEntityDoesNotExist()
+    {
+        var connectionString = BuildIsolatedConnectionString();
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+        var entityIdOfTenantB = Guid.NewGuid();
+
+        await using (var providerB = await BuildProviderAsync(connectionString, new FakeTenantProvider(tenantB)))
+        await using (var scopeB = providerB.CreateAsyncScope())
+        {
+            var repo = scopeB.ServiceProvider.GetRequiredService<IRepository<TestEntity, Guid>>();
+            var uow = scopeB.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await repo.AddAsync(new TestEntity(entityIdOfTenantB, "Secreto-De-B", 999) { TenantId = tenantB });
+            await uow.SaveChangesAsync();
+        }
+
+        await using var providerA = await BuildProviderAsync(connectionString, new FakeTenantProvider(tenantA));
+        await using var scopeA = providerA.CreateAsyncScope();
+        var repositoryA = scopeA.ServiceProvider.GetRequiredService<IRepository<TestEntity, Guid>>();
+
+        var foundFromA = await repositoryA.GetByIdAsync(entityIdOfTenantB);
+
+        foundFromA.Should().BeNull(
+            "un registro de otro tenant debe ser indistinguible de un Id inexistente, nunca visible " +
+            "ni accesible para actualizar/eliminar desde un contexto resuelto en un tenant distinto");
+
+        // Confirma que la fila sí existe físicamente (no es un falso negativo por otra causa, como un
+        // fallo al insertar): el mismo Id, resuelto como Tenant B, la encuentra sin problema.
+        await using var providerBRead = await BuildProviderAsync(connectionString, new FakeTenantProvider(tenantB));
+        await using var scopeBRead = providerBRead.CreateAsyncScope();
+        var repositoryB = scopeBRead.ServiceProvider.GetRequiredService<IRepository<TestEntity, Guid>>();
+        var foundFromB = await repositoryB.GetByIdAsync(entityIdOfTenantB);
+        foundFromB.Should().NotBeNull();
+        foundFromB!.Name.Should().Be("Secreto-De-B");
+    }
+
     [Fact]
     public async Task UnitOfWork_Rollback_DiscardsChangesAgainstRealSqlServer()
     {

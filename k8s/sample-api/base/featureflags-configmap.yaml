@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-api-featureflags
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+data:
+  # F4-12 (cierre del gap de hot-reload, ver docs/politica-configuracion-y-feature-flags.md sección 2.4):
+  # ConfigMap SEPARADO de "sample-api-config" a propósito -- este se monta como VOLUMEN de archivo
+  # (deployment.yaml, volumes/volumeMounts) en vez de "envFrom". Kubernetes SÍ actualiza en disco los
+  # archivos de un ConfigMap montado como volumen cuando el ConfigMap cambia (el kubelet resincroniza
+  # periódicamente, hasta ~1 minuto de latencia según el "sync period" del kubelet del cluster; no hay
+  # notificación instantánea) -- lo que "envFrom" nunca hace en un pod ya corriendo. La clave se llama
+  # "featureflags.json" (no "FeatureFlags__X" plano como en sample-api-config) porque el contenido es un
+  # documento JSON completo, montado en el filesystem del contenedor y leído por
+  # "builder.Configuration.AddJsonFile(path, optional: true, reloadOnChange: true)" en Program.cs -- ese
+  # método de Microsoft.Extensions.Configuration.Json es justamente el que dispara el change token que
+  # IOptionsMonitor<FeatureFlagsOptions>.OnChange (y, con él, FeatureFlagChangeAuditingService) necesita
+  # para reaccionar SIN reiniciar el proceso.
+  #
+  # IMPORTANTE (ver deployment.yaml): el volumeMount NO usa "subPath" -- un ConfigMap montado con subPath
+  # NO se actualiza cuando el ConfigMap cambia (limitación documentada de Kubernetes, el symlink atómico
+  # que el kubelet usa para propagar cambios no aplica a subPath). Este ConfigMap se monta como
+  # DIRECTORIO completo (con "items" acotando qué clave se materializa y con qué nombre de archivo) para
+  # que el hot-reload real funcione.
+  featureflags.json: |
+    {
+      "FeatureFlags": {}
+    }

@@ -9,6 +9,16 @@ namespace Templates.Tests;
 /// misma vara de medir que el resto de la Fase 6 en adelante: ejecutar el camino real, no confiar
 /// en que la plantilla "se ve bien".
 /// </summary>
+/// <remarks>
+/// El template <c>bitcode-feature</c> original de esta fase (<c>templates/feature-cqrs</c>, tres archivos
+/// sueltos por Command, sin Query ni Endpoint) fue reemplazado por <c>templates/feature</c> (F8-03, Plan
+/// Maestro Fase 8): mismo shortName <c>bitcode-feature</c>, pero vertical slice completo (Command o Query
+/// + Validator + Handler + Endpoint) pensado para insertarse dentro de un módulo ya generado por
+/// <c>dotnet new bitcode-module</c> (no contra un proyecto de verificación aislado, porque el Endpoint
+/// generado necesita <c>Shared.Infrastructure.Web</c> y el <c>FrameworkReference</c> a
+/// <c>Microsoft.AspNetCore.App</c> que ya trae cualquier módulo real). Ver
+/// <see cref="FeatureTemplateVerificationTests"/> para su verificación end-to-end.
+/// </remarks>
 public class TemplateVerificationTests : IDisposable
 {
     private readonly string _repoRoot = FindRepoRoot();
@@ -45,7 +55,6 @@ public class TemplateVerificationTests : IDisposable
 
     private void InstallTemplates()
     {
-        RunDotnet($"new install \"{Path.Combine(_repoRoot, "templates", "feature-cqrs")}\" --force", _repoRoot);
         RunDotnet($"new install \"{Path.Combine(_repoRoot, "templates", "domain-entity")}\" --force", _repoRoot);
     }
 
@@ -63,7 +72,7 @@ public class TemplateVerificationTests : IDisposable
             $"""
              <Project Sdk="Microsoft.NET.Sdk">
                <PropertyGroup>
-                 <TargetFramework>net8.0</TargetFramework>
+                 <TargetFramework>net10.0</TargetFramework>
                  <ImplicitUsings>enable</ImplicitUsings>
                  <Nullable>enable</Nullable>
                </PropertyGroup>
@@ -74,23 +83,6 @@ public class TemplateVerificationTests : IDisposable
              """);
 
         return projectDir;
-    }
-
-    [Fact]
-    public void FeatureCqrsTemplate_GeneratedCode_CompilesAgainstRealFrameworkProjects()
-    {
-        InstallTemplates();
-        var projectDir = CreateVerificationProject(
-            "FeatureVerification",
-            Path.Combine(_repoRoot, "src", "Shared.Application", "Shared.Application.csproj"));
-
-        var (generateExitCode, generateOutput) = RunDotnet(
-            "new bitcode-feature -n CrearProducto --Namespace Verification.Features",
-            projectDir);
-        generateExitCode.Should().Be(0, generateOutput);
-
-        var (buildExitCode, buildOutput) = RunDotnet("build --nologo", projectDir);
-        buildExitCode.Should().Be(0, buildOutput);
     }
 
     [Theory]

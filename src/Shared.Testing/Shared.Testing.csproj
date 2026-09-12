@@ -5,8 +5,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- F3-06: EventSchemaCompatibilityChecker compara la forma de dos IIntegrationEvent. -->
+    <ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <!-- F2-12: VaultContainerFixture usa el builder genérico (sin un paquete Testcontainers.Vault
+         dedicado en el ecosistema .NET); referencia explícita al paquete base en vez de depender de
+         que quede disponible transitivamente por Testcontainers.Keycloak/.MsSql/.Redis. -->
+    <PackageReference Include="Testcontainers" Version="3.10.0" />
+    <!-- F3-02: fixture de Kafka para pruebas de integración con broker real (KafkaContainerFixture). -->
+    <PackageReference Include="Testcontainers.Kafka" Version="3.10.0" />
+    <PackageReference Include="Testcontainers.Keycloak" Version="3.10.0" />
     <PackageReference Include="Testcontainers.MsSql" Version="3.10.0" />
     <PackageReference Include="Testcontainers.Redis" Version="3.10.0" />
     <PackageReference Include="xunit" Version="2.5.3" />

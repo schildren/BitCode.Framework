@@ -1,0 +1,167 @@
+#nullable enable
+BitCode.Framework.Platform.Workflow.Actors.IWorkflowActorContext
+BitCode.Framework.Platform.Workflow.Actors.IWorkflowActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Workflow.Actors.IWorkflowActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Workflow.Actors.IWorkflowActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.Codigo.get -> string!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.CreatedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.CreatedBy.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.DeletedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.DeletedBy.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.Descripcion.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.IsDeleted.get -> bool
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.IsDeleted.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.ModifiedBy.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.Nombre.get -> string!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition.WorkflowDefinition(System.Guid id, string! codigo, string! nombre, string? descripcion) -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowRuleEvaluator
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.AsignadoPorDefectoUserId.get -> System.Guid?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.Codigo.get -> string!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.EsFinal.get -> bool
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.EsInicial.get -> bool
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.EscalarAUserId.get -> System.Guid?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.Nombre.get -> string!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.RequiereTarea.get -> bool
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.SlaMinutos.get -> int?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.TituloTarea.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.WorkflowState(System.Guid id, System.Guid workflowVersionId, string! codigo, string! nombre, bool esInicial, bool esFinal, bool requiereTarea, string? tituloTarea, System.Guid? asignadoPorDefectoUserId, int? slaMinutos, System.Guid? escalarAUserId) -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState.WorkflowVersionId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.Accion.get -> string!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.DesdeEstadoId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.HaciaEstadoId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.Orden.get -> int
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.ReglaExpresion.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.WorkflowTransition(System.Guid id, System.Guid workflowVersionId, System.Guid desdeEstadoId, System.Guid haciaEstadoId, string! accion, string? reglaExpresion, int orden) -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition.WorkflowVersionId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.CreatedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.CreatedBy.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.Estado.get -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.ModifiedBy.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.Numero.get -> int
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.PublicadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.Publicar() -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.WorkflowDefinitionId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.WorkflowVersion(System.Guid id, System.Guid workflowDefinitionId, int numero) -> void
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado.Borrador = 0 -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
+BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado.Publicada = 1 -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
+BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob
+BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.EscalarVencidasAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.WorkflowEscalamientoJob(BitCode.Framework.Platform.Workflow.WorkflowDbContext! dbContext) -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.ActorUserId.get -> System.Guid?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.Detalle.get -> string!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.FechaUtc.get -> System.DateTime
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.TipoEvento.get -> string!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.WorkflowHistorial(System.Guid id, System.Guid workflowInstanceId, string! tipoEvento, string! detalle, System.Guid? actorUserId) -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.WorkflowInstanceId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.AvanzarA(System.Guid nuevoEstadoId, bool esFinal) -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.CreatedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.CreatedBy.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.Estado.get -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.EstadoActualId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.FinalizadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.IniciadoPorUserId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.ModifiedBy.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.ObtenerVariables() -> System.Collections.Generic.Dictionary<string!, string!>!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.RowVersion.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.VariablesJson.get -> string!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.WorkflowDefinitionId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.WorkflowInstance(System.Guid id, System.Guid workflowDefinitionId, System.Guid workflowVersionId, System.Guid estadoInicialId, System.Guid iniciadoPorUserId, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! variables) -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.WorkflowVersionId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado.EnCurso = 0 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado.Finalizada = 1 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.AccionResuelta.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.AsignadoAUserId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.AsignadoOriginalUserId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Comentario.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.CreatedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.CreatedBy.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Delegar(System.Guid nuevoAsignadoUserId) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Escalada.get -> bool
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.EscaladaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Escalar(System.Guid nuevoAsignadoUserId) -> bool
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Estado.get -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ModifiedBy.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Resolver(string! accion, System.Guid actorUserId, string? comentario) -> BitCode.Framework.Shared.Kernel.Result!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ResueltaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.ResueltaPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.RowVersion.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.SlaVencimientoUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.TenantId.set -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.Titulo.get -> string!
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.WorkflowInstanceId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.WorkflowStateId.get -> System.Guid
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.WorkflowTask(System.Guid id, System.Guid workflowInstanceId, System.Guid workflowStateId, string! titulo, System.Guid asignadoAUserId, System.DateTime? slaVencimientoUtc) -> void
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado.Pendiente = 0 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado
+BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado.Resuelta = 1 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowTaskEstado
+BitCode.Framework.Platform.Workflow.WorkflowDbContext
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Workflow.WorkflowDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowDefiniciones.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Definiciones.WorkflowDefinition!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowHistoriales.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowInstances.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowStates.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Definiciones.WorkflowState!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowTasks.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowTransitions.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Definiciones.WorkflowTransition!>!
+BitCode.Framework.Platform.Workflow.WorkflowDbContext.WorkflowVersiones.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion!>!
+BitCode.Framework.Platform.Workflow.WorkflowEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Workflow.WorkflowPermissions
+BitCode.Framework.Platform.Workflow.WorkflowServiceCollectionExtensions
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.DefinicionesCrear = "workflow.definiciones.crear" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.DefinicionesVer = "workflow.definiciones.ver" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.InstanciasIniciar = "workflow.instancias.iniciar" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.InstanciasVer = "workflow.instancias.ver" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.TareasDelegar = "workflow.tareas.delegar" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.TareasResolver = "workflow.tareas.resolver" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.TareasVer = "workflow.tareas.ver" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.VersionesCrear = "workflow.versiones.crear" -> string!
+const BitCode.Framework.Platform.Workflow.WorkflowPermissions.VersionesPublicar = "workflow.versiones.publicar" -> string!
+static BitCode.Framework.Platform.Workflow.Definiciones.WorkflowRuleEvaluator.Evaluar(string? expresion, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! variables) -> bool
+static BitCode.Framework.Platform.Workflow.WorkflowEndpointRouteBuilderExtensions.MapWorkflowEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Workflow.WorkflowServiceCollectionExtensions.AddSharedWorkflow(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

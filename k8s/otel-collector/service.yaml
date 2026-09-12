@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # ClusterIP: mismo criterio que k8s/sample-api/base/service.yaml -- solo tráfico interno del cluster
+  # (Sample.Api, BitCode.Gateway, y cualquier otro workload que exporte OTLP). El DNS interno resultante
+  # es "otel-collector.<namespace>.svc.cluster.local" (o simplemente "otel-collector" dentro del mismo
+  # namespace) -- ver OpenTelemetry__OtlpEndpoint en los ConfigMap de sample-api/gateway.
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: otel-collector
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+      protocol: TCP

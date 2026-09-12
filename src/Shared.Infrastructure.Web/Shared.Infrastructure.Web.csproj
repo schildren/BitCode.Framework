@@ -2,11 +2,46 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\Shared.Domain\Shared.Domain.csproj" />
     <ProjectReference Include="..\Shared.Modularity\Shared.Modularity.csproj" />
+    <!-- F2-02: MapSharedOidcAuthorizationCodeLogin consume las abstracciones del flujo Authorization
+         Code + PKCE (IOidcAuthorizationRequestFactory/IOidcAuthorizationCodeExchanger/
+         IOidcAuthorizationCodeStateProtector); la dirección de dependencia es Web -> Security, nunca
+         al revés, igual que el resto de los building blocks de infraestructura de este proyecto. -->
+    <ProjectReference Include="..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Solo para Serilog.Context.LogContext (F1-15, TenantLogEnrichmentMiddleware): el resto de
+         la configuración de Serilog (sinks, niveles) vive en Shared.Infrastructure.Observability. -->
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <!-- F1-27: versionado de API HTTP por segmento de ruta (Asp.Versioning, sucesor mantenido por la
+         comunidad .NET de Microsoft.AspNetCore.Mvc.Versioning). Solo el paquete .Http alcanza porque
+         el repositorio usa Minimal API en todos sus proyectos Web (MapGroup/MapGet/MapPost), no
+         controllers MVC: Asp.Versioning.Mvc.ApiExplorer no aplica. La superficie de extensión para
+         Minimal API (NewApiVersionSet/WithApiVersionSet/HasApiVersion/MapToApiVersion/
+         HasDeprecatedApiVersion, namespace Asp.Versioning.Builder) fluye transitivamente a cualquier
+         proyecto que referencie Shared.Infrastructure.Web (ver samples/Sample.Api/Productos/
+         ProductosModule.cs), sin que el consumidor declare su propio PackageReference. -->
+    <PackageReference Include="Asp.Versioning.Http" Version="10.2.3" />
+    <!-- F1-28: generación de contrato OpenAPI. Soporte NATIVO de .NET 10 (Microsoft.AspNetCore.OpenApi,
+         AddOpenApi/MapOpenApi) en vez de Swashbuckle/NSwag: cubre generación, document/operation
+         transformers (examples, seguridad) y ShouldInclude (documento separado por versión de API) sin
+         una dependencia externa adicional. Trae transitivamente Microsoft.OpenApi (el modelo de objetos
+         del documento, incluida su propia capacidad de lectura/validación vía
+         Microsoft.OpenApi.Reader.OpenApiDocument.Parse, usada por la suite de tests para el criterio de
+         aceptación "Validación automática" sin necesitar Microsoft.OpenApi.Readers, que todavía no tiene
+         una versión estable compatible con Microsoft.OpenApi 2.x). -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+    <!-- F2-03 (BFF): proxy hacia las APIs protegidas, adjuntando el access token guardado en la sesión
+         server-side (ver BffAccessTokenRequestTransform). YARP es la tecnología de gateway/reverse
+         proxy fijada por el Plan Maestro (sección 2) y formalizada en el ADR 0007, que explícitamente
+         habilita su construcción (no su habilitación productiva) para F2-03. -->
+    <PackageReference Include="Yarp.ReverseProxy" Version="2.3.0" />
   </ItemGroup>
 
 

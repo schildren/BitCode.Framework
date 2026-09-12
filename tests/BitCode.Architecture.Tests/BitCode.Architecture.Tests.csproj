@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Domain\Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Caching\Shared.Infrastructure.Caching.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Http\Shared.Infrastructure.Http.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.BackgroundJobs\Shared.Infrastructure.BackgroundJobs.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Identity\BitCode.Platform.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Organization\BitCode.Platform.Organization.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Catalogs\BitCode.Platform.Catalogs.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.FeatureManagement\BitCode.Platform.FeatureManagement.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Documents\BitCode.Platform.Documents.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.TaskInbox\BitCode.Platform.TaskInbox.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Notifications\BitCode.Platform.Notifications.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Reporting\BitCode.Platform.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.ImportExport\BitCode.Platform.ImportExport.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Dashboard\BitCode.Platform.Dashboard.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.IntegrationHub\BitCode.Platform.IntegrationHub.csproj" />
+    <ProjectReference Include="..\..\samples\Sample.Api\Sample.Api.csproj" />
+    <ProjectReference Include="..\..\samples\Sample.Eventing\Sample.Eventing.csproj" />
+  </ItemGroup>
+
+</Project>

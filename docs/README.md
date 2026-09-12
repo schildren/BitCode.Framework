@@ -18,5 +18,68 @@ Framework base de desarrollo .NET (stack Microsoft Open Source), construido por 
 
 ## Guías
 
+- [guia-sbom-notices.md](guia-sbom-notices.md) — Software Bill of Materials (SBOM) y Licencias (F8-14): inventario CycloneDX 1.5, reporte de licencias y `THIRD-PARTY-NOTICES.md` con 100% de cobertura y verificación continua en CI.
+- [guia-release-automation.md](guia-release-automation.md) — Automatización de Releases y Provenance (F8-13): pipeline unificado GitHub Actions (`release.yml`), generación automática de `CHANGELOG.md`, versionado SemVer sincronizado, firma Authenticode y atestaciones de procedencia SLSA.
+- [guia-cli-diagnostico.md](guia-cli-diagnostico.md) — CLI de Diagnóstico Accionable (F8-12): herramienta `BitCode.Diagnostics` y scripts `scripts/doctor.ps1`/`doctor.sh` para pre-flight check de .NET SDK, Node, Docker, variables y conectividad a infraestructura.
+- [guia-entorno-local.md](guia-entorno-local.md) — Entorno Local Reproducible con Contenedores (F8-11): Docker Compose con SQL Server 2022, Redis, Kafka (KRaft), OTel Collector y Jaeger, scripts `scripts/dev-env.ps1`/`dev-env.sh` y guía de onboarding en 5 minutos.
+- [golden-paths.md](golden-paths.md) — Golden Paths de Desarrollo (F8-10): rutas canónicas y código de referencia para CRUD/CQRS, Workflow, Events (Outbox+Kafka+Inbox), Documents e Integration Hub.
+- [guia-portal-tecnico.md](guia-portal-tecnico.md) — Portal Técnico y Documentación Viva (F8-09): aplicación interactiva SPA con búsqueda instantánea, visor de 100+ docs, 19 ADRs, catálogo OpenAPI y scaffolding.
 - [guia-uso-proyectos.md](guia-uso-proyectos.md) — cómo arrancar un proyecto consumidor desde cero, paso a paso.
 - [convenciones.md](convenciones.md) — nomenclatura, estructura de carpetas y reglas duras.
+- [guia-migraciones.md](guia-migraciones.md) — ciclo de vida de migraciones EF Core (F8-07): patrón Expand-and-Contract para despliegues zero-downtime, tooling CLI `BitCode.Migrations` (validación, status, forward rollout, rollback ensayado y scripts SQL idempotentes).
+- [guia-queries-eficientes.md](guia-queries-eficientes.md) — AsNoTracking por defecto en lecturas (F1-17), proyección a DTO sin materializar la entidad completa y paginación con `PagedResult<T>`.
+- [guia-hot-paths.md](guia-hot-paths.md) — contrato de extensión controlada para hot paths que `ISpecification<T>` no expresa bien (F1-18): `IHotPathQuery<TResult>`/`IHotPathQueryExecutor`, atributo `[HotPath]` obligatorio y benchmark real que justifica el bypass.
+- [guia-resiliencia-http.md](guia-resiliencia-http.md) — resiliencia de `HttpClient` saliente (F1-26): `AddResilientHttpClient<TClient>` (`Shared.Infrastructure.Http`), pipeline estándar de timeout/retry/circuit breaker/bulkhead, y por qué el retry automático solo aplica a operaciones seguras de reintentar.
+- [guia-rbac-2.md](guia-rbac-2.md) — RBAC 2.0 (F2-07): `IPermissionEvaluator`, normalización de roles/permisos/scopes/tenancy.
+- [guia-abac.md](guia-abac.md) — ABAC (F2-08): `IAuthorizationPolicyEvaluator`, autorización combinada RBAC + reglas por monto/empresa/sucursal.
+- [guia-auditoria-inmutable.md](guia-auditoria-inmutable.md) — Auditoría inmutable (Épica F2-D, F2-15 a F2-20, COMPLETA): `IAuditWriter`/`InMemoryAuditWriter`, cadena de integridad (`IAuditIntegrityVerifier`), firma de lotes (`IAuditBatchSigner`), exportación WORM (`IWormStorage`/`IAuditWormExportPipeline`), redacción de PII (`IAuditRedactionPolicy`) y consulta administrativa (`IAuditReader`/`IAuditQueryService`).
+- [guia-eventing-contratos.md](guia-eventing-contratos.md) — Contratos de eventos de integración (F3-01), adapter Kafka (F3-02) y relay de Outbox (F3-03): `IIntegrationEvent`/`IntegrationEvent`, `IEventPublisher`, `IEventConsumer<TEvent>` (`Shared.Application.Eventing`), diferencia con `DomainEvent` (F1-23), `KafkaEventPublisher`/`KafkaEventConsumer<TEvent>` y el relay que las conecta.
+- [guia-outbox-publisher.md](guia-outbox-publisher.md) — Relay de Outbox (F3-03): `OutboxBatchProcessor`/`OutboxPublisherBackgroundService`, mapeo `OutboxMessage` → `IIntegrationEvent`, bloqueo entre réplicas y criterio de aceptación "reinicio no pierde eventos".
+- [guia-inbox-consumer.md](guia-inbox-consumer.md) — Inbox Consumer (F3-04): `KafkaEventConsumer<TEvent>` coordinado con `IInboxMessageProcessor` (F1-24) contra SQL Server + Kafka reales.
+- [politica-reintentos-eventos.md](politica-reintentos-eventos.md) — Reintentos (F3-07): clasificación transitorio/permanente, backoff exponencial con jitter y límite máximo, en el relay de Outbox y en el consumidor Kafka.
+- [runbook-dlq.md](runbook-dlq.md) — DLQ y poison messages (F3-08/F3-09): dead-letter topics, metadatos de reprocesamiento y aislamiento de mensajes inválidos sin bloquear la partición.
+- [guia-observabilidad-eventos.md](guia-observabilidad-eventos.md) — Observabilidad de eventos (F3-10): métricas de publish/consume/error/lag/DLQ y correlación end-to-end vía `traceparent`/`tracestate`.
+- [politica-seguridad-kafka.md](politica-seguridad-kafka.md) — Seguridad de transporte Kafka (F3-11): TLS/SASL, ACL, identidad y mínimo privilegio.
+- [catalogo-eventos.md](catalogo-eventos.md) — Catálogo de eventos de integración (F3-12): owner, `SchemaVersion`, PII, consumidores conocidos, tópico y `PartitionKey` por evento productivo; hoy vacío de eventos reales (solo mecanismo y proceso, ver regla dura 27 de `convenciones.md`) porque el repositorio todavía no tiene ningún bounded context de negocio real (Fase 6 en adelante).
+- [fase-3-plataforma-eventos.md](fase-3-plataforma-eventos.md) — Cierre de la Fase 3 del Plan Maestro (F3-01 a F3-13, COMPLETA): resumen de las 13 tareas, matriz del Gate de salida con evidencia y detalle de la prueba de referencia end-to-end (F3-13, `samples/Sample.Eventing`/`samples/Sample.Eventing.Tests`) que integra Outbox, Kafka e Inbox reales entre dos módulos de ejemplo.
+
+## Plan Maestro vigente
+
+- [plan-maestro-bitcode-ia.md](plan-maestro-bitcode-ia.md) — plan de evolución hacia plataforma empresarial (Fases 0-10), documento rector actual.
+- [inventario-tecnico.md](inventario-tecnico.md) — inventario técnico versionado (F0-01): estructura de la solución, paquetes, dependencias entre proyectos, cobertura de pruebas, pipeline CI y brechas frente al Plan Maestro.
+- [mapa-capacidades.md](mapa-capacidades.md) — mapa de capacidades (F0-02): matriz de brechas que relaciona capacidad actual, brecha, criticidad y fase objetivo para 29 capacidades del plan, verificando explícitamente que ninguna quede sin fase objetivo asignada. **Estado: Propuesto, pendiente de revisión de arquitectura.**
+- [architecture-principles.md](architecture-principles.md) — principios de arquitectura (F0-03): modularidad, consistencia, seguridad, observabilidad y compatibilidad, cada uno anclado a una regla o componente vigente del repositorio. **Estado: Propuesto, pendiente de aprobación humana.**
+- [adr/](adr/) — Architecture Decision Records (F0-04): arquitectura, persistencia, tenancy, identidad, mensajería, cache, gateway y licencias. Ver índice de estados abajo.
+- [linea-base-rendimiento.md](linea-base-rendimiento.md) — línea base de rendimiento (F0-10): build, pruebas, carga HTTP aproximada y contadores de runtime medidos en el entorno de desarrollo; brechas pendientes frente al entorno de referencia formal de F0-09.
+- [entorno-referencia.md](entorno-referencia.md) — entorno de referencia formal para benchmarks (F0-09): hardware, versiones de herramientas, límites de aislamiento de procesos y política de reproducibilidad.
+- [benchmark-multitenancy.md](benchmark-multitenancy.md) — benchmark del modelo de multi-tenancy actual (F1-11): compilación de modelo EF Core, memoria, startup y throughput, con el overhead medido de `PerInstanceModelCacheKeyFactory` y las limitaciones para medir throughput por tenant (sin `ITenantProvider` productivo aún); insumo de datos para el ADR 0003 y para F1-12/13/14.
+- [threat-model.md](threat-model.md) — threat model (F0-07): activos, actores, fronteras de confianza, amenazas STRIDE y mitigaciones (existentes/planeadas/huecos sin plan), anclado al código y a los ADR ya vigentes. **Estado: Completado, pendiente de revisión de seguridad.**
+- [catalogo-slo-sla.md](catalogo-slo-sla.md) — catálogo SLI/SLO/SLA (F0-08): disponibilidad, latencia, error rate, throughput, RPO y RTO por perfil de servicio (API síncrona, background jobs, eventos, cache, persistencia), con fórmula de cálculo y dueño (rol genérico) por métrica. **Estado: Propuesto, pendiente de asignación real de dueños y de aprobación humana.**
+- [politica-versionado.md](politica-versionado.md) — política de versionado y compatibilidad (F0-05): SemVer de paquetes, deprecación, versionado de API HTTP/eventos/esquemas de base de datos y casos de ejemplo. **Estado: Propuesto, casos de ejemplo pendientes de aprobación humana.**
+- [politica-dependencias.md](politica-dependencias.md) — política de dependencias (F0-06): licencias permitidas/prohibidas, proceso de excepción, SCA/CVE y actualización. **Estado: Aplicada parcialmente en CI** (gate `dependency-scan` en `.github/workflows/ci.yml`, pendiente de primera corrida real en GitHub Actions).
+- [politica-empaquetado.md](politica-empaquetado.md) — política de empaquetado NuGet (F1-02): paquetes públicos vs. internos, convención de metadatos, símbolos/Source Link y procedimiento de verificación local de instalación (sin publicar a ningún feed real). **Estado: Aplicado**, verificado con instalación en app limpia.
+- [gate-compatibilidad-api.md](gate-compatibilidad-api.md) — gate de compatibilidad de API pública (F1-03): analyzer `Microsoft.CodeAnalysis.PublicApiAnalyzers` en los 11 proyectos públicos de `src/`, baseline `PublicAPI.Shipped.txt`/`PublicAPI.Unshipped.txt`, reglas núcleo escaladas a error, procedimiento para declarar un cambio de superficie como intencional y mecanismo (ApiCompat) a incorporar desde la próxima versión publicada. **Estado: Aplicado**, verificado con una prueba real de detección de cambio de superficie pública.
+- [matriz-soporte.md](matriz-soporte.md) — matriz de soporte (F1-05): runtime .NET, SQL Server, cache Redis/Valkey, broker Kafka y sistema operativo, con versión mínima/probada en CI, estado (Soportado/Planeado) y evidencia real en el repositorio; incluye brechas explícitas (versiones declaradas pero no validadas en CI) y una discrepancia encontrada frente a `entorno-referencia.md`/`linea-base-rendimiento.md`. **Estado: Aplicado**, validado contra `.github/workflows/ci.yml` y el código de fixtures de `Shared.Testing`.
+- [risk-register.md](risk-register.md) — registro de riesgos (F0-12): consolida los riesgos ya identificados en `threat-model.md`, `politica-dependencias.md`, `benchmark-multitenancy.md`, `matriz-soporte.md` y los ADR en estado `Proposed`, con probabilidad, impacto, mitigación y owner (rol genérico) por riesgo. **Estado: Pendiente de revisión por responsables.**
+
+### ADR (docs/adr/)
+
+| ADR | Tema | Estado |
+|---|---|---|
+| [0001](adr/0001-arquitectura-monolito-modular.md) | Arquitectura: monolito modular | Accepted |
+| [0002](adr/0002-persistencia-sql-server.md) | Persistencia: SQL Server | Accepted |
+| [0003](adr/0003-tenancy-multi-tenant-por-filtro-global.md) | Tenancy: filtro global por `ITenantEntity` (T1) | Accepted |
+| [0004](adr/0004-identidad-idp-oidc-oauth2.md) | Identidad: OIDC/OAuth2, proveedor de IdP pendiente | Proposed |
+| [0005](adr/0005-mensajeria-kafka.md) | Mensajería: Kafka | Accepted |
+| [0006](adr/0006-cache-hybridcache-valkey-redis.md) | Cache: HybridCache + Valkey/Redis | Accepted |
+| [0007](adr/0007-gateway-yarp.md) | Gateway: YARP | Proposed |
+| [0008](adr/0008-licencias-open-core.md) | Licencias: Open-Core (Apache-2.0 + propietario) | Proposed |
+| [0009](adr/0009-contratos-comando-transaccion-explicita.md) | Comandos: transacción explícita solo con `ITransactionalCommand` | Accepted |
+| [0010](adr/0010-tenancy-estrategia-t2-sharding-por-grupos-de-tenants.md) | Tenancy: contratos y prototipo de la estrategia T2 (sharding por grupos de tenants) | Proposed |
+| [0011](adr/0011-tenancy-estrategia-t3-base-dedicada-por-tenant.md) | Tenancy: contratos y operación de la estrategia T3 (base dedicada por tenant) | Proposed |
+| [0012](adr/0012-dbcontext-pooling-no-adoptado.md) | `DbContext` pooling: no adoptado para `MultiTenantDbContext` | Accepted |
+| [0013](adr/0013-resiliencia-http-saliente-microsoft-extensions-http-resilience.md) | Resiliencia HTTP saliente: `Microsoft.Extensions.Http.Resilience` con retry condicionado al método | Accepted |
+| [0014](adr/0014-secretos-proveedor-vault-propuesto.md) | Secretos: `ISecretProvider` (Accepted) + HashiCorp Vault (Accepted, proveedor concreto) | Accepted |
+| [0015](adr/0015-mtls-contrato-operativo-servicio-a-servicio.md) | mTLS: contrato operativo servicio-a-servicio para extracción futura | Accepted |
+| [0016](adr/0016-firma-lotes-auditoria-hmac-simetrico.md) | Auditoría: firma de lotes con HMAC-SHA256 simétrico (F2-17) | Accepted |
+| [0017](adr/0017-worm-proveedor-minio-object-lock-propuesto.md) | Auditoría WORM: `IWormStorage` + MinIO/S3 Object Lock como proveedor productivo (F2-18) | Accepted |

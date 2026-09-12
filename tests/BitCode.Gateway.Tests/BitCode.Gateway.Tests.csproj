@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- GatewayTestBackend.cs levanta un WebApplication real (Kestrel) como destino del cluster YARP
+         bajo prueba: necesita el shared framework de ASP.NET Core, no solo Microsoft.AspNetCore.Mvc.Testing. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BitCode.Gateway\BitCode.Gateway.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
+    <!-- Rate limiting distribuido (F4-08, cierre de pendiente): RedisContainerFixture (Redis real vía
+         Testcontainers), usado por la prueba de dos instancias reales del Gateway compartiendo Redis. -->
+    <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
+  </ItemGroup>
+
+</Project>

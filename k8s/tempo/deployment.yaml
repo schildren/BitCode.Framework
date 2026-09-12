@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempo
+  labels:
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/part-of: bitcode-framework
+spec:
+  # Cierre de pendiente F4-10: backend REAL de trazas (Grafana Tempo, modo "single binary") -- ver
+  # docs/guia-otel-collector.md sección 4 para la justificación de la elección de backend. Deliberadamente
+  # SIN réplicas (1 sola, sin overlays por ambiente todavía -- mismo alcance mínimo que k8s/otel-collector/
+  # y k8s/gateway/, F4-08/F4-10): Tempo en modo single-binary con backend de storage "local" (filesystem
+  # del propio Pod) NO soporta múltiples réplicas sin un backend de storage compartido real (S3/GCS/Azure
+  # Blob) -- 2+ réplicas escribiendo cada una a su propio filesystem local producirían un índice de
+  # bloques inconsistente entre sí (cada querier solo vería lo que escribió su propio ingester). Escalar
+  # esto a HA (separar distributor/ingester/querier/compactor en Deployments propios, con un backend de
+  # object storage compartido) es una decisión de infraestructura separada, fuera del alcance de este
+  # cierre de pendiente puntual.
+  replicas: 1
+  strategy:
+    # Recreate, no RollingUpdate: con una única réplica y storage LOCAL (emptyDir, no compartido entre
+    # Pods), un RollingUpdate con maxSurge>=1 arrancaría un segundo Pod con su propio emptyDir VACÍO en
+    # paralelo al primero -- ambos aceptando escritura de trazas nuevas al mismo tiempo sin verse entre
+    # sí, y el Pod viejo se termina igual perdiendo lo que tenía. Recreate evita esa ambigüedad: termina
+    # el Pod viejo (pierde su buffer local, ya documentado como trade-off aceptado -- ver
+    # tempo-config.yaml) antes de arrancar el nuevo. Coherente con "sin réplicas" de arriba -- si en el
+    # futuro este Deployment pasa a usar un backend de storage compartido (S3/GCS/Azure Blob) para
+    # soportar réplicas reales, esto debería revisarse junto con esa decisión.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tempo
+        app.kubernetes.io/part-of: bitcode-framework
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: tempo
+          image: grafana/tempo:2.6.1
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-config.file=/etc/tempo/tempo.yaml"
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: http
+              containerPort: 3200
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tempo
+              readOnly: true
+            # Storage local (tempo-config.yaml: storage.trace.backend: local, path /var/tempo/traces,
+            # wal.path /var/tempo/wal) -- emptyDir, NO PersistentVolumeClaim (trade-off documentado
+            # explícitamente en tempo-config.yaml: reiniciar/reemplazar el Pod pierde las trazas
+            # almacenadas). Necesario además porque el contenedor corre con readOnlyRootFilesystem: true
+            # (abajo) -- sin este volumen montado en /var/tempo, Tempo no tendría NINGÚN directorio
+            # escribible para el WAL/bloques, y fallaría al arrancar.
+            - name: storage
+              mountPath: /var/tempo
+          # GET /ready (puerto http, 3200) -- endpoint propio de Tempo, responde 200 solo cuando el
+          # ingester terminó su período de gracia post-arranque (~15s, verificado en este entorno con un
+          # contenedor real -- ver docs/guia-otel-collector.md sección de evidencia). Mismo patrón que
+          # k8s/otel-collector/deployment.yaml: startupProbe da margen generoso al arranque inicial,
+          # liveness/readiness comparten el mismo endpoint (Tempo en modo single-binary no distingue
+          # "vivo pero no listo" de un componente interno caído -- todo corre en el mismo proceso).
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            # Valores base conservadores -- mismo criterio que k8s/otel-collector/deployment.yaml: sin
+            # overlays por ambiente todavía, ajustar antes de tráfico productivo real.
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            # La imagen oficial ya corre como el usuario no-root 10001 (verificado en este entorno,
+            # `docker inspect grafana/tempo:2.6.1` -> Config.User: "10001:10001") -- se refuerza acá
+            # explícitamente, mismo criterio que k8s/otel-collector/deployment.yaml.
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          configMap:
+            # Nombre generado por kustomization.yaml (configMapGenerator, disableNameSuffixHash: true) a
+            # partir de tempo-config.yaml -- fuente única de verdad, sin duplicar el contenido acá.
+            name: tempo-config
+        - name: storage
+          emptyDir: {}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

@@ -1,0 +1,136 @@
+#nullable enable
+BitCode.Framework.Shared.Kernel.ConcurrencyError
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.get -> byte[]!
+BitCode.Framework.Shared.Kernel.IHasConcurrencyToken.RowVersion.set -> void
+BitCode.Framework.Shared.Kernel.IHasDomainEvents
+BitCode.Framework.Shared.Kernel.IHasDomainEvents.ClearDomainEvents() -> void
+BitCode.Framework.Shared.Kernel.IHasDomainEvents.DomainEvents.get -> System.Collections.Generic.IReadOnlyCollection<BitCode.Framework.Shared.Kernel.DomainEvent!>!
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot() -> void
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.AggregateRoot(TId id) -> void
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.ClearDomainEvents() -> void
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.DomainEvents.get -> System.Collections.Generic.IReadOnlyCollection<BitCode.Framework.Shared.Kernel.DomainEvent!>!
+BitCode.Framework.Shared.Kernel.AggregateRoot<TId>.RaiseDomainEvent(BitCode.Framework.Shared.Kernel.DomainEvent! domainEvent) -> void
+BitCode.Framework.Shared.Kernel.DomainEvent
+BitCode.Framework.Shared.Kernel.DomainEvent.DomainEvent() -> void
+BitCode.Framework.Shared.Kernel.DomainEvent.DomainEvent(BitCode.Framework.Shared.Kernel.DomainEvent! original) -> void
+BitCode.Framework.Shared.Kernel.DomainEvent.OccurredOnUtc.get -> System.DateTime
+BitCode.Framework.Shared.Kernel.Entity<TId>
+BitCode.Framework.Shared.Kernel.Entity<TId>.Entity() -> void
+BitCode.Framework.Shared.Kernel.Entity<TId>.Entity(TId id) -> void
+BitCode.Framework.Shared.Kernel.Entity<TId>.Equals(BitCode.Framework.Shared.Kernel.Entity<TId>? other) -> bool
+BitCode.Framework.Shared.Kernel.Entity<TId>.Id.get -> TId
+BitCode.Framework.Shared.Kernel.Entity<TId>.Id.set -> void
+BitCode.Framework.Shared.Kernel.Error
+BitCode.Framework.Shared.Kernel.Error.Code.get -> string!
+BitCode.Framework.Shared.Kernel.Error.Code.init -> void
+BitCode.Framework.Shared.Kernel.Error.Deconstruct(out string! Code, out string! Description, out BitCode.Framework.Shared.Kernel.ErrorType Type) -> void
+BitCode.Framework.Shared.Kernel.Error.Description.get -> string!
+BitCode.Framework.Shared.Kernel.Error.Description.init -> void
+BitCode.Framework.Shared.Kernel.Error.Error(BitCode.Framework.Shared.Kernel.Error! original) -> void
+BitCode.Framework.Shared.Kernel.Error.Error(string! Code, string! Description, BitCode.Framework.Shared.Kernel.ErrorType Type) -> void
+BitCode.Framework.Shared.Kernel.Error.Type.get -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.Error.Type.init -> void
+BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.Conflict = 3 -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.Failure = 0 -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.Forbidden = 5 -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.NotFound = 2 -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.Unauthorized = 4 -> BitCode.Framework.Shared.Kernel.ErrorType
+BitCode.Framework.Shared.Kernel.ErrorType.Validation = 1 -> BitCode.Framework.Shared.Kernel.ErrorType
+const BitCode.Framework.Shared.Kernel.ConcurrencyError.Code = "Concurrency.Conflict" -> string!
+static readonly BitCode.Framework.Shared.Kernel.ConcurrencyError.Conflict -> BitCode.Framework.Shared.Kernel.Error!
+BitCode.Framework.Shared.Kernel.IAuditedEntity
+BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedAtUtc.set -> void
+BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedBy.get -> string?
+BitCode.Framework.Shared.Kernel.IAuditedEntity.CreatedBy.set -> void
+BitCode.Framework.Shared.Kernel.IAuditedEntity.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Kernel.IAuditedEntity.ModifiedAtUtc.set -> void
+BitCode.Framework.Shared.Kernel.IAuditedEntity.ModifiedBy.get -> string?
+BitCode.Framework.Shared.Kernel.IAuditedEntity.ModifiedBy.set -> void
+BitCode.Framework.Shared.Kernel.ISoftDelete
+BitCode.Framework.Shared.Kernel.ISoftDelete.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Shared.Kernel.ISoftDelete.DeletedAtUtc.set -> void
+BitCode.Framework.Shared.Kernel.ISoftDelete.DeletedBy.get -> string?
+BitCode.Framework.Shared.Kernel.ISoftDelete.DeletedBy.set -> void
+BitCode.Framework.Shared.Kernel.ISoftDelete.IsDeleted.get -> bool
+BitCode.Framework.Shared.Kernel.ISoftDelete.IsDeleted.set -> void
+BitCode.Framework.Shared.Kernel.ITenantEntity
+BitCode.Framework.Shared.Kernel.ITenantEntity.TenantId.get -> System.Guid
+BitCode.Framework.Shared.Kernel.ITenantEntity.TenantId.set -> void
+BitCode.Framework.Shared.Kernel.Result
+BitCode.Framework.Shared.Kernel.Result.Error.get -> BitCode.Framework.Shared.Kernel.Error!
+BitCode.Framework.Shared.Kernel.Result.IsFailure.get -> bool
+BitCode.Framework.Shared.Kernel.Result.IsSuccess.get -> bool
+BitCode.Framework.Shared.Kernel.Result.Result(bool isSuccess, BitCode.Framework.Shared.Kernel.Error! error) -> void
+BitCode.Framework.Shared.Kernel.Result<TValue>
+BitCode.Framework.Shared.Kernel.Result<TValue>.Result(TValue? value, bool isSuccess, BitCode.Framework.Shared.Kernel.Error! error) -> void
+BitCode.Framework.Shared.Kernel.Result<TValue>.Value.get -> TValue
+BitCode.Framework.Shared.Kernel.ValidationError
+BitCode.Framework.Shared.Kernel.ValidationError.Equals(BitCode.Framework.Shared.Kernel.ValidationError? other) -> bool
+BitCode.Framework.Shared.Kernel.ValidationError.Errors.get -> BitCode.Framework.Shared.Kernel.Error![]!
+abstract BitCode.Framework.Shared.Kernel.DomainEvent.<Clone>$() -> BitCode.Framework.Shared.Kernel.DomainEvent!
+override BitCode.Framework.Shared.Kernel.DomainEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.DomainEvent.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.DomainEvent.ToString() -> string!
+override BitCode.Framework.Shared.Kernel.Entity<TId>.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.Entity<TId>.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.Error.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.Error.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.Error.ToString() -> string!
+override BitCode.Framework.Shared.Kernel.ValidationError.<Clone>$() -> BitCode.Framework.Shared.Kernel.ValidationError!
+override BitCode.Framework.Shared.Kernel.ValidationError.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.ValidationError.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.ValidationError.ToString() -> string!
+override sealed BitCode.Framework.Shared.Kernel.ValidationError.Equals(BitCode.Framework.Shared.Kernel.Error? other) -> bool
+static BitCode.Framework.Shared.Kernel.DomainEvent.operator !=(BitCode.Framework.Shared.Kernel.DomainEvent? left, BitCode.Framework.Shared.Kernel.DomainEvent? right) -> bool
+static BitCode.Framework.Shared.Kernel.DomainEvent.operator ==(BitCode.Framework.Shared.Kernel.DomainEvent? left, BitCode.Framework.Shared.Kernel.DomainEvent? right) -> bool
+static BitCode.Framework.Shared.Kernel.Entity<TId>.operator !=(BitCode.Framework.Shared.Kernel.Entity<TId>? left, BitCode.Framework.Shared.Kernel.Entity<TId>? right) -> bool
+static BitCode.Framework.Shared.Kernel.Entity<TId>.operator ==(BitCode.Framework.Shared.Kernel.Entity<TId>? left, BitCode.Framework.Shared.Kernel.Entity<TId>? right) -> bool
+static BitCode.Framework.Shared.Kernel.Error.Conflict(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.Failure(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.Forbidden(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.NotFound(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.Unauthorized(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.Validation(string! code, string! description) -> BitCode.Framework.Shared.Kernel.Error!
+static BitCode.Framework.Shared.Kernel.Error.operator !=(BitCode.Framework.Shared.Kernel.Error? left, BitCode.Framework.Shared.Kernel.Error? right) -> bool
+static BitCode.Framework.Shared.Kernel.Error.operator ==(BitCode.Framework.Shared.Kernel.Error? left, BitCode.Framework.Shared.Kernel.Error? right) -> bool
+static BitCode.Framework.Shared.Kernel.Result.Failure(BitCode.Framework.Shared.Kernel.Error! error) -> BitCode.Framework.Shared.Kernel.Result!
+static BitCode.Framework.Shared.Kernel.Result.Failure<TValue>(BitCode.Framework.Shared.Kernel.Error! error) -> BitCode.Framework.Shared.Kernel.Result<TValue>!
+static BitCode.Framework.Shared.Kernel.Result.Success() -> BitCode.Framework.Shared.Kernel.Result!
+static BitCode.Framework.Shared.Kernel.Result.Success<TValue>(TValue value) -> BitCode.Framework.Shared.Kernel.Result<TValue>!
+static BitCode.Framework.Shared.Kernel.Result<TValue>.implicit operator BitCode.Framework.Shared.Kernel.Result<TValue>!(TValue value) -> BitCode.Framework.Shared.Kernel.Result<TValue>!
+static BitCode.Framework.Shared.Kernel.ValidationError.FromErrors(BitCode.Framework.Shared.Kernel.Error![]! errors) -> BitCode.Framework.Shared.Kernel.ValidationError!
+static BitCode.Framework.Shared.Kernel.ValidationError.operator !=(BitCode.Framework.Shared.Kernel.ValidationError? left, BitCode.Framework.Shared.Kernel.ValidationError? right) -> bool
+static BitCode.Framework.Shared.Kernel.ValidationError.operator ==(BitCode.Framework.Shared.Kernel.ValidationError? left, BitCode.Framework.Shared.Kernel.ValidationError? right) -> bool
+static readonly BitCode.Framework.Shared.Kernel.Error.None -> BitCode.Framework.Shared.Kernel.Error!
+virtual BitCode.Framework.Shared.Kernel.DomainEvent.EqualityContract.get -> System.Type!
+virtual BitCode.Framework.Shared.Kernel.DomainEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+virtual BitCode.Framework.Shared.Kernel.DomainEvent.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual BitCode.Framework.Shared.Kernel.Error.<Clone>$() -> BitCode.Framework.Shared.Kernel.Error!
+virtual BitCode.Framework.Shared.Kernel.Error.EqualityContract.get -> System.Type!
+virtual BitCode.Framework.Shared.Kernel.Error.Equals(BitCode.Framework.Shared.Kernel.Error? other) -> bool
+virtual BitCode.Framework.Shared.Kernel.Error.PrintMembers(System.Text.StringBuilder! builder) -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>
+BitCode.Framework.Shared.Kernel.PagedResult<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+BitCode.Framework.Shared.Kernel.PagedResult<T>.Page.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.PageSize.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.TotalCount.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.TotalPages.get -> int
+BitCode.Framework.Shared.Kernel.PagedResult<T>.HasPreviousPage.get -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>.HasNextPage.get -> bool
+BitCode.Framework.Shared.Kernel.PagedResult<T>.PagedResult(System.Collections.Generic.IReadOnlyList<T>! items, int page, int pageSize, int totalCount) -> void
+BitCode.Framework.Shared.Kernel.PageRequest
+BitCode.Framework.Shared.Kernel.PageRequest.Page.get -> int
+BitCode.Framework.Shared.Kernel.PageRequest.PageSize.get -> int
+BitCode.Framework.Shared.Kernel.PageRequest.Equals(BitCode.Framework.Shared.Kernel.PageRequest? other) -> bool
+const BitCode.Framework.Shared.Kernel.PageRequest.DefaultMaxPageSize = 100 -> int
+static BitCode.Framework.Shared.Kernel.PageRequest.Create(int page, int pageSize, int maxPageSize = 100) -> BitCode.Framework.Shared.Kernel.Result<BitCode.Framework.Shared.Kernel.PageRequest!>!
+override BitCode.Framework.Shared.Kernel.PageRequest.Equals(object? obj) -> bool
+override BitCode.Framework.Shared.Kernel.PageRequest.GetHashCode() -> int
+override BitCode.Framework.Shared.Kernel.PageRequest.ToString() -> string!
+static BitCode.Framework.Shared.Kernel.PageRequest.operator ==(BitCode.Framework.Shared.Kernel.PageRequest? left, BitCode.Framework.Shared.Kernel.PageRequest? right) -> bool
+static BitCode.Framework.Shared.Kernel.PageRequest.operator !=(BitCode.Framework.Shared.Kernel.PageRequest? left, BitCode.Framework.Shared.Kernel.PageRequest? right) -> bool
+BitCode.Framework.Shared.Kernel.PageRequest.<Clone>$() -> BitCode.Framework.Shared.Kernel.PageRequest!

@@ -1,0 +1,49 @@
+<div class="bc-task-actions">
+  <div class="bc-task-actions__resolver">
+    <label class="bc-task-actions__label" for="bc-task-actions-comentario">Comentario (opcional)</label>
+    <textarea
+      id="bc-task-actions-comentario"
+      class="bc-task-actions__comentario"
+      [formControl]="comentario"
+    ></textarea>
+
+    <div class="bc-task-actions__buttons">
+      @for (action of actions(); track action.accion) {
+        <button
+          type="button"
+          class="bc-task-actions__button"
+          [disabled]="status() === 'resolving'"
+          (click)="resolverAccion(action.accion)"
+        >
+          {{ status() === 'resolving' ? 'Enviando…' : action.label }}
+        </button>
+      }
+    </div>
+
+    @if (error(); as uiError) {
+      <div class="bc-task-actions__error" role="alert">
+        <p class="bc-task-actions__error-message">{{ uiError.userMessage }}</p>
+        <p class="bc-task-actions__error-correlation">
+          Código de correlación: {{ uiError.correlationId ?? 'no disponible' }}
+        </p>
+        @if (uiError.technicalDetail) {
+          <details class="bc-task-actions__error-detail">
+            <summary>Detalle técnico</summary>
+            <p>{{ uiError.technicalDetail }}</p>
+          </details>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="bc-task-actions__delegar">
+    <h4 class="bc-task-actions__delegar-title">Reasignar tarea</h4>
+    <lib-bitcode-dynamic-form
+      [fields]="delegarFields"
+      [form]="delegarForm"
+      [submitHandler]="delegarSubmitHandler"
+      submitLabel="Reasignar"
+      (submitted)="onDelegated()"
+    />
+  </div>
+</div>

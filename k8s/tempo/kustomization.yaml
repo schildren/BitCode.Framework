@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Cierre de pendiente F4-10: backend REAL de trazas (Grafana Tempo, modo single-binary) -- ver
+# docs/guia-otel-collector.md sección 4 para la justificación completa de esta elección. Mismo patrón
+# deliberadamente básico que k8s/otel-collector/ (F4-10): sin overlays por ambiente todavía -- un
+# consumidor real que despliegue esto a producción agrega overlays/dev/staging/prod (namespace + patches
+# de resources/storage) y, sobre todo, decide el backend de storage compartido (S3/GCS/Azure Blob) para
+# poder escalar a más de 1 réplica -- ver el comentario completo en deployment.yaml.
+#
+# Mismo namespace que el OTel Collector ("bitcode-observability", NO el namespace de una app puntual):
+# Tempo es infraestructura de observabilidad compartida, igual que el Collector -- por eso el exporter
+# "otlp/tempo" del Collector lo referencia por el FQDN completo
+# ("tempo.bitcode-observability.svc.cluster.local:4317"), no por el nombre corto.
+
+namespace: bitcode-observability
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: tempo
+      app.kubernetes.io/part-of: bitcode-framework
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: true
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+
+configMapGenerator:
+  - name: tempo-config
+    # Fuente única de verdad: el mismo archivo que se valida directamente contra el binario real de
+    # Tempo (docs/guia-otel-collector.md sección de validación) -- nunca se duplica su contenido dentro
+    # de un manifiesto ConfigMap aparte.
+    files:
+      - tempo-config.yaml
+    options:
+      # Sin hash de sufijo -- mismo criterio y misma justificación completa que
+      # k8s/otel-collector/kustomization.yaml (el nombre del ConfigMap generado tiene que coincidir
+      # exactamente con el que referencia deployment.yaml; sin sufijo hash, un cambio en
+      # tempo-config.yaml no fuerza un rollout automático de los Pods existentes por sí solo).
+      disableNameSuffixHash: true

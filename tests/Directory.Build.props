@@ -1,0 +1,12 @@
+<Project>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)..'))" />
+
+  <!-- Ningún proyecto bajo tests/ se empaqueta (son internos a esta solución: proyectos *.Tests y sus
+       fixtures satélite como Shared.Modularity.Tests.HappyPathModules/.NegativeCases). Se fija de forma
+       centralizada para no depender de que cada .csproj nuevo recuerde declarar IsPackable=false. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>

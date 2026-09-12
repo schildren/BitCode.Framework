@@ -10,7 +10,12 @@ public class BackgroundJobsServiceCollectionExtensionsTests
     // Un único test/Host: Quartz.Logging.LogProvider cachea el ILoggerFactory del primer Host
     // creado en el proceso de forma estática (Quartz.Extensions.Hosting no lo libera al disponer
     // el Host), así que crear un segundo Host en el mismo proceso de test lanza
-    // ObjectDisposedException al referenciar el LoggerFactory ya liberado del primero.
+    // ObjectDisposedException al referenciar el LoggerFactory ya liberado del primero. Por esta
+    // misma razón, F4-11 (Quartz HA: JobStore persistente + clustering sobre SQL Server) tiene su
+    // propio proyecto de test dedicado (tests/Shared.Infrastructure.BackgroundJobs.IntegrationTests)
+    // en vez de vivir acá — necesita construir DOS ServiceProvider/scheduler Quartz reales en el
+    // mismo test, lo que colisiona con este mismo test si comparten proceso (`dotnet test` levanta
+    // un testhost por proyecto, así que proyectos separados = procesos separados = sin colisión).
     [Fact]
     public async Task AddSharedBackgroundJobs_RegistersSchedulerAndRunsRegisteredJobOnSchedule()
     {

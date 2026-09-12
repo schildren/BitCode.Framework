@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!-- F3-02: cliente oficial de Kafka para .NET (Apache-2.0, mantenido activamente por Confluent,
+         el de facto para .NET — ver docs/politica-dependencias.md, sección 2, "permitidas sin
+         excepción"). No hay ninguna referencia previa a un cliente Kafka en el repo. -->
+    <PackageReference Include="Confluent.Kafka" Version="2.15.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <!-- F9-05: AddHealthChecks()/IHealthCheck, mismo paquete genérico (no específico de ASP.NET Core)
+         que ya usa Shared.Infrastructure.Persistence (F1-25) para el health check de readiness del
+         productor Kafka (KafkaProducerHealthCheck). -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+</Project>

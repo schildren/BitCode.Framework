@@ -1,0 +1,190 @@
+#nullable enable
+BitCode.Framework.Platform.IntegrationHub.Actors.IIntegrationHubActorContext
+BitCode.Framework.Platform.IntegrationHub.Actors.IIntegrationHubActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.IntegrationHub.Actors.IIntegrationHubActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.IntegrationHub.Actors.IIntegrationHubActorContext.GetCurrentUserId() -> System.Guid?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Activar() -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Activo.get -> bool
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.ApiKeyHeaderName.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.BaseUrl.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Codigo.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.CreatedBy.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.CreatedBy.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Desactivar() -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.IntegrationConnector(System.Guid id, string! codigo, string! nombre, string! baseUrl, BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector metodo, BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector tipoAutenticacion, string? secretKey, string? apiKeyHeaderName) -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Metodo.get -> BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.ModifiedBy.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.ModifiedBy.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.Nombre.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.RowVersion.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.SecretKey.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.TenantId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.TenantId.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector.TipoAutenticacion.get -> BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.CampoDestino.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.CampoOrigen.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.ConnectorId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.IntegrationFieldMapping(System.Guid id, System.Guid connectorId, string! campoOrigen, string! campoDestino) -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.TenantId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping.TenantId.set -> void
+BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector.Patch = 2 -> BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector.Post = 0 -> BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector.Put = 1 -> BitCode.Framework.Platform.IntegrationHub.Conectores.MetodoHttpConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector.ApiKey = 1 -> BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector.BearerEstatico = 2 -> BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector
+BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector.Ninguna = 0 -> BitCode.Framework.Platform.IntegrationHub.Conectores.TipoAutenticacionConector
+BitCode.Framework.Platform.IntegrationHub.Envio.IIntegrationConnectorSender
+BitCode.Framework.Platform.IntegrationHub.Envio.IIntegrationConnectorSender.SendAsync(BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector! connector, string! payloadExternoJson, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult!>!
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.<Clone>$() -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult!
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.CodigoHttp.get -> int?
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.CodigoHttp.init -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Deconstruct(out BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome Outcome, out int? CodigoHttp, out string? ErrorMensaje) -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Equals(BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult? other) -> bool
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.ErrorMensaje.init -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.IntegrationConnectorSendResult(BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome Outcome, int? CodigoHttp, string? ErrorMensaje) -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Outcome.get -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Outcome.init -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationOutboundHttpClient
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationOutboundHttpClient.HttpClient.get -> System.Net.Http.HttpClient!
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationOutboundHttpClient.IntegrationOutboundHttpClient(System.Net.Http.HttpClient! httpClient) -> void
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome.Exitoso = 0 -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome.FalloPermanente = 2 -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome
+BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome.FalloTransitorio = 1 -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationSendOutcome
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext.IntegrationConnectors.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationConnector!>!
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext.IntegrationFieldMappings.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping!>!
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext.IntegrationHubDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext.IntegrationRequestLogs.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog!>!
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext.IntegrationRequests.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest!>!
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions.IntegrationHubOptions() -> void
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions.Retry.get -> BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions!
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions.Retry.set -> void
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubPermissions
+BitCode.Framework.Platform.IntegrationHub.IntegrationHubServiceCollectionExtensions
+BitCode.Framework.Platform.IntegrationHub.Mapping.IntegrationFieldMapper
+BitCode.Framework.Platform.IntegrationHub.Procesamiento.IntegrationOutboundProcessorJob
+BitCode.Framework.Platform.IntegrationHub.Procesamiento.IntegrationOutboundProcessorJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.IntegrationHub.Procesamiento.IntegrationOutboundProcessorJob.IntegrationOutboundProcessorJob(BitCode.Framework.Platform.IntegrationHub.IntegrationHubDbContext! dbContext, BitCode.Framework.Platform.IntegrationHub.Envio.IIntegrationConnectorSender! sender, Microsoft.Extensions.Options.IOptions<BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions!>! options) -> void
+BitCode.Framework.Platform.IntegrationHub.Procesamiento.IntegrationOutboundProcessorJob.ProcesarPendientesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ConnectorId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.CreatedBy.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.CreatedBy.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.DisparadoPorUserId.get -> System.Guid?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.EnviadaAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.Estado.get -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.IntegrationRequest(System.Guid id, System.Guid connectorId, string! payloadInternoJson, System.Guid? disparadoPorUserId) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.IntentosRealizados.get -> int
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ModifiedBy.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ModifiedBy.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.PayloadExternoJson.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.PayloadInternoJson.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.ProximoReintentoUtc.get -> System.DateTime?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RegistrarEnvioExitoso(System.DateTime atUtc, int codigoHttp, string! connectorCodigo) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RegistrarEnvioFallidoPermanente(string! error, int? codigoHttp, string! connectorCodigo) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RegistrarEnvioFallidoTransitorio(string! error, int? codigoHttp, System.DateTime atUtc, BitCode.Framework.Shared.Application.Eventing.EventRetryPolicyOptions! retryOptions, string! connectorCodigo) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RegistrarPayloadExterno(string! payloadExternoJson) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RowVersion.get -> byte[]!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.RowVersion.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.TenantId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.TenantId.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.UltimoCodigoHttp.get -> int?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequest.UltimoErrorMensaje.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado.Enviada = 1 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado.Fallida = 3 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado.PendienteDeEnvio = 0 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado.PendienteDeReintento = 2 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestEstado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.CodigoHttp.get -> int?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.ErrorMensaje.get -> string?
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.IntegrationRequestId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.IntegrationRequestLog(System.Guid id, System.Guid integrationRequestId, int intentoNumero, BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado resultado, int? codigoHttp, string? errorMensaje) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.IntentoNumero.get -> int
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.Resultado.get -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.TenantId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.TenantId.set -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLog.TimestampUtc.get -> System.DateTime
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado.Exitoso = 0 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado.FalloPermanente = 2 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado.FalloTransitorio = 1 -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.IntegrationRequestLogResultado
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.ConnectorCodigo.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.ConnectorCodigo.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.ConnectorId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.ConnectorId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.Deconstruct(out System.Guid IntegrationRequestId, out System.Guid ConnectorId, out string! ConnectorCodigo) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.Equals(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.IntegrationRequestId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.IntegrationRequestId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.SolicitudIntegracionEnviadaIntegrationEvent(System.Guid IntegrationRequestId, System.Guid ConnectorId, string! ConnectorCodigo) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.ConnectorCodigo.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.ConnectorCodigo.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.ConnectorId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.ConnectorId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.Deconstruct(out System.Guid IntegrationRequestId, out System.Guid ConnectorId, out string! ConnectorCodigo, out string! UltimoErrorMensaje) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.Equals(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.IntegrationRequestId.get -> System.Guid
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.IntegrationRequestId.init -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.SolicitudIntegracionFallidaIntegrationEvent(System.Guid IntegrationRequestId, System.Guid ConnectorId, string! ConnectorCodigo, string! UltimoErrorMensaje) -> void
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.UltimoErrorMensaje.get -> string!
+BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.UltimoErrorMensaje.init -> void
+const BitCode.Framework.Platform.IntegrationHub.IntegrationHubPermissions.ConectoresAdministrar = "integrationhub.conectores.administrar" -> string!
+const BitCode.Framework.Platform.IntegrationHub.IntegrationHubPermissions.ConectoresVer = "integrationhub.conectores.ver" -> string!
+const BitCode.Framework.Platform.IntegrationHub.IntegrationHubPermissions.SolicitudesEnviar = "integrationhub.solicitudes.enviar" -> string!
+const BitCode.Framework.Platform.IntegrationHub.IntegrationHubPermissions.SolicitudesVer = "integrationhub.solicitudes.ver" -> string!
+override BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.GetHashCode() -> int
+override BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.ToString() -> string!
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent!
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent!
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.ToString() -> string!
+override sealed BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.Exitoso(int codigoHttp) -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult!
+static BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.FalloPermanente(string! errorMensaje, int? codigoHttp = null) -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult!
+static BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.FalloTransitorio(string! errorMensaje, int? codigoHttp = null) -> BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult!
+static BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.operator !=(BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult? left, BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult? right) -> bool
+static BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult.operator ==(BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult? left, BitCode.Framework.Platform.IntegrationHub.Envio.IntegrationConnectorSendResult? right) -> bool
+static BitCode.Framework.Platform.IntegrationHub.IntegrationHubEndpointRouteBuilderExtensions.MapIntegrationHubEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.IntegrationHub.IntegrationHubServiceCollectionExtensions.AddSharedIntegrationHub(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<BitCode.Framework.Shared.Infrastructure.Http.Resilience.HttpResilienceOptions!>? configureHttpResilience = null, System.Action<BitCode.Framework.Platform.IntegrationHub.IntegrationHubOptions!>? configureOptions = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.IntegrationHub.Mapping.IntegrationFieldMapper.Map(string! payloadInternoJson, System.Collections.Generic.IReadOnlyList<BitCode.Framework.Platform.IntegrationHub.Conectores.IntegrationFieldMapping!>! mappings) -> BitCode.Framework.Shared.Kernel.Result<string!>!
+static BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.operator !=(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent? left, BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent.operator ==(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent? left, BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionEnviadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.operator !=(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent? left, BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent.operator ==(BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent? left, BitCode.Framework.Platform.IntegrationHub.Solicitudes.SolicitudIntegracionFallidaIntegrationEvent? right) -> bool

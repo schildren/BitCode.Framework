@@ -1,0 +1,62 @@
+{
+  "name": "ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/ui/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "release": {
+    "version": {
+      "manifestRootsToUpdate": ["dist/{projectRoot}"],
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk"
+    }
+  },
+  "tags": [],
+  "targets": {
+    "build-tokens": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/tokens/primitives.tokens.json",
+        "{projectRoot}/tokens/semantic.tokens.json",
+        "{projectRoot}/tokens/build-tokens.mjs"
+      ],
+      "outputs": [
+        "{projectRoot}/src/styles/tokens.css",
+        "{projectRoot}/src/styles/tokens.scss",
+        "{projectRoot}/src/lib/tokens.generated.ts"
+      ],
+      "options": {
+        "command": "node tokens/build-tokens.mjs",
+        "cwd": "packages/ui"
+      }
+    },
+    "build": {
+      "executor": "@nx/angular:package",
+      "dependsOn": ["build-tokens", "^build"],
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "project": "packages/ui/ng-package.json",
+        "tsConfig": "packages/ui/tsconfig.lib.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "packages/ui/tsconfig.lib.prod.json"
+        },
+        "development": {}
+      }
+    },
+    "test": {
+      "dependsOn": ["build-tokens"]
+    },
+    "nx-release-publish": {
+      "options": {
+        "packageRoot": "dist/{projectRoot}"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

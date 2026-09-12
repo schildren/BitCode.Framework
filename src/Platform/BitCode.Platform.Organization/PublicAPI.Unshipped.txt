@@ -1,0 +1,173 @@
+#nullable enable
+BitCode.Framework.Platform.Organization.Actors.IOrganizationActorContext
+BitCode.Framework.Platform.Organization.Actors.IOrganizationActorContext.GetCurrentActor() -> BitCode.Framework.Shared.Infrastructure.Security.Audit.AuditActor!
+BitCode.Framework.Platform.Organization.Actors.IOrganizationActorContext.GetCurrentPrincipal() -> System.Security.Claims.ClaimsPrincipal?
+BitCode.Framework.Platform.Organization.Areas.Area
+BitCode.Framework.Platform.Organization.Areas.Area.Area(System.Guid id, System.Guid sucursalId, string! nombre, System.Guid? parentAreaId) -> void
+BitCode.Framework.Platform.Organization.Areas.Area.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Organization.Areas.Area.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.CreatedBy.get -> string?
+BitCode.Framework.Platform.Organization.Areas.Area.CreatedBy.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Areas.Area.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.DeletedBy.get -> string?
+BitCode.Framework.Platform.Organization.Areas.Area.DeletedBy.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.IsDeleted.get -> bool
+BitCode.Framework.Platform.Organization.Areas.Area.IsDeleted.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Areas.Area.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Organization.Areas.Area.ModifiedBy.set -> void
+BitCode.Framework.Platform.Organization.Areas.Area.Nombre.get -> string!
+BitCode.Framework.Platform.Organization.Areas.Area.ParentAreaId.get -> System.Guid?
+BitCode.Framework.Platform.Organization.Areas.Area.SucursalId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Areas.Area.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Areas.Area.TenantId.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo
+BitCode.Framework.Platform.Organization.Cargos.Cargo.AreaId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Cargos.Cargo.Cargo(System.Guid id, System.Guid areaId, string! nombre) -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Organization.Cargos.Cargo.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.CreatedBy.get -> string?
+BitCode.Framework.Platform.Organization.Cargos.Cargo.CreatedBy.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Cargos.Cargo.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.DeletedBy.get -> string?
+BitCode.Framework.Platform.Organization.Cargos.Cargo.DeletedBy.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.IsDeleted.get -> bool
+BitCode.Framework.Platform.Organization.Cargos.Cargo.IsDeleted.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Cargos.Cargo.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Organization.Cargos.Cargo.ModifiedBy.set -> void
+BitCode.Framework.Platform.Organization.Cargos.Cargo.Nombre.get -> string!
+BitCode.Framework.Platform.Organization.Cargos.Cargo.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Cargos.Cargo.TenantId.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa
+BitCode.Framework.Platform.Organization.Empresas.Empresa.Activa.get -> bool
+BitCode.Framework.Platform.Organization.Empresas.Empresa.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Organization.Empresas.Empresa.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.CreatedBy.get -> string?
+BitCode.Framework.Platform.Organization.Empresas.Empresa.CreatedBy.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Empresas.Empresa.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.DeletedBy.get -> string?
+BitCode.Framework.Platform.Organization.Empresas.Empresa.DeletedBy.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.Desactivar() -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.Empresa(System.Guid id, string! razonSocial, string! identificador) -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.Identificador.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.Empresa.IsDeleted.get -> bool
+BitCode.Framework.Platform.Organization.Empresas.Empresa.IsDeleted.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Empresas.Empresa.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Organization.Empresas.Empresa.ModifiedBy.set -> void
+BitCode.Framework.Platform.Organization.Empresas.Empresa.RazonSocial.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.Empresa.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Empresas.Empresa.TenantId.set -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Deconstruct(out System.Guid EmpresaId, out string! RazonSocial, out string! Identificador) -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EmpresaCreadaIntegrationEvent(System.Guid EmpresaId, string! RazonSocial, string! Identificador) -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EmpresaId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EmpresaId.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Equals(BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Identificador.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Identificador.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.RazonSocial.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.RazonSocial.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.Deconstruct(out System.Guid EmpresaId) -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EmpresaDesactivadaIntegrationEvent(System.Guid EmpresaId) -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EmpresaId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EmpresaId.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.Equals(BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Organization.OrganizationDbContext
+BitCode.Framework.Platform.Organization.OrganizationDbContext.Areas.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Organization.Areas.Area!>!
+BitCode.Framework.Platform.Organization.OrganizationDbContext.Cargos.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Organization.Cargos.Cargo!>!
+BitCode.Framework.Platform.Organization.OrganizationDbContext.Empresas.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Organization.Empresas.Empresa!>!
+BitCode.Framework.Platform.Organization.OrganizationDbContext.OrganizationDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<BitCode.Framework.Platform.Organization.OrganizationDbContext!>! options, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantProvider! tenantProvider) -> void
+BitCode.Framework.Platform.Organization.OrganizationDbContext.Sucursales.get -> Microsoft.EntityFrameworkCore.DbSet<BitCode.Framework.Platform.Organization.Sucursales.Sucursal!>!
+BitCode.Framework.Platform.Organization.OrganizationEndpointRouteBuilderExtensions
+BitCode.Framework.Platform.Organization.OrganizationPermissions
+BitCode.Framework.Platform.Organization.OrganizationServiceCollectionExtensions
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.Activa.get -> bool
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.CreatedAtUtc.get -> System.DateTime
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.CreatedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.CreatedBy.get -> string?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.CreatedBy.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.DeletedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.DeletedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.DeletedBy.get -> string?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.DeletedBy.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.Desactivar() -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.Direccion.get -> string?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.EmpresaId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.IsDeleted.get -> bool
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.IsDeleted.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.ModifiedAtUtc.get -> System.DateTime?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.ModifiedAtUtc.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.ModifiedBy.get -> string?
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.ModifiedBy.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.Nombre.get -> string!
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.Sucursal(System.Guid id, System.Guid empresaId, string! nombre, string? direccion) -> void
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.TenantId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Sucursales.Sucursal.TenantId.set -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Deconstruct(out System.Guid SucursalId, out System.Guid EmpresaId, out string! Nombre) -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.EmpresaId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.EmpresaId.init -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Equals(BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent? other) -> bool
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.EventId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.EventId.init -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.EventType.get -> string!
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Nombre.get -> string!
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Nombre.init -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.PartitionKey.get -> string!
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.SchemaVersion.get -> int
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.SucursalCreadaIntegrationEvent(System.Guid SucursalId, System.Guid EmpresaId, string! Nombre) -> void
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.SucursalId.get -> System.Guid
+BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.SucursalId.init -> void
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.AreasCrear = "organizacion.areas.crear" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.AreasVer = "organizacion.areas.ver" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.CargosCrear = "organizacion.cargos.crear" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.CargosVer = "organizacion.cargos.ver" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.EmpresasCrear = "organizacion.empresas.crear" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.EmpresasDesactivar = "organizacion.empresas.desactivar" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.EmpresasVer = "organizacion.empresas.ver" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.SucursalesCrear = "organizacion.sucursales.crear" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.SucursalesDesactivar = "organizacion.sucursales.desactivar" -> string!
+const BitCode.Framework.Platform.Organization.OrganizationPermissions.SucursalesVer = "organizacion.sucursales.ver" -> string!
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent!
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent!
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.ToString() -> string!
+override BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent!
+override BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Equals(object? obj) -> bool
+override BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.GetHashCode() -> int
+override BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.ToString() -> string!
+override sealed BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+override sealed BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
+static BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Empresas.EmpresaCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Empresas.EmpresaDesactivadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Organization.OrganizationEndpointRouteBuilderExtensions.MapOrganizationEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static BitCode.Framework.Platform.Organization.OrganizationServiceCollectionExtensions.AddSharedOrganization(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent? right) -> bool
+static BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent? left, BitCode.Framework.Platform.Organization.Sucursales.SucursalCreadaIntegrationEvent? right) -> bool

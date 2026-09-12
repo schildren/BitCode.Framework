@@ -1,0 +1,11 @@
+{
+  "name": "@bitcode/ui",
+  "version": "0.1.0",
+  "description": "Design system y componentes base de BitCode.",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "@angular/core": "^22.1.0",
+    "@bitcode/auth": "^0.1.0"
+  },
+  "sideEffects": false
+}

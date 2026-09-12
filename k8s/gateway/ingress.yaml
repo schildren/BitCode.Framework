@@ -1,0 +1,97 @@
+# F4-09 (WAF y límites): capa PERIMETRAL delante del Gateway YARP (F4-08), no reemplaza sus controles
+# de aplicación (auth boundary, rate limiting, headers) -- los complementa como defensa en profundidad
+# adicional (tamaño de payload, timeouts, rate limit por IP) ANTES de que el tráfico llegue al proceso
+# .NET del Gateway. Ver docs/politica-perimetral-waf.md para la política completa (qué cubre esta capa,
+# qué cubre el Gateway de aplicación, y qué queda fuera de alcance -- WAF de firmas/CRS real, elección
+# de proveedor cloud-managed).
+#
+# Ingress Controller asumido: NGINX Ingress Controller (ingress-nginx, el más común en clusters
+# Kubernetes on-prem/cloud-agnósticos y el que usan las anotaciones de abajo) -- el Plan Maestro no fija
+# un proveedor cloud específico para esta pieza, así que se eligió el controller de referencia más
+# ampliamente adoptado en vez de atarse a un WAF cloud-managed de un vendor puntual.
+#
+# WAF de firmas (F4-09, DECISIÓN TOMADA en este entorno self-hosted, ver docs/politica-perimetral-waf.md
+# sección 4): OWASP ModSecurity Core Rule Set integrado en este mismo ingress-nginx, en modo
+# DetectionOnly para el arranque (no bloquea tráfico legítimo sin antes revisar falsos positivos, con un
+# plan de pasar a bloqueo real documentado en la política). Un WAF cloud-managed de un proveedor cloud
+# específico sigue quedando fuera de esta decisión (requeriría aprobación humana separada, Plan Maestro
+# sección 13, si el proyecto migra a un cloud provider concreto).
+#
+# Este manifiesto es DECLARATIVO -- no hay Ingress Controller real instalado en este entorno (mismo
+# tratamiento que el resto de k8s/, ver docs/politica-manifiestos-kubernetes.md sección 5): la política
+# queda definida y validada sintácticamente (kubectl kustomize + kubeconform), pero "casos abusivos
+# bloqueados" en tráfico real contra este Ingress no se pudo demostrar en este entorno.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  labels:
+    app.kubernetes.io/name: gateway
+    app.kubernetes.io/part-of: bitcode-framework
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+
+    # Tamaño máximo de request body (defensa perimetral, primera línea antes que el límite de
+    # aplicación del propio Gateway -- RequestLimits:MaxRequestBodySizeBytes, F4-09, ver
+    # configmap.yaml). Mismo valor (10 MiB) que el límite de aplicación: evita que un cliente abusivo
+    # ni siquiera llegue a completar el upload hacia el Gateway si lo supera.
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # Timeouts (protección contra conexiones lentas/colgadas tipo Slowloris, y contra un backend caído
+    # reteniendo un worker de NGINX indefinidamente). 30s es un valor conservador para APIs síncronas
+    # típicas -- un proyecto consumidor con endpoints de larga duración (export/reportes) sube este
+    # valor por overlay, no lo relaja acá globalmente.
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "5"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+
+    # Rate limiting a nivel de Ingress (defensa perimetral por IP de origen, ANTES de que el request
+    # cuente contra el rate limiting de aplicación del Gateway -- RateLimiting:PermitLimit, F4-08).
+    # 20 req/s por IP con ráfaga controlada (burst-multiplier 3 => hasta 60 req/s de pico corto antes
+    # de empezar a devolver 503) -- valor conservador de referencia, no un SLA medido; un proyecto
+    # consumidor ajusta esto a su perfil de tráfico real (mismo criterio documentado para
+    # RateLimiting:PermitLimit en appsettings.json del Gateway).
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "3"
+
+    # WAF de firmas (F4-09, decisión tomada -- ver docs/politica-perimetral-waf.md sección 4): OWASP
+    # ModSecurity Core Rule Set (CRS) integrado en el mismo ingress-nginx ya elegido arriba, en vez de un
+    # WAF cloud-managed (Azure Front Door/AWS WAF/Cloudflare) -- sin costo de licencia, sin atarse a un
+    # proveedor cloud (mismo criterio cloud-agnóstico del resto de k8s/, ver ADR 0001/0008), y sin sumar
+    # una pieza de infraestructura nueva (corre dentro del Ingress Controller que ya está declarado). Un
+    # WAF cloud-managed queda como alternativa futura si el proyecto consumidor decide operar en un cloud
+    # provider específico -- ver política sección 4 para el detalle de esa puerta abierta.
+    #
+    # REQUISITO EXPLÍCITO no verificable en este entorno (sin clúster real, ver política sección 5.1): la
+    # imagen del Ingress Controller debe tener el módulo ModSecurity compilado -- la imagen OFICIAL
+    # `registry.k8s.io/ingress-nginx/controller` NO lo trae por defecto. Un despliegue real necesita
+    # `registry.k8s.io/ingress-nginx/controller-chroot` (que sí lo incluye desde ingress-nginx >= 1.9) o
+    # una imagen custom compilada con `--with-http_modsecurity_module`. Aplicar este manifiesto contra un
+    # controller sin ese módulo deja las anotaciones sin efecto real (NGINX las ignora en silencio) --
+    # documentado para que no se asuma protección activa sin haberlo confirmado.
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
+    # Arranque en modo DETECTION -- NUNCA bloqueo agresivo de entrada (política sección 4.2): el CRS
+    # genérico tiene una tasa de falsos positivos no despreciable contra tráfico legítimo real (payloads
+    # JSON con caracteres que matchean firmas SQLi/XSS de forma espuria) -- bloquear en el primer
+    # despliegue sin haber observado ese tráfico real arriesga cortar clientes legítimos. `DetectionOnly`
+    # audita/loguea sin bloquear; el plan de transición a bloqueo real (`SecRuleEngine On`) queda
+    # documentado en la política (sección 4.2), no se activa en este manifiesto.
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      SecRuleEngine DetectionOnly
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  name: http
+  # TLS deliberadamente fuera de alcance de esta tarea: requiere un certificado real (cert-manager +
+  # Issuer, o un certificado provisto externamente) y un dominio real, ninguno disponible en este
+  # entorno -- mismo criterio que k8s/sample-api/base/secret.example.yaml no aplica secretos reales.
+  # Un despliegue real agrega `spec.tls` con el Secret de certificado correspondiente por overlay antes
+  # de habilitar tráfico productivo (Plan Maestro sección 13).

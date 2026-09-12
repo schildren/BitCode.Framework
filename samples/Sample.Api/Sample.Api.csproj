@@ -5,10 +5,14 @@
     <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
     <ProjectReference Include="..\..\src\Shared.Modularity\Shared.Modularity.csproj" />
+    <!-- Telemetría (F4-10): AddSharedObservability instrumenta ASP.NET Core + HttpClient y exporta
+         trazas/métricas OTLP hacia el OTel Collector centralizado (k8s/otel-collector/), mismo patrón
+         que ya adoptó BitCode.Gateway (F4-08). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>

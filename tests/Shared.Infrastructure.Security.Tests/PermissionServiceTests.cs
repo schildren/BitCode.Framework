@@ -94,6 +94,34 @@ public class PermissionServiceTests : IAsyncDisposable
         permissions.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task GetPermissionsForRoleAsync_ReturnsPermissionsGrantedToRole()
+    {
+        await using var scope = await CreateInitializedScopeAsync();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<TestApplicationRole>>();
+        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+
+        var role = new TestApplicationRole { Name = "Editor" };
+        await roleManager.CreateAsync(role);
+        await roleManager.AddPermissionAsync(role, "productos.crear");
+        await roleManager.AddPermissionAsync(role, "productos.editar");
+
+        var permissions = await permissionService.GetPermissionsForRoleAsync("Editor");
+
+        permissions.Should().BeEquivalentTo(["productos.crear", "productos.editar"]);
+    }
+
+    [Fact]
+    public async Task GetPermissionsForRoleAsync_WithUnknownRole_ReturnsEmpty()
+    {
+        await using var scope = await CreateInitializedScopeAsync();
+        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+
+        var permissions = await permissionService.GetPermissionsForRoleAsync("Inexistente");
+
+        permissions.Should().BeEmpty();
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _provider.DisposeAsync();

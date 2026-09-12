@@ -1,0 +1,258 @@
+name: Release Automation
+
+# F8-13 (docs/guia-release-automation.md): Pipeline unificado y orquestado de release para
+# BitCode.Framework. Automatiza validación pre-vuelo, changelog, versionado SemVer (MinVer y Nx),
+# firma Authenticode, generación de SLSA Provenance Attestations, publicación sincronizada a feeds
+# (NuGet y npm en GitHub Packages) y creación de GitHub Release con artefactos binarios.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Si es true, valida, empaqueta y simula sin publicar a feeds ni crear release oficial."
+        type: boolean
+        default: true
+      prerelease:
+        description: "Marcar este release como pre-lanzamiento (alpha/beta/rc)."
+        type: boolean
+        default: false
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  BITCODE_NUGET_FEED: https://nuget.pkg.github.com/schildren/index.json
+  BITCODE_NPM_REGISTRY: https://npm.pkg.github.com
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  attestations: write
+
+jobs:
+  pre-flight:
+    name: Pre-Flight Checks & Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Restaurar dependencias .NET
+        run: dotnet restore BitCode.Framework.slnx
+
+      - name: Pruebas de arquitectura y fitness functions
+        run: dotnet test tests/BitCode.Architecture.Tests/BitCode.Architecture.Tests.csproj -c Release --no-restore
+
+      - name: Diagnóstico de herramientas (BitCode.Diagnostics)
+        run: dotnet run --project tools/BitCode.Diagnostics -- tools
+
+  generate-changelog:
+    name: Generate Changelog & Release Notes
+    needs: pre-flight
+    runs-on: ubuntu-latest
+    outputs:
+      release_version: ${{ steps.notes.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - id: notes
+        name: Extraer notas de release desde Conventional Commits
+        run: |
+          node scripts/generate-changelog.mjs --notes-only > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+          echo "version=${GITHUB_REF_NAME:-v-candidata}" >> "$GITHUB_OUTPUT"
+
+      # F8-14: Generar SBOM CycloneDX 1.5, License Report y THIRD-PARTY-NOTICES
+      - name: Generar SBOM y Third-Party Notices
+        run: node scripts/generate-sbom-notices.mjs
+
+      - name: Subir artefacto de notas de release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: RELEASE_NOTES.md
+
+      - name: Subir artefactos SBOM y Notices
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-artifacts
+          path: |
+            artifacts/sbom/*
+            THIRD-PARTY-NOTICES.md
+
+  pack-sign-publish-nuget:
+    name: NuGet (MinVer, Pack, Sign, Provenance, Publish)
+    needs: [pre-flight, generate-changelog]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restaurar .NET
+        run: dotnet restore BitCode.Framework.slnx
+
+      - name: Empaquetar proyectos públicos (MinVer + Source Link)
+        run: dotnet pack BitCode.Framework.slnx -c Release --no-restore -o ./artifacts/packages
+
+      - name: Listar paquetes .nupkg generados
+        run: ls -la ./artifacts/packages
+
+      - name: Firmar paquetes NuGet (Authenticode)
+        if: env.HAS_CERT == 'true'
+        env:
+          HAS_CERT: ${{ secrets.NUGET_SIGNING_CERTIFICATE != '' }}
+        run: |
+          echo "${{ secrets.NUGET_SIGNING_CERTIFICATE }}" | base64 --decode > signing-cert.pfx
+          dotnet nuget sign "./artifacts/packages/*.nupkg" \
+            --certificate-path signing-cert.pfx \
+            --certificate-password "${{ secrets.NUGET_SIGNING_CERTIFICATE_PASSWORD }}" \
+            --timestamper http://timestamp.digicert.com \
+            --overwrite
+          rm -f signing-cert.pfx
+          dotnet nuget verify "./artifacts/packages/*.nupkg"
+
+      - name: Generar SLSA Provenance Attestation (NuGet)
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: './artifacts/packages/*.nupkg'
+
+      - name: Publicar al feed NuGet (GitHub Packages)
+        if: github.event_name == 'push' || github.event.inputs.dry_run == 'false'
+        run: |
+          dotnet nuget push "./artifacts/packages/*.nupkg" \
+            --source "$BITCODE_NUGET_FEED" \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --skip-duplicate
+
+      - name: Subir paquetes NuGet como artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-artifacts
+          path: ./artifacts/packages/*
+
+  pack-publish-npm:
+    name: npm (Nx Release, Tarball, Provenance, Publish)
+    needs: [pre-flight, generate-changelog]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Instalar dependencias frontend
+        run: npm ci
+
+      - name: Versionar paquetes @bitcode/* (Nx Release fixed)
+        run: npx nx release version ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+
+      - name: Compilar librerías frontend publicables
+        run: npx nx run-many -t build -p tag:package
+
+      - name: Empaquetar tarballs npm (.tgz)
+        run: |
+          mkdir -p ../artifacts/npm
+          for dir in dist/packages/*; do
+            if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
+              echo "Empaquetando $dir..."
+              tarball=$(cd "$dir" && npm pack --pack-destination ../../../artifacts/npm)
+              echo "Generado: $tarball"
+            fi
+          done
+          ls -la ../artifacts/npm
+
+      - name: Generar SLSA Provenance Attestation (npm Tarballs)
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'artifacts/npm/*.tgz'
+
+      - name: Publicar al feed npm (GitHub Packages)
+        if: github.event_name == 'push' || github.event.inputs.dry_run == 'false'
+        run: npx nx release publish
+
+      - name: Subir artefactos npm
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-artifacts
+          path: artifacts/npm/*.tgz
+
+  publish-github-release:
+    name: Publish Official GitHub Release
+    needs: [generate-changelog, pack-sign-publish-nuget, pack-publish-npm]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.dry_run == 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar notas de release
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Descargar paquetes NuGet
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-artifacts
+          path: ./release-assets/nuget
+
+      - name: Descargar tarballs npm
+        uses: actions/download-artifact@v4
+        with:
+          name: npm-artifacts
+          path: ./release-assets/npm
+
+      - name: Descargar artefactos SBOM y Notices
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom-artifacts
+          path: ./release-assets/compliance
+
+      - name: Crear GitHub Release oficial
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-v0.2.0}"
+          PRERELEASE_FLAG=""
+          if [ "${{ github.event.inputs.prerelease }}" == "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          echo "Creando GitHub Release para tag: $TAG"
+          gh release create "$TAG" \
+            ./release-assets/nuget/*.nupkg \
+            ./release-assets/npm/*.tgz \
+            ./release-assets/compliance/* \
+            --title "BitCode Framework $TAG" \
+            --notes-file RELEASE_NOTES.md \
+            $PRERELEASE_FLAG

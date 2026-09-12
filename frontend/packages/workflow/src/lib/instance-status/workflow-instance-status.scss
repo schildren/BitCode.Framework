@@ -1,0 +1,27 @@
+.bc-instance-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-4, 1rem);
+}
+
+.bc-instance-status__error {
+  border: 1px solid var(--bc-color-danger, #c0392b);
+  border-radius: var(--bc-radius-sm, 4px);
+  padding: var(--bc-space-2, 0.5rem);
+}
+
+.bc-instance-status__history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-2, 0.5rem);
+}
+
+.bc-instance-status__history-item {
+  display: flex;
+  gap: var(--bc-space-2, 0.5rem);
+  border-bottom: 1px solid var(--bc-color-border, #eee);
+  padding-bottom: var(--bc-space-2, 0.5rem);
+}

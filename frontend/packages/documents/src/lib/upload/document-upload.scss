@@ -1,0 +1,42 @@
+.bc-document-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-2, 0.5rem);
+}
+
+.bc-document-upload__button {
+  align-self: flex-start;
+  padding: var(--bc-space-2, 0.5rem) var(--bc-space-4, 1rem);
+  border-radius: var(--bc-radius-sm, 4px);
+  border: 1px solid var(--bc-color-border, #ccc);
+  cursor: pointer;
+}
+
+.bc-document-upload__progress {
+  position: relative;
+  height: 1.25rem;
+  border-radius: var(--bc-radius-sm, 4px);
+  background: var(--bc-color-surface-muted, #eee);
+  overflow: hidden;
+}
+
+.bc-document-upload__progress-bar {
+  height: 100%;
+  background: var(--bc-color-primary, #2563eb);
+  transition: width 0.15s ease-out;
+}
+
+.bc-document-upload__progress-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.bc-document-upload__error {
+  border: 1px solid var(--bc-color-danger, #c0392b);
+  border-radius: var(--bc-radius-sm, 4px);
+  padding: var(--bc-space-2, 0.5rem);
+}

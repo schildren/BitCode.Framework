@@ -1,0 +1,152 @@
+// Design tokens de BitCode (F7-02, @bitcode/ui). Misma decisión que `apps/shell/src/styles.scss`: se
+// referencia por ruta relativa al código FUENTE del paquete, no vía import de npm, porque el workspace
+// (npm workspaces) symlinkea `@bitcode/ui` a su carpeta fuente, no a `dist/packages/ui` -- ver
+// docs/guia-frontend-workspace.md, sección 7.5/7.6. Cuando el paquete se consuma publicado (post-F8-06),
+// la ruta pasa a ser `@bitcode/ui/styles/tokens.css`.
+@use '../../../../ui/src/styles/tokens.css';
+
+.bc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-3);
+  font-family: var(--bc-font-family-sans);
+  color: var(--bc-color-text-primary);
+}
+
+.bc-grid__toolbar {
+  display: flex;
+  gap: var(--bc-space-2);
+}
+
+.bc-grid__global-filter,
+.bc-grid__column-filter {
+  border: 1px solid var(--bc-color-border);
+  border-radius: var(--bc-radius-sm);
+  padding: var(--bc-space-1) var(--bc-space-2);
+  font-size: var(--bc-font-size-sm);
+  color: var(--bc-color-text-primary);
+  background: var(--bc-color-surface);
+}
+
+.bc-grid__global-filter {
+  flex: 1;
+}
+
+.bc-grid__button {
+  border: 1px solid var(--bc-color-brand-primary);
+  background: var(--bc-color-brand-primary);
+  color: var(--bc-color-on-brand-primary);
+  border-radius: var(--bc-radius-sm);
+  padding: var(--bc-space-1) var(--bc-space-3);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bc-color-brand-primary-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: var(--bc-opacity-disabled);
+  }
+}
+
+.bc-grid__table {
+  border: 1px solid var(--bc-color-border);
+  border-radius: var(--bc-radius-md);
+  overflow: hidden;
+}
+
+.bc-grid__row {
+  display: grid;
+  column-gap: var(--bc-space-2);
+}
+
+.bc-grid__row--header {
+  background: var(--bc-color-surface-sunken);
+  font-weight: var(--bc-font-weight-semibold);
+  border-bottom: 1px solid var(--bc-color-border);
+}
+
+.bc-grid__row--filters {
+  border-bottom: 1px solid var(--bc-color-border);
+  padding: var(--bc-space-1) 0;
+}
+
+.bc-grid__row--body {
+  border-bottom: 1px solid var(--bc-color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.bc-grid__cell {
+  padding: var(--bc-space-2);
+  font-size: var(--bc-font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bc-grid__cell--number {
+  text-align: right;
+  font-family: var(--bc-font-family-mono);
+}
+
+.bc-grid__sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bc-space-1);
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.bc-grid__sort-indicator {
+  font-size: var(--bc-font-size-xs);
+  color: var(--bc-color-brand-primary);
+}
+
+.bc-grid__viewport {
+  width: 100%;
+}
+
+.bc-grid__state {
+  padding: var(--bc-space-6) var(--bc-space-4);
+  text-align: center;
+  color: var(--bc-color-text-secondary);
+}
+
+.bc-grid__state--error {
+  color: var(--bc-color-error);
+  text-align: left;
+}
+
+.bc-grid__error-message {
+  font-weight: var(--bc-font-weight-medium);
+}
+
+.bc-grid__error-correlation {
+  font-size: var(--bc-font-size-xs);
+  color: var(--bc-color-text-secondary);
+}
+
+.bc-grid__pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--bc-space-3);
+  font-size: var(--bc-font-size-sm);
+}
+
+.bc-grid__pagination-info {
+  flex: 1;
+}
+
+.bc-grid__pagination-actions {
+  display: flex;
+  gap: var(--bc-space-2);
+}

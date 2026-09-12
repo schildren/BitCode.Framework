@@ -126,3 +126,30 @@ Un `ICommand` obtiene automáticamente validación + logging + transacción sin 
 
 - Behavior de idempotencia (patrón visto en BC-SFE-MID vía Redis) — no forma parte del plan de Fase 2 original; candidato para una fase de infraestructura transversal (Fase 4) si se decide incorporarlo.
 - Fase 3 del plan general (seguridad: Identity/JWT/OpenIddict, permisos, policy-based authorization) — siguiente fase a desarrollar.
+
+## Actualización (F1-06 — Épica F1-B, Plan Maestro)
+
+El diseño de `TransactionBehavior` descrito arriba (todo `ICommand` abre transacción implícita) fue
+**reemplazado**: a partir de F1-06, `TransactionBehavior` solo abre una transacción real de base de
+datos (`BeginTransactionAsync`/`CommitAsync`/`RollbackAsync`) para comandos que implementan
+explícitamente el nuevo marcador `ITransactionalCommand`. Un `ICommand`/`ICommand<T>` simple sigue
+persistiendo sus cambios automáticamente vía `SaveChangesAsync` (el handler nunca lo llama a mano),
+pero sin transacción explícita. También se agregó `IIdempotentCommand` como contrato marcador para
+comandos que deben tolerar reintentos (implementación completa en F1-22).
+
+Ver `docs/adr/0009-contratos-comando-transaccion-explicita.md` para el detalle de la decisión y
+`docs/convenciones.md` (reglas 1, 3 y 4) para la convención vigente.
+
+## Actualización (F1-07 — Épica F1-B, Plan Maestro)
+
+Endurecimiento del pipeline transaccional sobre el diseño de F1-06 (criterio de aceptación:
+"Rollback verificado"): en las ramas de fallo, `TransactionBehavior` ahora revierte la transacción
+(`RollbackAsync`) antes de loguear, para no demorar la liberación de locks con trabajo no esencial
+mientras la transacción sigue abierta. Se documentó como regla dura que ningún handler de
+`ITransactionalCommand` debe hacer llamadas HTTP, a cache distribuido o a un broker de mensajería
+mientras la transacción está abierta. Se verificó, con un comando de prueba de dos escrituras
+dependientes contra SQL Server real (Testcontainers, ver
+`tests/Shared.Infrastructure.Persistence.Tests/Integration/TransactionBehaviorIntegrationTests.cs`),
+que un fallo en la segunda escritura revierte también la primera, ya enviada al motor con un
+`SaveChangesAsync` intermedio. Ver el addendum en
+`docs/adr/0009-contratos-comando-transaccion-explicita.md` para el detalle completo.

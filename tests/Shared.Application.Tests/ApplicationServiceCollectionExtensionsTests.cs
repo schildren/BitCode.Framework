@@ -19,13 +19,29 @@ public class ApplicationServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task Send_Command_GoesThroughTransactionBehaviorAndCommits()
+    public async Task Send_SimpleCommand_GoesThroughTransactionBehaviorAndSavesChangesWithoutTransaction()
     {
         var unitOfWork = Substitute.For<IUnitOfWork>();
         using var provider = BuildProvider(unitOfWork);
         var mediator = provider.GetRequiredService<IMediator>();
 
         var result = await mediator.Send(new TestCommand("Mundo"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("Hola, Mundo");
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().BeginTransactionAsync(Arg.Any<CancellationToken>());
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Send_TransactionalCommand_GoesThroughTransactionBehaviorAndCommits()
+    {
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        using var provider = BuildProvider(unitOfWork);
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new TestTransactionalCommand("Mundo"));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be("Hola, Mundo");

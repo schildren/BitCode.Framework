@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sample-api-config
+  labels:
+    app.kubernetes.io/name: sample-api
+    app.kubernetes.io/part-of: bitcode-framework
+data:
+  # Puerto ya fijado por la imagen base (ASPNETCORE_HTTP_PORTS=8080, ver
+  # docs/politica-contenedores.md sección 3.5); se repite acá explícitamente
+  # para que el manifiesto sea autocontenido si la imagen base cambia.
+  ASPNETCORE_HTTP_PORTS: "8080"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft.AspNetCore: "Warning"
+  # Proveedor de secretos por defecto (docs/guia-secret-provider.md); cada
+  # overlay puede sobreescribir a "Vault" cuando el ambiente tenga uno
+  # disponible. El token/credenciales del proveedor NUNCA van en este
+  # ConfigMap -- viven en el Secret referenciado ("sample-api-secrets").
+  Secrets__Provider: "Configuration"
+  # F4-10: nombre del servicio para AddSharedObservability (F4-10 -- Sample.Api no instrumentaba con
+  # OpenTelemetry hasta esta tarea, ver InfrastructureModule.ConfigureServices/Program.cs). OtlpEndpoint
+  # apunta al Service ClusterIP del OTel Collector centralizado (k8s/otel-collector/, namespace propio
+  # "bitcode-observability", DISTINTO del namespace de este Deployment) vía su FQDN completo -- el nombre
+  # corto "otel-collector" NO resuelve entre namespaces distintos, hace falta el FQDN de 3 partes
+  # (servicio.namespace.svc.cluster.local). Puerto 4317 = receiver OTLP/gRPC (protocolo que usan
+  # tracing.AddOtlpExporter/metrics.AddOtlpExporter y el sink Serilog.Sinks.OpenTelemetry, ver
+  # ObservabilityServiceCollectionExtensions/SerilogHostBuilderExtensions).
+  OpenTelemetry__ServiceName: "Sample.Api"
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector.bitcode-observability.svc.cluster.local:4317"
+  # F4-12: los feature flags on/off (sección "FeatureFlags", AddSharedFeatureFlags) NO viven en este
+  # ConfigMap desde el cierre del gap de hot-reload -- ver "sample-api-featureflags"
+  # (featureflags-configmap.yaml), montado como VOLUMEN de archivo (no envFrom) para que un cambio de
+  # flag se recargue en caliente sin "kubectl rollout restart". Este ConfigMap ("sample-api-config") sigue
+  # siendo envFrom (variables de entorno) para todo lo demás -- ese patrón sigue siendo correcto para
+  # configuración que no necesita cambiar sin reiniciar el proceso. Ver
+  # docs/politica-configuracion-y-feature-flags.md sección 2.4.

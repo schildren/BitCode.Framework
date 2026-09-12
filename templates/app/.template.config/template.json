@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "BitCode.Framework",
+  "classifications": ["Common", "Web/WebAPI", "BitCode.Framework"],
+  "identity": "BitCode.Framework.Templates.App",
+  "name": "BitCode Framework - Aplicación base (Web API)",
+  "shortName": "bitcode-app",
+  "sourceName": "AppName",
+  "preferNameDirectory": true,
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "symbols": {
+    "SharedSourceRoot": {
+      "type": "parameter",
+      "datatype": "string",
+      "replaces": "../../src",
+      "defaultValue": "../../src",
+      "description": "Ruta relativa (desde el directorio de salida del proyecto generado) hacia la carpeta src/ del framework. El valor por defecto asume que el proyecto se genera dos niveles bajo la raíz del repo (ej. samples/MiApp.Api/), igual que el resto de los proyectos de referencia -- BitCode.Framework todavía no publica sus paquetes en un feed NuGet (F8-05, pendiente), así que ProjectReference relativo es la forma real de consumir el framework hoy. Cuando F8-05 esté resuelto, un consumidor externo puede pasar --SharedSourceRoot con una ruta propia o reemplazar directamente las referencias por PackageReference."
+    }
+  }
+}

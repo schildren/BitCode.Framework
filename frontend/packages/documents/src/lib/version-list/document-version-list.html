@@ -1,0 +1,39 @@
+<div class="bc-document-versions">
+  @switch (status()) {
+    @case ('loading') {
+      <p class="bc-document-versions__loading" role="status">Cargando versiones…</p>
+    }
+    @case ('error') {
+      <div class="bc-document-versions__error" role="alert">
+        <p class="bc-document-versions__error-message">{{ error()?.userMessage }}</p>
+        <p class="bc-document-versions__error-correlation">
+          Código de correlación: {{ error()?.correlationId ?? 'no disponible' }}
+        </p>
+        <button type="button" class="bc-document-versions__retry" (click)="reload()">Reintentar</button>
+      </div>
+    }
+    @case ('loaded') {
+      @if (versiones().length === 0) {
+        <p class="bc-document-versions__empty">Sin versiones todavía.</p>
+      } @else {
+        <ul class="bc-document-versions__list">
+          @for (version of versiones(); track version.id) {
+            <li class="bc-document-versions__item">
+              <span class="bc-document-versions__numero">v{{ version.numero }}</span>
+              <span class="bc-document-versions__nombre">{{ version.nombreArchivo }}</span>
+              <span class="bc-document-versions__estado">{{ estadoEscaneoLabel(version.estadoEscaneo) }}</span>
+              <button
+                type="button"
+                class="bc-document-versions__download"
+                [disabled]="!puedeDescargarse(version.estadoEscaneo) || descargandoNumero() !== null"
+                (click)="descargar(version)"
+              >
+                {{ descargandoNumero() === version.numero ? 'Descargando…' : 'Descargar' }}
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</div>

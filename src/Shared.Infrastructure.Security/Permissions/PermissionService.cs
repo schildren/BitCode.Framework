@@ -44,4 +44,23 @@ public class PermissionService<TUser, TRole>(UserManager<TUser> userManager, Rol
 
         return permissions.ToList();
     }
+
+    public async Task<IReadOnlyList<string>> GetPermissionsForRoleAsync(
+        string roleName,
+        CancellationToken cancellationToken = default)
+    {
+        var role = await roleManager.FindByNameAsync(roleName);
+        if (role is null)
+        {
+            return [];
+        }
+
+        var claims = await roleManager.GetClaimsAsync(role);
+
+        return claims
+            .Where(c => c.Type == PermissionClaimTypes.Permission)
+            .Select(c => c.Value)
+            .Distinct()
+            .ToList();
+    }
 }

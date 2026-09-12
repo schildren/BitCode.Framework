@@ -9,8 +9,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="FluentAssertions" Version="6.12.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
@@ -21,7 +21,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <!-- F3-03: OutboxPublisherIntegrationTests ejercita el flujo completo SQL Server -> relay ->
+         Kafka real (KafkaContainerFixture, mismo criterio que F3-02). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
+    <!-- F3-08: OutboxDeadLetterIntegrationTests ejercita el reprocesamiento auditado
+         (IDeadLetterReprocessor/IAuditWriter, Shared.Infrastructure.Security) sobre el mismo
+         OutboxMessage que ya vive en Shared.Infrastructure.Persistence: referencia de proyecto de
+         TEST únicamente, no crea un ciclo en src/ (Shared.Infrastructure.Security ya referencia
+         Shared.Infrastructure.Persistence, nunca al revés). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
     <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
   </ItemGroup>
 

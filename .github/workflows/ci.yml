@@ -18,7 +18,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Restore
         run: dotnet restore
@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Restore
         run: dotnet restore
@@ -61,7 +61,7 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Restore
         run: dotnet restore
@@ -79,3 +79,179 @@ jobs:
         with:
           name: integration-test-results
           path: ./TestResults
+
+  contracts-verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias de frontend
+        run: npm ci
+        working-directory: frontend
+
+      # F8-04 (docs/guia-contratos-frontend.md): prueba que el cliente TypeScript
+      # generado en frontend/packages/*/src/lib/contracts/generated/ es 100%
+      # reproducible desde el OpenAPI real de cada Sample.*.Api (Testcontainers SQL
+      # Server, requiere Docker -- ya presente en el runner ubuntu-latest) y nunca
+      # requiere edición manual: regenera de punta a punta, falla si el working tree
+      # cambia (git diff --exit-code) y compila cada archivo generado con tsc --strict.
+      - name: Verificar contratos TypeScript generados desde OpenAPI
+        run: npm run contracts:verify
+        working-directory: frontend
+
+      # F8-09 (docs/guia-portal-tecnico.md): verifica que los metadatos y documentación
+      # del Portal Técnico se compilen correctamente desde docs/, ADRs y OpenAPI specs.
+      - name: Verificar compilación del portal técnico (portal:build)
+        run: npm run portal:build
+        working-directory: frontend
+
+  dependency-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      # SCA mínimo (F0-06, docs/politica-dependencias.md sección 5): audita vulnerabilidades
+      # conocidas (directas y transitivas) contra el NuGet Advisory feed. `dotnet list
+      # package --vulnerable` siempre devuelve exit code 0, por eso el bloqueo real se hace
+      # con el grep de abajo. Umbral deliberadamente conservador (solo Critical bloquea):
+      # ver justificación completa en docs/politica-dependencias.md sección 5 sobre las
+      # vulnerabilidades High/Moderate transitivas preexistentes (Testcontainers, EF Core
+      # SqlServer/Sqlite) que no son responsabilidad de esta tarea.
+      - name: Auditoría de vulnerabilidades de dependencias (SCA)
+        run: |
+          dotnet list BitCode.Framework.slnx package --vulnerable --include-transitive | tee vulnerability-report.txt
+          if grep -q "Critical" vulnerability-report.txt; then
+            echo "::error::Se encontraron vulnerabilidades de severidad Critical. Ver docs/politica-dependencias.md."
+            exit 1
+          fi
+          echo "Sin vulnerabilidades Critical. Revisar el reporte completo arriba: severidades High/Moderate/Low quedan registradas como hallazgos (ver docs/politica-dependencias.md, sección 3) y no bloquean el pipeline por ahora."
+
+      - name: Publicar reporte de vulnerabilidades
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-vulnerability-report
+          path: vulnerability-report.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # F8-14 (docs/guia-sbom-notices.md): Genera y valida Software Bill of Materials (SBOM)
+      # en formato CycloneDX 1.5, audita licencias permisivas y actualiza THIRD-PARTY-NOTICES.
+      - name: Generar y verificar SBOM y cumplimiento de licencias
+        run: node scripts/generate-sbom-notices.mjs
+
+      - name: Publicar artefactos SBOM y License Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-and-license-reports
+          path: artifacts/sbom/*
+
+  container-scan:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # F4-01 (docs/politica-contenedores.md, sección 4): construye la imagen del único
+      # host ejecutable real de la solución hoy (samples/Sample.Api) y la escanea con
+      # Trivy. Gate igual al de dependency-scan: solo CRITICAL bloquea el pipeline; HIGH
+      # y menores quedan como hallazgo publicado, no como bloqueo (mismo criterio
+      # conservador que docs/politica-dependencias.md sección 5).
+      - name: Build de la imagen (docker/sample-api/Dockerfile)
+        run: docker build -f docker/sample-api/Dockerfile -t bitcode/sample-api:ci .
+
+      - name: Escaneo de vulnerabilidades de contenedor (Trivy)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: bitcode/sample-api:ci
+          format: table
+          output: container-vulnerability-report.txt
+          severity: CRITICAL,HIGH
+          scanners: vuln,secret,misconfig
+          exit-code: 0
+
+      - name: Bloquear el pipeline ante CVE CRITICAL
+        run: |
+          cat container-vulnerability-report.txt
+          if grep -q "CRITICAL" container-vulnerability-report.txt; then
+            echo "::error::Se encontraron vulnerabilidades CRITICAL en la imagen. Ver docs/politica-contenedores.md."
+            exit 1
+          fi
+          echo "Sin vulnerabilidades CRITICAL en la imagen. Hallazgos HIGH (si los hay) quedan registrados en el reporte, no bloquean el pipeline por ahora."
+
+      - name: Publicar reporte de vulnerabilidades de contenedor
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-vulnerability-report
+          path: container-vulnerability-report.txt
+
+  deploy-dev-dry-run:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # F4-13 (docs/politica-despliegue-gradual.md sección 5): gate de manifiestos, no un despliegue
+      # real -- no hay credenciales ni kubeconfig de ningún clúster real configuradas en este
+      # repositorio (ver la sección 5 del documento para por qué eso queda deliberadamente fuera de
+      # alcance). `kubectl` en ubuntu-latest ya trae Kustomize embebido (`kubectl kustomize`, mismo
+      # binario y versión documentados en docs/politica-manifiestos-kubernetes.md sección 5).
+      - name: Instalar kubeconform (v0.8.0, yannh/kubeconform, Apache-2.0)
+        run: |
+          curl -sSL -o kubeconform.tar.gz https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          chmod +x kubeconform
+          ./kubeconform -v
+
+      # Los 5 paquetes de manifiestos del repositorio (F4-02 sample-api con 3 overlays, F4-08 gateway,
+      # F4-10 otel-collector, sin overlays por ambiente los últimos dos -- ver
+      # docs/politica-manifiestos-kubernetes.md sección 2 y docs/guia-otel-collector.md). Cada uno se
+      # renderiza con `kubectl kustomize` (build real, valida que base+patches fusionen sin conflicto)
+      # y se valida con `kubeconform -strict` contra el esquema oficial de Kubernetes 1.30 (mismo
+      # comando y versión que la evidencia manual de F4-02/F4-04/F4-05/F4-06/F4-07/F4-13, ahora
+      # automatizado en el pipeline en vez de solo documentado).
+      - name: Validar manifiestos Kustomize (kubectl kustomize + kubeconform -strict)
+        run: |
+          set -e
+          packages=(
+            "k8s/sample-api/overlays/dev"
+            "k8s/sample-api/overlays/staging"
+            "k8s/sample-api/overlays/prod"
+            "k8s/gateway"
+            "k8s/otel-collector"
+          )
+          for pkg in "${packages[@]}"; do
+            name=$(echo "$pkg" | tr '/' '-')
+            echo "::group::$pkg"
+            kubectl kustomize "$pkg" > "rendered-${name}.yaml"
+            ./kubeconform -strict -summary -kubernetes-version 1.30.0 "rendered-${name}.yaml"
+            echo "::endgroup::"
+          done
+
+      - name: Publicar manifiestos renderizados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-k8s-manifests
+          path: rendered-*.yaml

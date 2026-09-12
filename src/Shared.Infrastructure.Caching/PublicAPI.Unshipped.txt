@@ -1,0 +1,15 @@
+#nullable enable
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.CachingOptions() -> void
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.RedisConnectionString.get -> string?
+BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.RedisConnectionString.set -> void
+BitCode.Framework.Shared.Infrastructure.Caching.CachingServiceCollectionExtensions
+const BitCode.Framework.Shared.Infrastructure.Caching.CachingOptions.SectionName = "Caching" -> string!
+static BitCode.Framework.Shared.Infrastructure.Caching.CachingServiceCollectionExtensions.AddSharedCaching(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+BitCode.Framework.Shared.Infrastructure.Caching.ITenantAwareCache
+BitCode.Framework.Shared.Infrastructure.Caching.ITenantAwareCache.GetOrCreateAsync<T>(string! key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! factory, Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string!>? tags = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T>
+BitCode.Framework.Shared.Infrastructure.Caching.ITenantAwareCache.RemoveAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+BitCode.Framework.Shared.Infrastructure.Caching.TenantAwareCache
+BitCode.Framework.Shared.Infrastructure.Caching.TenantAwareCache.TenantAwareCache(Microsoft.Extensions.Caching.Hybrid.HybridCache! cache, BitCode.Framework.Shared.Domain.MultiTenancy.ITenantContext! tenantContext, Microsoft.Extensions.Logging.ILogger<BitCode.Framework.Shared.Infrastructure.Caching.TenantAwareCache!>? logger = null) -> void
+BitCode.Framework.Shared.Infrastructure.Caching.TenantAwareCache.GetOrCreateAsync<T>(string! key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! factory, Microsoft.Extensions.Caching.Hybrid.HybridCacheEntryOptions? options = null, System.Collections.Generic.IEnumerable<string!>? tags = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T>
+BitCode.Framework.Shared.Infrastructure.Caching.TenantAwareCache.RemoveAsync(string! key, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask

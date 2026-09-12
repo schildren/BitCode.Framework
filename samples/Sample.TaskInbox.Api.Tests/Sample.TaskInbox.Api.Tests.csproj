@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sample.TaskInbox.Api\Sample.TaskInbox.Api.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.TaskInbox\BitCode.Platform.TaskInbox.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+    <!-- F9-04: WorkflowEventDeadLetterIntegrationTests ejercita KafkaEventConsumer(TEvent) real
+         (F3-07/F3-08) contra un evento de integración real de Workflow, para probar el mecanismo de
+         compensación (dead-letter tras agotar reintentos) específicamente en el flujo Workflow a
+         TaskInbox: referencia de proyecto de TEST únicamente, mismo criterio que
+         Shared.Infrastructure.Persistence.Tests con Shared.Infrastructure.Security (test-only). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
+  </ItemGroup>
+
+</Project>

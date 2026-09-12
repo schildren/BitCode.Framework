@@ -1,0 +1,91 @@
+# 0005. Mensajería: Kafka como broker de eventos de integración
+
+**Estado:** Accepted
+**Fecha:** 2026-09-05 (Proposed) / 2026-09-06 (Accepted)
+**Responsable:** Aprobado por el responsable de producto/arquitectura vía sesión de ejecución de la Fase 3
+
+## Contexto
+
+El Plan Maestro (sección 2) fija Kafka como decisión rectora de mensajería, y la Fase 3 ("Event Platform") lo desarrolla como mecanismo de comunicación confiable entre bounded contexts (consistente con la regla de eventual consistency de la sección 2.1). El estado actual del repositorio (`docs/inventario-tecnico.md`, `docs/plan-maestro-bitcode-ia.md` sección 4.1) no tiene ninguna infraestructura de mensajería: "Messaging: Ausente — Construir", y tampoco existen Outbox/Inbox/Idempotency (prerequisito para publicar eventos de forma confiable tras el commit de una transacción SQL, sección 2.1 del plan). En la estructura de repositorio sugerida (Plan Maestro, sección 10) ya se prevén los proyectos `BitCode.Messaging.Contracts` y `BitCode.Messaging.Kafka`, aún no creados.
+
+## Decisión
+
+Se adopta Kafka como broker de eventos de integración entre bounded contexts, a construirse en Fase 3 sobre el patrón Outbox/Inbox de Fase 1 (transacción de negocio + evento Outbox en la misma transacción SQL; publicación después del commit). Se marca este ADR como `Proposed` (no `Accepted`) porque introducir Kafka es la incorporación de un **nuevo broker** al stack de runtime, y la sección 13 del Plan Maestro exige aprobación humana explícita para "introducción de una nueva base de datos o broker" — aun cuando ya esté listado como decisión rectora en la sección 2, formalizar su incorporación real al entorno de ejecución (aprovisionamiento, operación, costos) requiere esa aprobación antes de construir la infraestructura de Fase 3.
+
+## Alternativas consideradas
+
+- **RabbitMQ o Azure Service Bus:** no evaluados en profundidad en este documento; el Plan Maestro ya fija Kafka como decisión rectora del stack objetivo (sección 2), por lo que no se reabre la comparación sin justificación nueva.
+- **Sin broker, solo polling de Outbox vía HTTP o base de datos compartida:** descartado como estrategia definitiva; no escala para eventos entre múltiples bounded contexts ni ofrece particionamiento/retención comparable a Kafka.
+
+## Consecuencias
+
+- No implica código nuevo en esta tarea; formaliza la dirección para F3 y para las tareas relacionadas de Outbox/Inbox en Fase 1.
+- Ninguna transacción SQL debe extenderse para incluir la publicación síncrona a Kafka (regla de consistencia, `docs/architecture-principles.md` sección 2) — el evento se persiste en Outbox dentro de la transacción; la publicación real a Kafka ocurre en un proceso posterior al commit.
+- El Plan Maestro (sección 3.2) prohíbe explícitamente prometer exactly-once de extremo a extremo en mensajería; el diseño de Fase 3 debe asumir at-least-once con Inbox/idempotencia del lado consumidor.
+
+## Riesgos y mitigación
+
+- **Riesgo:** aprovisionar o habilitar tráfico productivo sobre Kafka sin aprobación humana. Mitigación: la introducción operativa de Kafka (aprovisionamiento real, no solo el diseño) se trata como decisión de la sección 13 del Plan Maestro y requiere aprobación antes de F3.
+- Vinculado al registro de riesgos de F0-12 (pendiente de creación).
+
+## Addendum F1-23 (Outbox base — lado emisor, sin broker todavía)
+
+Este ADR se mantiene `Proposed` (Kafka en sí sigue sin implementarse, sigue requiriendo la aprobación de la sección 13 antes de F3), pero el prerequisito que menciona la Decisión de arriba ("construirse en Fase 3 sobre el patrón Outbox/Inbox de Fase 1") ya quedó resuelto del lado del Outbox:
+
+- `OutboxSaveChangesInterceptor` (Shared.Infrastructure.Persistence) escribe cada `DomainEvent` levantado por un `AggregateRoot<TId>` (`Shared.Kernel`, vía `RaiseDomainEvent`/`IHasDomainEvents`) como fila `OutboxMessage` (Shared.Domain) dentro del MISMO `SaveChangesAsync` que persiste el cambio de negocio del agregado — nunca en una escritura separada. Esto es lo que garantiza el criterio de aceptación de F1-23 ("evento no se pierde tras commit"): si el commit tiene éxito, el evento ya está en la base junto con el cambio de negocio; si la transacción hace rollback, ninguno de los dos queda persistido.
+- `OutboxMessage.ProcessedAtUtc` queda siempre en `null` tras F1-23 — no existe todavía ningún proceso que lo marque como publicado. El relay/publisher que lea las filas pendientes (`ProcessedAtUtc IS NULL`, ya indexado por `OutboxModelConfigurator`) y las publique a Kafka es trabajo de Fase 3, condicionado a la aprobación humana de este ADR; F1-23 no lo implementa.
+- Ver `docs/convenciones.md` (regla dura 3 y la nueva entrada de Outbox) para cómo levantar un evento desde un agregado, y `tests/Shared.Infrastructure.Persistence.Tests/Integration/OutboxIntegrationTests.cs` para la verificación de atomicidad contra SQL Server real.
+
+## Addendum F1-24 (Inbox base — lado receptor, sin consumidor real todavía)
+
+Este ADR se mantiene `Proposed` (Kafka en sí sigue sin implementarse). Del lado del Inbox mencionado en
+la Decisión de arriba ("construirse en Fase 3 sobre el patrón Outbox/Inbox de Fase 1") también queda
+resuelto el mecanismo genérico:
+
+- `InboxMessage` (Shared.Domain) registra, por `MessageId` (el identificador único que traería el
+  mensaje del broker/productor original), si un mensaje ya fue procesado con éxito. `IInboxMessageProcessor`
+  / `InboxMessageProcessor` (Shared.Application) es el punto de entrada que un futuro consumidor real
+  invocaría una vez por cada mensaje entregado por el broker, ANTES de reconocer/hacer commit del
+  offset: si el mensaje ya tiene una fila con `ProcessedAtUtc` no nulo, se descarta sin ejecutar el
+  handler de negocio (criterio de aceptación de F1-24, "duplicados descartados") — necesario porque
+  Kafka (como la mayoría de los brokers reales) ofrece entrega "at-least-once", no "exactly-once" (ver
+  la sección de Consecuencias de este ADR: el Plan Maestro prohíbe prometer exactly-once de punta a
+  punta en mensajería).
+- Igual que con el Outbox, `InboxMessageProcessor` nunca llama a `SaveChangesAsync` hasta que el handler
+  de negocio termina con éxito: si el handler lanza una excepción, ninguna fila de `InboxMessage` queda
+  persistida, así que un reintento posterior con el mismo `MessageId` no se trata como duplicado —
+  vuelve a ejecutar el handler con normalidad. Ver el `remarks` de `InboxMessageProcessor` para el
+  razonamiento completo y `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxIntegrationTests.cs`
+  para la verificación contra SQL Server real de ambos casos.
+- Ningún consumidor real de Kafka existe todavía: `IInboxMessageProcessor` es, por ahora, un mecanismo
+  genérico invocable manualmente (o desde pruebas), sin ninguna suscripción a un broker — igual que
+  F1-23, esto sigue siendo trabajo de Fase 3, condicionado a la aprobación humana de este ADR.
+
+## Addendum F3-02 (aprobación humana y adapter Kafka)
+
+Este ADR queda `Accepted` a partir de esta fecha: la aprobación humana explícita que exige la sección 13
+del Plan Maestro ("introducción de una nueva base de datos o broker") fue solicitada antes de comenzar
+F3-02 y confirmada por el responsable en la sesión de ejecución de la Fase 3. Alcance de la aprobación:
+
+- Se aprueba **Kafka como broker de eventos de integración** para el desarrollo del adapter (F3-02) y el
+  resto de la Fase 3 (Outbox Publisher F3-03, Inbox Consumer F3-04, particionamiento F3-05, schema
+  F3-06, retries F3-07, DLQ F3-08, poison messages F3-09, observabilidad F3-10, seguridad F3-11,
+  catálogo F3-12, prueba de referencia F3-13) sobre entornos de desarrollo, CI y pruebas de integración
+  (Testcontainers) usando un broker real no productivo.
+- La aprobación **no** cubre "habilitación de tráfico productivo" (sección 13, ítem separado): aprovisionar
+  y habilitar Kafka en un ambiente productivo sigue requiriendo una aprobación humana explícita adicional
+  en el momento de ese despliegue.
+- Alternativa RabbitMQ/Azure Service Bus: se mantiene descartada por lo ya expuesto en "Alternativas
+  consideradas" — no se reabre la comparación.
+
+## Addendum F3-11 (configuración de seguridad de transporte — no habilita tráfico productivo)
+
+F3-11 completó el mapeo de `KafkaMessagingOptions` hacia `Confluent.Kafka.ClientConfig` para
+SASL/TLS (`KafkaClientConfigFactory`, `KafkaMessagingOptionsValidator`) y documentó la política
+productiva recomendada (`docs/politica-seguridad-kafka.md`: SASL_SSL con SCRAM, un principal por
+bounded context, ACL de mínimo privilegio). Esto es *configuración preparada*, no un cambio de
+alcance de la aprobación de este ADR: sigue sin existir ningún entorno productivo con Kafka real, y
+la verificación de que las ACL efectivamente rechazan accesos cruzados entre tópicos queda como
+parte del runbook operativo del primer despliegue real (ver la sección "Verificación pendiente" de
+`docs/politica-seguridad-kafka.md`), no de un test automatizado de este repositorio. La aprobación
+de "habilitación de tráfico productivo" (sección 13 del Plan Maestro) sigue pendiente, sin cambios.
