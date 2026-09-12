@@ -79,7 +79,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      CLUSTER_ID: "4L622nShTUiBenYh semester"
+      CLUSTER_ID: "O0_AbcNpnNpCFbeCpN-D_A"
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:

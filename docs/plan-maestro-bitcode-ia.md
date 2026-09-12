@@ -836,15 +836,17 @@ La ejecución de la plantilla empresarial deberá producir:
 
 #### Gate de salida
 
-- [x] Una persona nueva puede levantar el entorno siguiendo la guía.
-- [x] La plantilla supera build y pruebas sin edición manual.
-- [x] Los paquetes tienen versionado, firma y provenance.
-- [x] El pipeline produce SBOM, license report y vulnerabilidades.
-- [x] Los golden paths están cubiertos por pruebas de humo.
+Auditado de forma independiente (`bitcode-gate-auditor`, 2026-09-11) tras el cierre de F8-14. Los 3 primeros checkboxes habían sido auto-marcados `[x]` por el mismo commit que cerraba F8-14 (F8-13/14); la auditoría encontró que 3 de los 5 criterios no estaban realmente cumplidos y corrigió el estado a continuación.
+
+- [x] Una persona nueva puede levantar el entorno siguiendo la guía. Corregido tras la auditoría: `docker-compose.yml` tenía `CLUSTER_ID` de Kafka inválido (`"4L622nShTUiBenYh semester"`, con espacio y texto no-base64 — nunca se había validado con `docker compose up` real). Se reemplazó por un Cluster ID KRaft válido y se verificó `docker compose up -d` de punta a punta: los 5 servicios (kafka, sqlserver, redis, jaeger, otel-collector) levantan `healthy`.
+- [x] La plantilla supera build y pruebas sin edición manual. Verificado ejecutando `Templates.Tests` (app/módulo/feature): las 3 plantillas generan, compilan y pasan pruebas reales, incluida una app generada corriendo contra SQL Server real (Testcontainers).
+- [ ] Los paquetes tienen versionado, firma y provenance. **Bloqueado, no cumplido.** El mecanismo (MinVer/Nx + SLSA `attest-build-provenance`) está implementado, pero: (1) la firma de paquetes NuGet depende de `NUGET_SIGNING_CERTIFICATE`, un secreto que no existe en el repositorio — el paso fallaría si se disparara hoy; (2) la publicación real de paquetes NuGet/npm está bloqueada por diseño hasta que `docs/adr/0008-licencias-open-core.md` pase de `Proposed` a `Accepted` (decisión humana de licencia, fuera del alcance de cualquier tarea ejecutada por un agente); (3) `release.yml`/`nuget-publish.yml`/`npm-publish.yml` nunca corrieron de punta a punta en modo real (solo existe el tag `v0.1.0`, sin release publicado). Pendiente: resolver ADR-0008 y ejercitar al menos un dry-run exitoso del pipeline de release antes de marcar este criterio.
+- [x] El pipeline produce SBOM, license report y vulnerabilidades. Verificado ejecutando `scripts/generate-sbom-notices.mjs`: genera SBOM CycloneDX 1.5, license report y `THIRD-PARTY-NOTICES.md` reales (63 dependencias, 100% licencias compatibles). `ci.yml` corre además auditoría de vulnerabilidades (`dotnet list package --vulnerable`) y Trivy sobre la imagen.
+- [ ] Los golden paths están cubiertos por pruebas de humo. **Parcial, no cumplido como "pruebas de humo" en sentido estricto.** `GoldenPathSmokeTests.cs` pasa (5/5), pero 4 de los 5 golden paths (Workflow, Events, Documents, IntegrationHub) sólo verifican existencia de tipos por reflexión (`typeof(X).Should().NotBeNull()`), no ejercitan comportamiento real (crear un workflow, publicar/consumir un evento por Outbox/Inbox, subir un documento, invocar un conector). Sólo el golden path CRUD (heredado de F8-01) tiene cobertura funcional real de punta a punta. Pendiente: ampliar F8-10 con al menos un caso funcional por golden path, o documentar explícitamente la limitación como aceptada.
 
 #### Hito
 
-> Crear una solución empresarial BitCode es un proceso repetible, seguro y documentado.
+> Crear una solución empresarial BitCode es un proceso repetible, seguro y documentado — con las excepciones pendientes de firma/publicación de paquetes (sujeta a ADR-0008) y cobertura funcional de golden paths no-CRUD, documentadas arriba.
 
 ---
 
