@@ -1,6 +1,6 @@
 # Guía de Migraciones y Rollout — BitCode.Framework
 
-**Tarea:** Fase 8 — Developer Experience y productización, tarea F8-07 (Migraciones: tooling de generación, validación y rollout) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md).  
+**Tarea:** Fase 8 — Developer Experience y productización, tarea F8-07 (Migraciones: tooling de generación, validación y rollout) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Extendida en Fase 9 (F9-08, "Data migration": migrar y reconciliar datos — ver sección 8).  
 **Fecha:** Septiembre de 2026.  
 **Estado:** Aplicada con tooling y pruebas automatizadas contra SQL Server real (Testcontainers).
 
@@ -186,9 +186,58 @@ Si la nueva versión de la aplicación (V2) presenta un fallo crítico durante e
 
 ---
 
-## 7. Evidencia y Pruebas Automatizadas
+## 8. Reconciliación de Datos (Fase 9, F9-08 — "Data migration")
 
-La suite automatizada en `tests/BitCode.Migrations.Tests` valida el comportamiento de punta a punta:
+**Tarea:** Fase 9 — Capacidad de extracción de microservicios, tarea F9-08 (Data migration: migrar y reconciliar datos) del [Plan Maestro de BitCode](plan-maestro-bitcode-ia.md). Entregable: "Herramienta". Criterio de aceptación: "Conteos y hashes conciliados".
+
+### 8.1 Contexto y alcance real de esta tarea
+
+El Plan Maestro fija Workflow como módulo piloto de extracción de microservicios (ver [ADR-0020](adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md)). F9-03 ("Data ownership") ya confirmó con evidencia real (`WorkflowDataOwnershipIntegrationTests`) que `WorkflowDbContext` **nunca compartió base de datos con ningún otro módulo** — este framework separó el store de cada módulo de plataforma desde la Fase 6. Por lo tanto, F9-08 en este framework **no consiste en separar filas mezcladas en una base compartida** (ese trabajo no existe aquí), sino en construir la herramienta que sí sería necesaria en una extracción real: mover el store físico de un módulo (p. ej. Workflow) de un servidor SQL Server a otro sin downtime, o consolidar/particionar datos, y **demostrar con evidencia real** que el destino contiene exactamente lo mismo que el origen.
+
+### 8.2 Comando `reconcile`
+
+Se extendió el CLI existente `BitCode.Migrations` (en vez de crear una herramienta nueva) porque ya resuelve, de forma genérica por reflexión, cualquier `DbContext` de EF Core a partir de un ensamblado — el mismo mecanismo que usan `validate`/`status`/`migrate`/`rollback`/`script`. El comando `reconcile` compara, tabla por tabla, un origen y un destino que comparten el mismo modelo:
+
+```powershell
+dotnet run --project tools/BitCode.Migrations -- reconcile `
+  --assembly "bin/Debug/net10.0/MiApp.Api.dll" `
+  --context "WorkflowDbContext" `
+  --source-connection-string "Server=origen;Database=Workflow;User Id=sa;Password=...;TrustServerCertificate=True" `
+  --target-connection-string "Server=destino;Database=Workflow;User Id=sa;Password=...;TrustServerCertificate=True" `
+  --tables "WorkflowDefiniciones,WorkflowVersiones,WorkflowStates,WorkflowTransitions,WorkflowInstances,WorkflowTasks,WorkflowHistoriales"
+```
+
+Devuelve código de salida `0` si todas las tablas quedan conciliadas y `1` si se detecta cualquier discrepancia (conteo o contenido). `--format json` emite el reporte estructurado para pipelines/auditoría. Omitir `--tables` reconcilia todas las tablas descubribles del modelo (incluidas `IdempotencyKey`/`OutboxMessage`/`InboxMessage`, configuradas automáticamente por `MultiTenantDbContext`); en un escenario real de migración de store conviene filtrarlas explícitamente si el Outbox/Inbox se maneja con su propia estrategia de relay en vez de copiarse fila por fila.
+
+### 8.3 Qué garantiza y qué NO garantiza
+
+Por cada tabla, el reporte incluye:
+
+- **Conteo de filas** en origen y destino (`SELECT COUNT_BIG(*)`).
+- **Hash de contenido agregado** (`SHA-256`), calculado como el hash acumulado *streaming* (sin materializar la tabla completa en memoria) de los hashes SHA-256 de cada fila individual, en el orden determinístico de la clave primaria.
+- Si hay discrepancia, el **detalle de la primera fila divergente** (índice, valores de clave primaria, hash de fila en cada lado) — sin necesidad de un segundo paso de búsqueda, porque el hash por fila ya se calculó en el camino.
+
+**Granularidad y su implicación:** el hash reportado por tabla es un resumen de tabla completa, no un hash por columna. Esto significa que el reporte confirma o refuta la igualdad de **toda la fila** de una vez; para saber *qué columna específica* cambió dentro de la fila divergente reportada, hay que inspeccionar esa fila puntual en ambos lados con una consulta manual — la herramienta ya redujo el problema de "¿alguna de N millones de filas difiere?" a "esta fila con esta clave difiere", pero no llega a nivel de columna.
+
+**Limitaciones honestas:**
+
+- **Sin aislamiento transaccional entre origen y destino.** Si hay escrituras concurrentes durante la reconciliación, puede reportarse una discrepancia falsa. Ejecutar en una ventana sin escritura (tras cortar tráfico hacia el store viejo) o con aislamiento snapshot.
+- **Solo reconcilia entidades con clave primaria** (sin PK no hay orden determinístico posible) y **excluye tipos derivados de jerarquías TPH** para no duplicar el conteo de la tabla raíz. Ninguna de las siete entidades de negocio de `WorkflowDbContext` cae en ninguno de los dos casos.
+- **Diseño específico de módulo, generalizable como trabajo futuro:** `DataReconciler` no está acoplado a `WorkflowDbContext` — descubre las tablas a partir del `IModel` de cualquier `DbContext`, así que el mismo comando sirve, sin cambios de código, para cualquier otro módulo del framework. Lo que queda **fuera de alcance** de esta tarea es reconciliar contra un esquema de destino ya transformado (columnas renombradas, particionado, tipos distintos) — hoy se asume que origen y destino comparten exactamente el mismo modelo.
+- **El comando hereda la limitación de carga por reflexión de `validate`/`status`/`migrate` (F8-07):** apuntar `--assembly` a un ensamblado de host ASP.NET Core (que depende del *shared framework* `Microsoft.AspNetCore.App`) puede fallar al cargarse desde el proceso de consola del CLI, porque este último no hospeda ese *shared framework*. Funciona sin problemas apuntando a un ensamblado de biblioteca plano que contenga el `DbContext` (como se hace en la prueba de integración automatizada de esta tarea, que apunta directamente a `BitCode.Platform.Workflow.dll`).
+
+### 8.4 Evidencia y pruebas automatizadas
+
+`tests/BitCode.Migrations.Tests/Reconciliation/DataReconciliationIntegrationTests.cs` ejecuta contra **SQL Server real** (Testcontainers, dos bases de datos aisladas dentro del mismo contenedor simulando origen y destino):
+
+- **Escenario conciliado:** puebla un origen de `WorkflowDbContext` con el grafo completo de las siete entidades de negocio (mismo patrón de datos que `WorkflowDataOwnershipIntegrationTests`, F9-03), lo copia al destino tabla por tabla con `SqlBulkCopy` (respetando el orden de dependencia de claves foráneas) y confirma que `DataReconciler` reporta `IsFullyReconciled = true`, con conteos y hashes iguales en las siete tablas.
+- **Escenario con discrepancia:** repite la copia y luego altera deliberadamente el contenido de una fila en el destino (`UPDATE` sobre `WorkflowHistoriales.Detalle`) sin cambiar el conteo de filas. Confirma que la herramienta detecta la discrepancia exactamente en `WorkflowHistoriales` (`CountsMatch = true`, `HashesMatch = false`, `FirstMismatch` no nulo) sin producir falsos positivos en las otras seis tablas no alteradas — evidencia de que la comparación es de **contenido real**, no solo de cantidad.
+
+---
+
+## 9. Evidencia y Pruebas Automatizadas — Ciclo de Vida de Esquema (F8-07)
+
+La suite automatizada en `tests/BitCode.Migrations.Tests` valida el comportamiento de punta a punta del ciclo de vida de migraciones de esquema (`validate`/`status`/`migrate`/`rollback`/`script`). La evidencia del comando `reconcile` (F9-08) se documenta en la sección 8.4:
 
 - **`MigrationValidatorTests`**: 8 pruebas unitarias que verifican la detección estricta de `DropTable`, `DropColumn`, `RenameTable`, `RenameColumn` y `AddColumn` `NOT NULL` sin default, así como el modo permisivo `--allow-destructive`.
 - **`MigrationRolloutIntegrationTests`**: Pruebas de integración ejecutadas contra **SQL Server real** (Testcontainers):

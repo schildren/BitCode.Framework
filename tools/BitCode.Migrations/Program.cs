@@ -1,6 +1,8 @@
 using System.Reflection;
 using System.Text;
 using BitCode.Framework.Tools.Migrations.Core;
+using BitCode.Framework.Tools.Migrations.Core.DataReconciliation;
+using BitCode.Framework.Tools.Migrations.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -35,6 +37,7 @@ public static class Program
                 "migrate" => await RunMigrateAsync(cmdArgs),
                 "rollback" => await RunRollbackAsync(cmdArgs),
                 "script" => RunScript(cmdArgs),
+                "reconcile" => await RunReconcileAsync(cmdArgs),
                 _ => HandleUnknownCommand(command)
             };
         }
@@ -62,7 +65,8 @@ public static class Program
         Console.WriteLine("  status     Muestra las migraciones aplicadas y pendientes en la base de datos.");
         Console.WriteLine("  migrate    Aplica migraciones pendientes (Forward rollout) tras validar.");
         Console.WriteLine("  rollback   Revierte la base de datos a una migración previa (Rollback ensayado).");
-        Console.WriteLine("  script     Genera un script SQL idempotente de migración para DBAs/pipelines.\n");
+        Console.WriteLine("  script     Genera un script SQL idempotente de migración para DBAs/pipelines.");
+        Console.WriteLine("  reconcile  Concilia conteos y hashes de contenido entre un origen y un destino (F9-08).\n");
         Console.WriteLine("Opciones comunes:");
         Console.WriteLine("  --connection-string <cs>   Cadena de conexión SQL Server (o env: ConnectionStrings__Default)");
         Console.WriteLine("  --assembly <path>          Ruta al ensamblado (.dll) que contiene el DbContext y migraciones");
@@ -70,6 +74,12 @@ public static class Program
         Console.WriteLine("  --target <name>            Nombre de la migración objetivo (o '0' para revertir todo)");
         Console.WriteLine("  --allow-destructive        Permite operaciones destructivas (fase Contract autorizada)");
         Console.WriteLine("  --output <file>            Archivo de salida para el script SQL generado");
+        Console.WriteLine();
+        Console.WriteLine("Opciones de 'reconcile':");
+        Console.WriteLine("  --source-connection-string <cs>  Cadena de conexión del origen (o env: ConnectionStrings__Source)");
+        Console.WriteLine("  --target-connection-string <cs>  Cadena de conexión del destino (o env: ConnectionStrings__Target)");
+        Console.WriteLine("  --tables <t1,t2,...>              Limita la reconciliación a estas tablas (por defecto: todas)");
+        Console.WriteLine("  --format json                     Emite el reporte en JSON");
     }
 
     private static int HandleUnknownCommand(string command)
@@ -336,6 +346,63 @@ public static class Program
             }
 
             return 0;
+        }
+    }
+
+    private static async Task<int> RunReconcileAsync(string[] args)
+    {
+        var assemblyPath = GetOption(args, "--assembly");
+        var contextName = GetOption(args, "--context");
+        var sourceConnectionString = GetOption(args, "--source-connection-string")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__Source");
+        var targetConnectionString = GetOption(args, "--target-connection-string")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__Target");
+        var tablesOption = GetOption(args, "--tables");
+        var isJson = args.Any(a => a.Equals("--format=json", StringComparison.OrdinalIgnoreCase))
+            || string.Equals(GetOption(args, "--format"), "json", StringComparison.OrdinalIgnoreCase);
+
+        if (string.IsNullOrWhiteSpace(assemblyPath)
+            || string.IsNullOrWhiteSpace(sourceConnectionString)
+            || string.IsNullOrWhiteSpace(targetConnectionString))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: --assembly, --source-connection-string y --target-connection-string son obligatorios para 'reconcile'.");
+            Console.ResetColor();
+            return 1;
+        }
+
+        IReadOnlyCollection<string>? tableFilter = string.IsNullOrWhiteSpace(tablesOption)
+            ? null
+            : tablesOption.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        // El Model de EF Core es independiente de la conexión: se usa la cadena de origen únicamente
+        // para instanciar el DbContext (vía el mismo mecanismo de reflexión de CreateDbContext), no se
+        // abre ninguna conexión hasta que DataReconciler ejecuta sus propias consultas SQL directas.
+        var modelArgs = new List<string> { "--assembly", assemblyPath, "--connection-string", sourceConnectionString };
+        if (!string.IsNullOrWhiteSpace(contextName))
+        {
+            modelArgs.Add("--context");
+            modelArgs.Add(contextName);
+        }
+
+        var (context, _, _) = CreateDbContext(modelArgs.ToArray());
+        await using (context)
+        {
+            var reconciler = new DataReconciler(context.Model);
+
+            Console.WriteLine($"Reconciliando '{context.GetType().Name}' entre origen y destino...");
+            var report = await reconciler.ReconcileAsync(sourceConnectionString, targetConnectionString, tableFilter);
+
+            if (isJson)
+            {
+                Console.WriteLine(ReconciliationReportFormatter.ToJson(report));
+            }
+            else
+            {
+                ReconciliationReportFormatter.RenderConsole(report);
+            }
+
+            return report.IsFullyReconciled ? 0 : 1;
         }
     }
 

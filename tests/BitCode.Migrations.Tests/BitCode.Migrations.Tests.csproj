@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Shared.Kernel\Shared.Kernel.csproj" />
     <ProjectReference Include="..\..\src\Shared.Domain\Shared.Domain.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
   </ItemGroup>
 
 </Project>
