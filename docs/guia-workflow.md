@@ -276,6 +276,83 @@ quedaron sólidas y con test real; 2 quedaron simplificadas/parciales, documenta
   de Workflow implementada acá, y esta tarea no esperó a que aquella se resuelva primero (implementación
   autónoma, según lo pedido explícitamente).
 
+## Data ownership (F9-03)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-03, "Data ownership") pidió confirmar/endurecer,
+para Workflow como módulo piloto de extracción
+(`docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`), que su store es realmente propio y
+que "sin joins entre bases" no es solo una afirmación de esta guía sino algo que un test real rompe si
+deja de ser cierto.
+
+**Hallazgo honesto: este framework no separa esquemas de base de datos por módulo (no hay `HasDefaultSchema`
+en ningún `DbContext` del repo).** La aislación de datos entre módulos de plataforma no se logra con un
+esquema SQL Server distinto (`workflow.*` vs `dbo.*`), sino con dos mecanismos independientes, ambos ya
+vigentes antes de F9-03:
+
+1. **Base de datos físicamente separada por consumidor.** `AddSharedPersistence<TContext>` (F1-19) recibe
+   una connection string propia por `DbContext`; ningún host de referencia de Fase 6 combina dos
+   `AddSharedPersistence<T>` de módulos distintos apuntando a la misma base de datos (ver el comentario en
+   `samples/Sample.TaskInbox.Api/InfrastructureModule.cs` sobre por qué eso rompería la resolución de
+   `DbContext` sin tipar de `RepositoryBase<,>`). `Sample.Workflow.Api` usa `ConnectionStrings:Default`
+   exclusivamente para `WorkflowDbContext` y una base de datos aparte (`ConnectionStrings:Identity`) para
+   `SampleIdentityDbContext` — nunca comparte una base de datos con otro módulo de negocio. En producción,
+   cada consumidor real decide su propia connection string por módulo; nada en el framework fuerza a
+   compartir la misma base de datos entre dos `AddSharedPersistence<T>` de bounded contexts distintos.
+2. **Acoplamiento de COMPILACIÓN prohibido entre módulos, enforced en CI.** `ContractBoundaryTests`
+   (`tests/BitCode.Architecture.Tests/Layers/ContractBoundaryTests.cs`, F9-02) falla si CUALQUIERA de los
+   12 ensamblados de plataforma referencia el ensamblado completo de otro (solo se permite depender de un
+   ensamblado `.Contracts`); `PlatformModuleBoundaryTests`
+   (`tests/BitCode.Architecture.Tests/Layers/PlatformModuleBoundaryTests.cs`) verifica, además, a nivel de
+   TIPO que ningún módulo referencia el `DbContext` concreto de otro. Sin un `ProjectReference` al módulo
+   dueño, ningún handler de otro módulo puede escribir un `JOIN`/`FromSqlRaw` contra las tablas de
+   Workflow ni pisarlas por accidente — el análisis manual con `grep` de F9-01 (ver ADR-0020) queda ahora
+   respaldado por un test que corre en cada build, no solo por una inspección puntual.
+
+**Confirmado explícitamente para Task Inbox** (el consumidor real más cercano a Workflow): su read-model
+`TaskInboxItem` se puebla EXCLUSIVAMENTE a través de `IEventConsumer<TareaAsignada/Aprobada/
+RechazadaIntegrationEvent>` (`src/Platform/BitCode.Platform.TaskInbox/Eventos/*.cs`), que reciben el
+evento ya deserializado desde `IInboxMessageProcessor.ProcessAsync` y escriben SOLO en su propia tabla
+`TaskInboxItems` vía `IRepository<TaskInboxItem, Guid>` — ningún archivo de
+`BitCode.Platform.TaskInbox` importa `WorkflowDbContext` ni abre una conexión propia a la base de datos de
+Workflow (confirmado con `Grep` sobre todo el módulo, cero coincidencias). El host de referencia
+`Sample.TaskInbox.Api` tampoco registra `AddSharedPersistence<WorkflowDbContext>` — la única forma en que
+ese proceso conocería la base de datos de Workflow.
+
+**Test nuevo de F9-03** (`samples/Sample.Workflow.Api.Tests/Integration/WorkflowDataOwnershipIntegrationTests.cs`),
+contra SQL Server real (Testcontainers), evidencia estructural en vez de solo documental:
+
+- `WorkflowDbContext_CreadoEnAislamiento_ExponeExactamenteSusPropiasTablas`: crea una base de datos vacía
+  usando ÚNICAMENTE `AddSharedPersistence<WorkflowDbContext>` (sin `Sample.Workflow.Api`, sin ningún otro
+  módulo de plataforma cableado en el proceso) y confirma que las tablas resultantes son EXACTAMENTE las
+  7 tablas de negocio de Workflow más las 3 de infraestructura compartida (`IdempotencyKey`/
+  `OutboxMessage`/`InboxMessage`) — ni una tabla de otro módulo, ni una tabla de Workflow faltante. Un
+  cambio futuro que agregue por accidente una entidad de otro módulo al modelo de `WorkflowDbContext`
+  rompe este test.
+- `WorkflowDbContext_CreadoEnAislamiento_PermiteCrearYConsultarElGrafoCompleto`: crea el grafo completo
+  (`WorkflowDefinition` → `WorkflowVersion` → `WorkflowState`/`WorkflowTransition` → `WorkflowInstance` →
+  `WorkflowTask` → `WorkflowHistorial`) vía `IRepository<,>`/`IUnitOfWork` (regla dura 1) y lo relee en un
+  scope nuevo (fuerza una lectura real desde SQL Server, no del change tracker) — evidencia de que el
+  store no solo "existe" sino que se puebla y consulta de punta a punta sin ningún otro módulo presente.
+
+**Sobre "ejecutar las migraciones de Workflow de forma aislada":** este framework no versiona migraciones
+de EF Core commiteadas por módulo (ningún directorio `Migrations/` bajo `src/Platform/*` ni bajo los hosts
+`Sample.*.Api` de referencia — todos usan `Database.EnsureCreatedAsync()`, ver comentario en
+`samples/Sample.Workflow.Api/Program.cs`: "proyecto de referencia/demo de la plataforma, no un consumidor
+productivo"). El único mecanismo real de migraciones versionadas del framework vive en
+`tests/BitCode.Migrations.Tests` (genérico, no específico de un módulo). Por eso el test nuevo aplica el
+mismo `IModel` completo de `WorkflowDbContext` que cualquier `Database.MigrateAsync()` real aplicaría, en
+vez de ejecutar archivos de migración — es la evidencia equivalente disponible con el mecanismo que este
+framework tiene hoy, documentada así en vez de inventar una carpeta de migraciones que no refleja cómo se
+opera este módulo en la práctica actual.
+
+**Pendiente explícito, sin resolver por esta tarea:** nada impide HOY, a nivel de infraestructura, que un
+operador configure por error la misma base de datos física para dos `AddSharedPersistence<T>` de módulos
+distintos (el framework no lo prohíbe en tiempo de ejecución, solo en tiempo de compilación vía los tests
+de arquitectura de arriba). Igual que ya documenta `docs/guia-taskinbox.md` ("Límites conocidos"), esto es
+deuda de infraestructura compartida (un chequeo en `AddSharedPersistence<TContext>` que detecte y rechace
+una connection string ya registrada por otro `DbContext` de módulo distinto en el mismo proceso), fuera
+del alcance de F9-03.
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
@@ -294,6 +371,12 @@ de escalamiento (propiedad necesaria, pero no una prueba de recuperación real �
 explícitos"). 7/7 pasan tras agregar `IHasConcurrencyToken` a `WorkflowTask`/`WorkflowInstance`
 (auditoría de arquitectura, 2026-09-09), confirmando que el token no rompió ningún camino existente.
 
+`WorkflowDataOwnershipIntegrationTests` (F9-03, SQL Server real, Testcontainers) cubre, en un proceso
+donde SOLO `BitCode.Platform.Workflow` está cableado (ni `Sample.Workflow.Api`, ni ningún otro módulo de
+plataforma): que el store creado a partir del modelo de `WorkflowDbContext` expone exactamente sus propias
+tablas, y que ese store se puebla/consulta de punta a punta vía `IRepository<,>`/`IUnitOfWork` — ver
+sección "Data ownership (F9-03)" arriba.
+
 ## Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, "Épica de Workflow".
@@ -303,3 +386,8 @@ explícitos"). 7/7 pasan tras agregar `IHasConcurrencyToken` a `WorkflowTask`/`W
 - `src/Platform/BitCode.Platform.Workflow/` — implementación.
 - `samples/Sample.Workflow.Api/` — host de referencia.
 - `samples/Sample.Workflow.Api.Tests/Integration/WorkflowEndpointsIntegrationTests.cs` — evidencia de los criterios de aceptación.
+- `docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md` — Fase 9, selección de Workflow como módulo piloto.
+- `docs/guia-inbox-consumer.md`, sección "Boundary de contratos (F9-02)" — acoplamiento de compilación eliminado entre Workflow y sus consumidores de eventos.
+- `docs/guia-taskinbox.md` — confirma que Task Inbox nunca referencia `WorkflowDbContext` (F9-03).
+- `tests/BitCode.Architecture.Tests/Layers/ContractBoundaryTests.cs` / `PlatformModuleBoundaryTests.cs` — tests de arquitectura que enforced en CI el ownership de datos entre módulos.
+- `samples/Sample.Workflow.Api.Tests/Integration/WorkflowDataOwnershipIntegrationTests.cs` — F9-03, evidencia de store propio.
