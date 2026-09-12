@@ -495,6 +495,141 @@ curl http://localhost:18081/health/live
 curl http://localhost:18081/health/ready
 ```
 
+## Routing (F9-06)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-06, "Routing") pidió "migrar tráfico mediante
+gateway" hacia el módulo piloto, con criterio de aceptación **"Cambio reversible"**. Como ya documenta
+`ADR-0020`, este framework no tiene tráfico productivo real que "migrar" — el objetivo honesto de esta
+tarea es demostrar el **mecanismo** de routing/strangler en `BitCode.Gateway` (F4-08, YARP): una ruta
+pública puede apuntar al host independiente de Workflow (F9-05, `samples/Sample.Workflow.Api`) en vez de
+a un host monolítico, y ese apuntado se puede revertir sin cambiar código ni redesplegar el Gateway.
+
+### Qué se agregó
+
+`src/BitCode.Gateway/appsettings.json` agrega una segunda ruta/cluster de YARP, sin tocar la ruta
+`sample-api` ya existente (F4-08):
+
+```json
+"ReverseProxy": {
+  "Routes": {
+    "sample-workflow-api": {
+      "ClusterId": "sample-workflow-api-cluster",
+      "Match": { "Path": "/api/v{version}/workflows/{**catch-all}" }
+    },
+    "sample-api": {
+      "ClusterId": "sample-api-cluster",
+      "Match": { "Path": "/api/{**catch-all}" }
+    }
+  },
+  "Clusters": {
+    "sample-workflow-api-cluster": {
+      "Destinations": { "destination1": { "Address": "http://sample-workflow-api/" } }
+    },
+    "sample-api-cluster": {
+      "Destinations": { "destination1": { "Address": "http://sample-api/" } }
+    }
+  }
+}
+```
+
+El path `/api/v{version}/workflows/{**catch-all}` es el prefijo **real** que ya expone
+`WorkflowEndpointRouteBuilderExtensions.MapWorkflowEndpoints` (`/api/v1/workflows/...`) — no un prefijo
+inventado para la demostración. Con ambas rutas registradas, un request a `/api/v1/workflows/...` resuelve
+a la ruta `sample-workflow-api` (más específica, segmentos literales `v{version}`/`workflows` contra el
+único segmento literal `api` de la ruta catch-all de `sample-api`) gracias al algoritmo de precedencia de
+enrutamiento de ASP.NET Core (endpoint routing, mismo motor que usa YARP) — confirmado empíricamente, no
+asumido, ver "Verificación real" más abajo. `appsettings.Development.json` agrega el mismo par
+ruta/dirección para desarrollo local (`http://localhost:5299/`, mismo patrón que `sample-api-cluster` con
+`http://localhost:5269/`).
+
+**Auth boundary sin cambios (F4-08):** `MapReverseProxy().RequireAuthorization()` en `Program.cs` se
+aplica sobre TODAS las rutas registradas por `LoadFromConfig`, sin excepción por ruta — agregar
+`sample-workflow-api` no crea un bypass de autenticación; un request sin JWT válido hacia
+`/api/v1/workflows/...` se rechaza con `401` exactamente igual que uno hacia `/api/echo`, antes de llegar a
+ningún backend (verificado en pruebas y manualmente, ver abajo).
+
+### Mecanismo de reversión: config estática + reinicio del proceso (sin hot-reload)
+
+**Hallazgo honesto, verificado empíricamente (no asumido):** este framework **NO** recarga en caliente la
+configuración de rutas/clusters de YARP. Aunque `WebApplication.CreateBuilder(args)` carga
+`appsettings.json` con `reloadOnChange: true` por defecto, y a veces se asume que
+`AddReverseProxy().LoadFromConfig(...)` reacciona a cambios de `IConfiguration` sin reiniciar el proceso,
+se confirmó lo contrario contra el Gateway real: con el proceso corriendo (`dotnet run`, escuchando en
+`http://localhost:5250`, proxyando hacia un `Sample.Workflow.Api` real en `http://localhost:5299`), se
+editó el `appsettings.json` efectivamente cargado (el del directorio de salida del build) para quitar la
+ruta `sample-workflow-api`, y se esperó (más de 10 segundos, con una escritura adicional al archivo para
+forzar el evento de cambio) — el Gateway **siguió** enrutando `/api/v1/workflows/...` hacia Workflow sin
+ningún cambio, confirmado por los logs (`Loading proxy data from config.` solo aparece una vez, al
+arranque, nunca de nuevo). Por lo tanto, la reversión real de esta ruta es exactamente:
+
+1. Revertir `ReverseProxy:Routes:sample-workflow-api` (o su `ClusterId`) en `appsettings.json` —
+   sin tocar el código del Gateway, solo su configuración externalizada.
+2. **Reiniciar el proceso del Gateway** (no hay hot-reload disponible hoy en este framework para esta
+   sección de configuración) — documentado así, en vez de sugerir una capacidad de recarga en caliente
+   que no existe.
+
+Esto sigue cumpliendo el criterio de aceptación "Cambio reversible": es una reversión sin cambio de
+código ni rebuild/redeploy del artefacto (misma imagen/binario, solo configuración distinta), al costo de
+un reinicio de proceso — no un despliegue nuevo. Confirmado también que el Gateway no se cae ni queda en
+un estado roto durante la reversión: tras revertir y reiniciar, `/api/v1/workflows/...` volvió a caer en
+la única ruta que seguía coincidiendo (`sample-api`, catch-all), respondiendo `502` (porque `sample-api`
+no estaba corriendo en esta verificación), en vez de quedar sin ruta ni crashear el proceso.
+
+### Verificación real ejecutada (no solo "el JSON existe")
+
+Se levantó, con `docker compose up -d sqlserver kafka` (mismos servicios validados en F8-11/F9-05), un
+`Sample.Workflow.Api` real (`dotnet run`, `http://localhost:5299`, conectado a SQL Server/Kafka reales) y
+el Gateway real (`dotnet run`, `ASPNETCORE_ENVIRONMENT=Development`, `http://localhost:5250`, con la
+sección `ReverseProxy` de `appsettings.Development.json` apuntando a `http://localhost:5299/`):
+
+- `GET /api/v1/workflows/` sin token → `401` (el auth boundary de F4-08 sigue aplicando sobre la ruta
+  nueva, igual que sobre `/api/echo`).
+- `GET /api/v1/workflows/` con un JWT válido (firmado con el secreto propio del Gateway) →
+  respuesta **idéntica byte a byte** (`401`, mismo `WWW-Authenticate: Bearer error="invalid_token",
+  error_description="The signature key was not found"`) a la de invocar
+  `http://localhost:5299/api/v1/workflows/` **directamente**, sin pasar por el Gateway, con el mismo
+  token — evidencia de que el request efectivamente llegó al proceso real de `Sample.Workflow.Api` (que
+  lo rechaza con su propio secreto JWT, distinto del secreto del Gateway; este framework no comparte hoy
+  un secreto de firma único entre el Gateway y cada host de referencia, ver "Pendiente explícito" abajo).
+- `GET /api/echo` con el mismo token, contra el mismo Gateway → `502 Bad Gateway` (porque `sample-api`
+  deliberadamente no estaba corriendo en esta verificación) — confirma que la ruta preexistente sigue
+  intentando proxyar hacia su propio destino, sin verse redirigida por accidente hacia Workflow.
+- Reversión: se detuvo el Gateway, se revirtió `ReverseProxy:Routes:sample-workflow-api` en el
+  `appsettings.json` efectivamente cargado, se reinició el proceso, y `GET /api/v1/workflows/...` volvió
+  a devolver `502` (mismo destino caído que `/api/echo`) en vez de la respuesta de Workflow — la reversión
+  tomó efecto solo con el reinicio del proceso, tal como se documentó arriba.
+
+Además, `GatewayWorkflowRoutingIntegrationTests`
+(`tests/BitCode.Gateway.Tests/Integration/GatewayWorkflowRoutingIntegrationTests.cs`) deja esto cubierto
+de forma reproducible en CI, contra el Gateway real (Kestrel/`WebApplicationFactory`) proxyando a DOS
+backends HTTP reales (`GatewayTestBackend` para `sample-api`, `GatewayWorkflowRoutingTestBackend` — nuevo,
+mismo patrón — para `sample-workflow-api`, este último mapeando el prefijo real `/api/v1/workflows/...`):
+sin token se rechaza `401` antes de proxyar; con token válido, `/api/v1/workflows/` llega al backend de
+Workflow (nunca al de `sample-api`); y la ruta preexistente hacia `sample-api` sigue funcionando sin
+regresión. La reversión en sí (criterio "Cambio reversible") se dejó verificada contra el Gateway real
+como se describe arriba, no dentro de esta clase de pruebas — un segundo `WebApplicationFactory<Program>`
+en el mismo proceso de pruebas mostró un comportamiento de enrutamiento no reproducible de forma confiable
+al reconfigurar la misma ruta en caliente (ver comentario en el archivo de pruebas), así que se prefirió
+no dejar una prueba automatizada frágil en vez de forzarla.
+
+### Pendiente explícito, sin resolver por esta tarea
+
+- **Secretos JWT no compartidos entre el Gateway y los hosts de referencia.** Hoy cada host de referencia
+  (`Sample.Workflow.Api`, Gateway) tiene su propio `Jwt:SecretKey`/`Issuer`/`Audience` de desarrollo — un
+  token que pasa la autenticación del Gateway no necesariamente pasa la del backend real detrás de él (un
+  desplegador real usaría el mismo Identity Provider/secreto para todos los hosts detrás de un mismo
+  Gateway). Esto no bloqueó la verificación de routing de esta tarea (el objetivo era confirmar que el
+  request llega al proceso correcto, no ejercitar un flujo de negocio autorizado de punta a punta), pero es
+  deuda pendiente si se quisiera demostrar un flujo autorizado real a través del Gateway.
+- **Sin hot-reload de configuración de YARP** — ver arriba; una mejora futura (fuera de alcance de F9-06)
+  sería adoptar un `IProxyConfigProvider` dinámico (p. ej. respaldado por un almacén externo con
+  notificación de cambios) si se necesitara reversión sin reinicio de proceso.
+- **No se agregó `sample-workflow-api` a `docker-compose.yml`** — igual que `sample-api`/`BitCode.Gateway`
+  hoy (ninguno de los tres está en `docker-compose.yml`; ese archivo solo declara infraestructura
+  compartida — SQL Server, Redis, Kafka, OpenTelemetry Collector, Jaeger — F8-11), la verificación de esta
+  tarea siguió el mismo patrón manual (`docker build`/`docker run` o `dotnet run`) que F9-05, sin alterar
+  ese contrato.
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
@@ -519,6 +654,12 @@ plataforma): que el store creado a partir del modelo de `WorkflowDbContext` expo
 tablas, y que ese store se puebla/consulta de punta a punta vía `IRepository<,>`/`IUnitOfWork` — ver
 sección "Data ownership (F9-03)" arriba.
 
+`GatewayWorkflowRoutingIntegrationTests` (F9-06, `tests/BitCode.Gateway.Tests/Integration/`, Gateway real
+vía Kestrel/`WebApplicationFactory` proxyando a backends HTTP reales) cubre: `401` sin token antes de
+proxyar, routing correcto hacia el backend de Workflow (nunca hacia `sample-api`) con token válido, y que
+la ruta preexistente de `sample-api` sigue funcionando sin regresión — ver sección "Routing (F9-06)"
+arriba para el detalle completo, incluida la verificación manual de la reversión contra el Gateway real.
+
 ## Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, "Épica de Workflow".
@@ -533,3 +674,5 @@ sección "Data ownership (F9-03)" arriba.
 - `docs/guia-taskinbox.md` — confirma que Task Inbox nunca referencia `WorkflowDbContext` (F9-03).
 - `tests/BitCode.Architecture.Tests/Layers/ContractBoundaryTests.cs` / `PlatformModuleBoundaryTests.cs` — tests de arquitectura que enforced en CI el ownership de datos entre módulos.
 - `samples/Sample.Workflow.Api.Tests/Integration/WorkflowDataOwnershipIntegrationTests.cs` — F9-03, evidencia de store propio.
+- `src/BitCode.Gateway/appsettings.json`, `appsettings.Development.json` — F9-06, ruta/cluster nuevos hacia el host independiente de Workflow.
+- `tests/BitCode.Gateway.Tests/Integration/GatewayWorkflowRoutingIntegrationTests.cs`, `GatewayWorkflowRoutingTestBackend.cs` — F9-06, evidencia automatizada de routing y de que el auth boundary de F4-08 sigue aplicando.
