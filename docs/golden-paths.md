@@ -192,9 +192,9 @@ Para comunicación asíncrona y consistente entre bounded contexts desacoplados.
 
 ### Flujo Canónico
 1. **Generar Evento en Dominio:** El agregado de negocio levanta un `DomainEvent` interno (`RaiseDomainEvent`) durante una operación transaccional.
-2. **Outbox Automático:** `TransactionBehavior` persiste el agregado y la fila correspondiente en `OutboxMessages` dentro de la misma transacción física SQL Server.
+2. **Outbox Automático:** `TransactionBehavior` persiste el agregado y la fila correspondiente en `OutboxMessage` dentro de la misma transacción física SQL Server.
 3. **Outbox Relay:** `OutboxPublisherBackgroundService` toma los lotes pendientes con bloqueo pesimista y los publica en el broker Kafka.
-4. **Consumo e Inbox Idempotente:** El módulo consumidor recibe el evento con `KafkaEventConsumer<T>`, valida que no haya sido procesado previamente en `InboxMessages` y ejecuta la lógica de negocio.
+4. **Consumo e Inbox Idempotente:** El módulo consumidor recibe el evento con `KafkaEventConsumer<T>`, valida que no haya sido procesado previamente en `InboxMessage` y ejecuta la lógica de negocio.
 
 ### Código Canónico
 

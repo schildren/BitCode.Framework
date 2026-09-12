@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/schildren/BitCode.Framework/actions/workflows/ci.yml/badge.svg)](https://github.com/schildren/BitCode.Framework/actions/workflows/ci.yml)
 
-Framework base de desarrollo .NET 8 sobre stack Microsoft/Open Source, construido por fases a partir del análisis de [ASP.NET Boilerplate](https://aspnetboilerplate.com/) y de la auditoría de proyectos reales del equipo.
+Framework base de desarrollo .NET (hoy .NET 10, ver `TargetFramework` de cada `.csproj` en `src/`) sobre stack Microsoft/Open Source, construido por fases a partir del análisis de [ASP.NET Boilerplate](https://aspnetboilerplate.com/) y de la auditoría de proyectos reales del equipo.
 
 ## Qué incluye
 

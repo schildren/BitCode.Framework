@@ -47,7 +47,7 @@ dado lo que la infraestructura ya demuestra que puede medir, no compromisos cont
 |---|---|---|---|
 | **Disponibilidad de `/health/ready`** | 99.5% del tiempo en `200 Healthy`, medido en ventanas de 30 días | Valor de referencia estándar de un servicio interno de plataforma sin SLA contractual todavía — no hay tráfico real del que derivar un número distinto | Polling directo del endpoint (`curl http://<host>:8080/health/ready` o el probe de Kubernetes/Docker Compose ya configurado); F9-05 ya verificó que el endpoint reacciona a un fallo real de Kafka/SQL Server (no un mock) |
 | **Latencia del camino Gateway → Workflow** | p99 < 2 segundos, con un techo duro de 5 segundos (el `ActivityTimeout` del cluster YARP, F9-09) | Coherente por diseño con `HttpRequest.ActivityTimeout: "00:00:05"` de `sample-workflow-api-cluster` (`src/BitCode.Gateway/appsettings.json`, F9-09): un p99 de referencia debe quedar cómodamente por debajo del timeout configurado, nunca igual o mayor — de lo contrario el timeout empezaría a cortar tráfico normal, no solo fallos reales | Trazas reales en Jaeger, filtrando por servicio (`Sample.Workflow.Api`, `BitCode.Gateway`) y por duración del span — mismo mecanismo que F9-07 ya usó para confirmar trazas reales tras un cambio de routing |
-| **Tasa de éxito de publicación al Outbox/Kafka** | ≥ 99% de los `OutboxMessage` de Workflow publicados sin llegar a `ExhaustedAtUtc` (dead-letter), medido por ventana | Ligado directamente al mecanismo de reintentos ya verificado (F3-07, `EventRetryPolicyOptions.MaxAttempts`) y al dead-letter ya probado específicamente contra eventos reales de Workflow en F9-04 (`WorkflowEventDeadLetterIntegrationTests`) | Query SQL sobre `OutboxMessages` (sección 2.2 más abajo) + `KafkaProducerHealthCheck` (F9-05, tag `"ready"`, ya expuesto en `/health/ready`) como señal de que el productor puede alcanzar el clúster |
+| **Tasa de éxito de publicación al Outbox/Kafka** | ≥ 99% de los `OutboxMessage` de Workflow publicados sin llegar a `ExhaustedAtUtc` (dead-letter), medido por ventana | Ligado directamente al mecanismo de reintentos ya verificado (F3-07, `EventRetryPolicyOptions.MaxAttempts`) y al dead-letter ya probado específicamente contra eventos reales de Workflow en F9-04 (`WorkflowEventDeadLetterIntegrationTests`) | Query SQL sobre `OutboxMessage` (sección 2.2 más abajo) + `KafkaProducerHealthCheck` (F9-05, tag `"ready"`, ya expuesto en `/health/ready`) como señal de que el productor puede alcanzar el clúster |
 
 **Por qué no hay un SLO de "tasa de éxito end-to-end de negocio" (por ejemplo, "% de instancias de
 Workflow completadas sin error"):** no existe tráfico productivo real del que derivar una tasa base
@@ -79,7 +79,7 @@ módulo piloto Workflow, no sobre agregar un componente nuevo de plataforma de o
 | Condición | Umbral propuesto | Cómo evaluarla hoy (sin sistema de alerting conectado) |
 |---|---|---|
 | `/health/ready` de Workflow en rojo sostenido | `503` durante más de 2 minutos consecutivos (más de un ciclo de reintento normal de un orquestador) | `curl -f http://<host>:8080/health/ready` en un loop de polling manual, o el estado del liveness/readiness probe del orquestador (Docker healthcheck / Kubernetes) si el host corre bajo uno |
-| Tasa de mensajes en dead-letter por encima del umbral | Más de 1% de los `OutboxMessage` de Workflow con `ExhaustedAtUtc` no nulo en la última hora | `SELECT COUNT(*) FROM OutboxMessages WHERE EventType LIKE 'Workflow.%' AND ExhaustedAtUtc IS NOT NULL AND ExhaustedAtUtc > DATEADD(HOUR, -1, SYSUTCDATETIME());` contra la base de datos de Workflow (mismo mecanismo que `docs/runbook-dlq.md`, sección "1. Identificar mensajes en DLQ, Opción A") |
+| Tasa de mensajes en dead-letter por encima del umbral | Más de 1% de los `OutboxMessage` de Workflow con `ExhaustedAtUtc` no nulo en la última hora | `SELECT COUNT(*) FROM OutboxMessage WHERE EventType LIKE 'Workflow.%' AND ExhaustedAtUtc IS NOT NULL AND ExhaustedAtUtc > DATEADD(HOUR, -1, SYSUTCDATETIME());` contra la base de datos de Workflow (mismo mecanismo que `docs/runbook-dlq.md`, sección "1. Identificar mensajes en DLQ, Opción A") |
 | Latencia p99 del Gateway hacia Workflow superando el timeout configurado | p99 > 2 segundos (SLO de referencia) o cualquier `504 Gateway Timeout` real en las trazas (evidencia de que el `ActivityTimeout` de 5s ya está cortando tráfico) | Consultar la API de Jaeger filtrando por servicio y por `http.response.status_code=504` (mismo mecanismo que F9-07 ya usó: `GET http://localhost:16686/api/traces?service=BitCode.Gateway`), o por duración de span > 2000ms |
 | `KafkaProducerHealthCheck` reportando no saludable de forma sostenida | Cualquier duración sostenida más allá de un ciclo de reintento de infraestructura (más de 1 minuto) | `curl http://<host>:8080/health/ready` — el JSON de respuesta de `MapSharedHealthChecks` (F1-25) incluye el check con nombre `"kafka"` y su estado individual, no solo el agregado |
 
@@ -152,7 +152,7 @@ específico verificado para el flujo de Workflow en F9-04:
    `docs/runbook-dlq.md` sección 1, Opción A:
    ```sql
    SELECT Id, TenantId, EventType, Error, RetryCount, ExhaustedAtUtc, OccurredAtUtc
-   FROM OutboxMessages
+   FROM OutboxMessage
    WHERE EventType LIKE 'Workflow.%' AND ExhaustedAtUtc IS NOT NULL
    ORDER BY ExhaustedAtUtc DESC;
    ```

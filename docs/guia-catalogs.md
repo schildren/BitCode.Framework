@@ -77,7 +77,7 @@ Catalogo (identidad estable, código único por tenant)
 
 `CatalogsDbContext` (hereda de `MultiTenantDbContext`, Shared.Infrastructure.Persistence) es el dueño
 exclusivo de las tablas `Catalogos`, `CatalogoVersiones`, `CatalogoItems`, `Parametros`,
-`ParametroVigencias` (más `IdempotencyKeys`/`OutboxMessages`/`InboxMessages`, configuradas
+`ParametroVigencias` (más `IdempotencyKey`/`OutboxMessage`/`InboxMessage`, configuradas
 automáticamente por la clase base). Ningún otro módulo de plataforma debe leer/escribir estas tablas
 directamente.
 

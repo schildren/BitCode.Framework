@@ -22,7 +22,7 @@ Identity Administration es la capa de **administración** (CRUD de usuarios/role
 
 ## Modelo de datos
 
-`IdentityAdministrationDbContext : MultiTenantIdentityDbContext<ApplicationUser, ApplicationRole>` (Security 2.0) es el dueño exclusivo del esquema de identidad: `AspNetUsers`/`AspNetRoles`/`AspNetUserRoles`/`AspNetUserClaims`/`AspNetRoleClaims`/`RefreshTokens`, más `IdempotencyKeys`/`OutboxMessages` (ya configurados por la clase base). Ningún otro módulo de plataforma debe leer/escribir estas tablas directamente — solo a través de los contratos públicos de este módulo o de los servicios de Security 2.0 ya expuestos (`UserManager<ApplicationUser>`/`RoleManager<ApplicationRole>`/`IPermissionService`).
+`IdentityAdministrationDbContext : MultiTenantIdentityDbContext<ApplicationUser, ApplicationRole>` (Security 2.0) es el dueño exclusivo del esquema de identidad: `AspNetUsers`/`AspNetRoles`/`AspNetUserRoles`/`AspNetUserClaims`/`AspNetRoleClaims`/`RefreshTokens`, más `IdempotencyKey`/`OutboxMessage` (ya configurados por la clase base). Ningún otro módulo de plataforma debe leer/escribir estas tablas directamente — solo a través de los contratos públicos de este módulo o de los servicios de Security 2.0 ya expuestos (`UserManager<ApplicationUser>`/`RoleManager<ApplicationRole>`/`IPermissionService`).
 
 El módulo usa los tipos concretos `ApplicationUser`/`ApplicationRole` de Security 2.0 directamente (sin genéricos propios) — decisión deliberada de simplicidad para el primer corte; un consumidor que necesite campos adicionales de usuario/rol extendería ese modelo en una tarea posterior.
 

@@ -966,7 +966,7 @@ criterio ya usado para la DLQ genérica (`docs/runbook-dlq.md`).
   `k8s/otel-collector/otel-collector-config.yaml` — ningún backend real de métricas/alerting está
   desplegado hoy (los pipelines de métricas/logs exportan solo a `debug`; únicamente trazas llegan a un
   backend real, Tempo/Jaeger). Las condiciones de alerta quedan como **queries concretas** (SQL sobre
-  `OutboxMessages`, API de Jaeger, `/health/ready`) para evaluación manual, no como reglas activas de un
+  `OutboxMessage`, API de Jaeger, `/health/ready`) para evaluación manual, no como reglas activas de un
   motor de alerting conectado a un canal de notificación.
 - **Runbooks:** 3 documentados de punta a punta — "Workflow no responde a `/health/ready`" (nuevo,
   diagnóstico con `docker logs`/`KafkaProducerHealthCheck`/SQL Server), "Mensajes en dead-letter del flujo

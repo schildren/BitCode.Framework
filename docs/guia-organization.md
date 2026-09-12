@@ -39,8 +39,8 @@ empresas, entre sucursales, ni entre cargos.
 ## Modelo de datos
 
 `OrganizationDbContext` (hereda de `MultiTenantDbContext`, Shared.Infrastructure.Persistence) es el
-dueño exclusivo de las tablas `Empresas`, `Sucursales`, `Areas`, `Cargos` (más `IdempotencyKeys`/
-`OutboxMessages`/`InboxMessages`, configuradas automáticamente por la clase base). Ningún otro módulo
+dueño exclusivo de las tablas `Empresas`, `Sucursales`, `Areas`, `Cargos` (más `IdempotencyKey`/
+`OutboxMessage`/`InboxMessage`, configuradas automáticamente por la clase base). Ningún otro módulo
 de plataforma debe leer/escribir estas tablas directamente.
 
 - `Empresa` (`AggregateRoot<Guid>`, `ITenantEntity`, `IAuditedEntity`, `ISoftDelete`): `RazonSocial`,

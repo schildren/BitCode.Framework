@@ -125,6 +125,64 @@ dotnet run --project tools/BitCode.Migrations -- script `
   --output "deploy/migrations/migrate-v2.sql"
 ```
 
+### 3.2 Limitación conocida y workaround obligatorio: ensamblados de host ASP.NET Core (Web SDK)
+
+**Corregido en la revisión documental F10-07 (Fase 10) — antes de esta corrección, los comandos de
+la sección 3.1 tal como estaban escritos fallaban siempre que `--assembly` apuntara al `.dll` de un
+host ASP.NET Core real** (exactamente el caso de `samples/Sample.Api`, de cualquier proyecto generado
+con `dotnet new bitcode-app`, o de cualquier `MiApp.Api.dll` — el mismo ejemplo que usan los comandos
+de arriba). Reproducido de punta a punta el 2026-09-12 contra `samples/Sample.Api` y contra un
+proyecto nuevo generado con `dotnet new bitcode-app`:
+
+```powershell
+dotnet run --project tools/BitCode.Migrations -- validate --assembly "samples/Sample.Api/bin/Debug/net10.0/Sample.Api.dll"
+
+# [ERROR FATAL]: Unable to load one or more of the requested types.
+# Could not load file or assembly 'Microsoft.AspNetCore, Version=10.0.0.0, ...'. El sistema no puede
+# encontrar el archivo especificado.
+```
+
+**Causa:** el CLI (`BitCode.Migrations`, un ejecutable de consola simple) usa `Assembly.LoadFrom` para
+cargar por reflexión el ensamblado indicado en `--assembly`. Un proyecto `Microsoft.NET.Sdk.Web` se
+compila asumiendo el *shared framework* `Microsoft.AspNetCore.App` disponible en el proceso que lo
+carga; el proceso de consola de `BitCode.Migrations` no referencia ni hospeda ese *shared framework*,
+así que la carga de tipos falla apenas el ensamblado hace referencia a cualquier tipo de
+`Microsoft.AspNetCore.*` (lo cual incluye prácticamente cualquier host real de este framework).
+
+**Workaround verificado — ejecutar el CLI con el `runtimeconfig`/`deps.json` del propio host destino**
+(mismo mecanismo que usa `dotnet exec` para resolver *shared frameworks* de un ensamblado ajeno al
+proceso que lo ejecuta):
+
+```powershell
+dotnet build tools/BitCode.Migrations
+dotnet build samples/Sample.Api   # o el proyecto host real
+
+dotnet exec `
+  --runtimeconfig samples/Sample.Api/bin/Debug/net10.0/Sample.Api.runtimeconfig.json `
+  --depsfile samples/Sample.Api/bin/Debug/net10.0/Sample.Api.deps.json `
+  tools/BitCode.Migrations/bin/Debug/net10.0/BitCode.Migrations.dll `
+  validate --assembly "samples/Sample.Api/bin/Debug/net10.0/Sample.Api.dll"
+```
+
+Reemplazar `--runtimeconfig`/`--depsfile` y `--assembly` por los del host real en cada caso (`status`,
+`migrate`, `rollback` y `script` comparten la misma limitación y el mismo workaround). Esto aplica
+siempre que `--assembly` apunte a un ensamblado `Microsoft.NET.Sdk.Web`; no aplica si el `DbContext` y
+las migraciones viven en un proyecto de biblioteca plano sin `FrameworkReference` a
+`Microsoft.AspNetCore.App` (ver sección 8.3, que documenta la misma causa raíz para el comando
+`reconcile`).
+
+**Segunda limitación relacionada, también verificada el 2026-09-12:** `status`/`migrate`/`rollback`
+(no `validate`, que no instancia el `DbContext`) necesitan crear una instancia real del `DbContext`.
+Si el `DbContext` hereda de `MultiTenantDbContext`/`MultiTenantIdentityDbContext<,>` (el patrón
+estándar de este framework, ver [`guia-uso-proyectos.md`](guia-uso-proyectos.md) sección 2), su
+constructor recibe `ITenantProvider` además de `DbContextOptions<T>` — el CLI solo sabe resolver un
+constructor con únicamente `DbContextOptions<T>`/`DbContextOptions`, o delegar a un
+`IDesignTimeDbContextFactory<T>` si existe uno en el ensamblado (misma convención que `dotnet ef`).
+Un proyecto consumidor real que quiera usar `status`/`migrate`/`rollback` de `BitCode.Migrations`
+contra su `DbContext` multi-tenant debe implementar `IDesignTimeDbContextFactory<TContext>` — sin eso,
+el CLI falla con `No se pudo instanciar el DbContext '<Nombre>'` (mensaje ya accionable, pero no
+mencionado hasta ahora en esta guía).
+
 ---
 
 ## 4. Generación de Nuevas Migraciones
@@ -224,7 +282,7 @@ Por cada tabla, el reporte incluye:
 - **Sin aislamiento transaccional entre origen y destino.** Si hay escrituras concurrentes durante la reconciliación, puede reportarse una discrepancia falsa. Ejecutar en una ventana sin escritura (tras cortar tráfico hacia el store viejo) o con aislamiento snapshot.
 - **Solo reconcilia entidades con clave primaria** (sin PK no hay orden determinístico posible) y **excluye tipos derivados de jerarquías TPH** para no duplicar el conteo de la tabla raíz. Ninguna de las siete entidades de negocio de `WorkflowDbContext` cae en ninguno de los dos casos.
 - **Diseño específico de módulo, generalizable como trabajo futuro:** `DataReconciler` no está acoplado a `WorkflowDbContext` — descubre las tablas a partir del `IModel` de cualquier `DbContext`, así que el mismo comando sirve, sin cambios de código, para cualquier otro módulo del framework. Lo que queda **fuera de alcance** de esta tarea es reconciliar contra un esquema de destino ya transformado (columnas renombradas, particionado, tipos distintos) — hoy se asume que origen y destino comparten exactamente el mismo modelo.
-- **El comando hereda la limitación de carga por reflexión de `validate`/`status`/`migrate` (F8-07):** apuntar `--assembly` a un ensamblado de host ASP.NET Core (que depende del *shared framework* `Microsoft.AspNetCore.App`) puede fallar al cargarse desde el proceso de consola del CLI, porque este último no hospeda ese *shared framework*. Funciona sin problemas apuntando a un ensamblado de biblioteca plano que contenga el `DbContext` (como se hace en la prueba de integración automatizada de esta tarea, que apunta directamente a `BitCode.Platform.Workflow.dll`).
+- **El comando hereda la limitación de carga por reflexión de `validate`/`status`/`migrate` (F8-07):** apuntar `--assembly` a un ensamblado de host ASP.NET Core (que depende del *shared framework* `Microsoft.AspNetCore.App`) puede fallar al cargarse desde el proceso de consola del CLI, porque este último no hospeda ese *shared framework*. Funciona sin problemas apuntando a un ensamblado de biblioteca plano que contenga el `DbContext` (como se hace en la prueba de integración automatizada de esta tarea, que apunta directamente a `BitCode.Platform.Workflow.dll`). Ver sección 3.2 (agregada en la revisión documental F10-07) para el workaround verificado con `dotnet exec --runtimeconfig/--depsfile` cuando sí hace falta apuntar a un host real.
 
 ### 8.4 Evidencia y pruebas automatizadas
 

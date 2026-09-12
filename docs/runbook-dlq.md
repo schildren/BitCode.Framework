@@ -91,7 +91,7 @@ message) es F3-09 (ver sección dedicada más abajo).
 
 ```sql
 SELECT Id, TenantId, EventType, Error, RetryCount, ExhaustedAtUtc, OccurredAtUtc
-FROM OutboxMessages
+FROM OutboxMessage
 WHERE ExhaustedAtUtc IS NOT NULL
 ORDER BY ExhaustedAtUtc DESC;
 ```

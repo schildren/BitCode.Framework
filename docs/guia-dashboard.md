@@ -160,7 +160,7 @@ cache como fuente de verdad para... transacciones" — acá tampoco se usa como 
 Dashboard no publica ni consume ningún evento de integración (`docs/catalogo-eventos.md`) — es la capa de
 presentación/agregación final de Fase 6, no un productor de eventos de negocio, mismo criterio que
 Reporting. `DashboardDbContext` (vía `MultiTenantDbContext`) sigue configurando
-`IdempotencyKeys`/`OutboxMessages`/`InboxMessages` automáticamente (sin costo adicional), pero ninguna de
+`IdempotencyKey`/`OutboxMessage`/`InboxMessage` automáticamente (sin costo adicional), pero ninguna de
 las tres se usa realmente en este módulo hoy.
 
 ## Auditoría
