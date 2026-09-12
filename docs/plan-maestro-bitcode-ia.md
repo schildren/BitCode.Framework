@@ -886,15 +886,51 @@ Demostrar que un módulo elegible puede extraerse como servicio independiente si
 
 #### Gate de salida
 
-- [ ] Consumidores no fueron reescritos.
-- [ ] El servicio tiene datos, despliegue y operación independientes.
-- [ ] El fallo del servicio no derriba la plataforma.
-- [ ] La migración y reversión fueron ensayadas.
-- [ ] Se demostró beneficio frente al costo operativo adicional.
+Auditado de forma independiente (`bitcode-gate-auditor`, 2026-09-12) tras el cierre de F9-11, con Workflow
+como módulo piloto (`docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`, Accepted). A
+diferencia del cierre de Fase 8 (que había auto-marcado los 5 checkboxes en el mismo commit que cerraba su
+última tarea), F9-11 se dejó deliberadamente sin marcar el Gate para permitir esta auditoría independiente
+primero — la auditoría ejecutó en vivo los tests clave de F9-02/03/04/08/09/11 (todos pasaron) y no
+encontró ningún hallazgo sobre-marcado.
+
+- [x] Consumidores no fueron reescritos. Verificado por diff real entre el estado previo a Fase 9 y el
+  actual sobre TaskInbox/Notifications/Reporting: sólo cambiaron sus `.csproj` (referencia al nuevo
+  ensamblado de contratos, F9-02), cero líneas de código de negocio modificadas. Enforced en CI por
+  `ContractBoundaryTests` (`tests/BitCode.Architecture.Tests/Layers/ContractBoundaryTests.cs`, 2/2 pasan).
+- [x] El servicio tiene datos, despliegue y operación independientes. Datos: `WorkflowDataOwnershipIntegrationTests`
+  (F9-03, 2/2 pasan contra SQL Server real) confirma store propio y aislado. Despliegue:
+  `docker/sample-workflow-api/Dockerfile` (F9-05) verificado contra Docker real en su tarea original (no
+  re-ejecutado en esta auditoría puntual, evidencia de commit). Operación: paquete operativo existe y es
+  accionable (`docs/runbook-workflow.md`, F9-10), con dos limitaciones honestas explícitas —
+  `Owner: <definir>` sin asignar y sin alerting conectado a un canal de notificación real — documentadas,
+  no ocultas.
+- [x] El fallo del servicio no derriba la plataforma. Verificado en vivo:
+  `GatewayWorkflowResilienceIntegrationTests` (F9-09, 2/2 pasan) confirma que con Workflow completamente
+  caído, la ruta `sample-api` servida por el mismo Gateway sigue respondiendo `200` con normalidad, y que
+  un backend lento no cuelga al Gateway (`HttpRequest.ActivityTimeout: 5s`). Ausencia honesta de circuit
+  breaker/bulkhead (YARP no los expone a nivel de cluster en este framework) documentada explícitamente —
+  no afecta el criterio literal del Gate, que es sobre aislamiento de fallo, ya demostrado.
+- [x] La migración y reversión fueron ensayadas. `DataReconciliationIntegrationTests` (F9-08, 2/2 pasan)
+  y `WorkflowReversionCompatibilityTests` (F9-11, 1/1 pasa) verificados en vivo contra infraestructura
+  real. RTO de reversión de routing medido con evidencia real contra Docker (4.26s-4.31s, 4 corridas,
+  `docs/runbook-workflow.md` Runbook D.3) — el ensayo de migración/reversión es estructural y mecánico
+  (nunca hubo tráfico/datos productivos reales que reconciliar), limitación documentada honestamente.
+- [x] Se demostró beneficio frente al costo operativo adicional. La auditoría encontró este criterio sin
+  un análisis dedicado (costo y beneficio quedaban implícitos, dispersos) — cerrado con una sección nueva
+  en `docs/guia-workflow.md` ("Cierre de Fase 9 — costo vs. beneficio") que enumera el costo real
+  introducido (una imagen Docker, una ruta de Gateway, un ensamblado de contratos, documentación sin owner
+  asignado, sin alerting conectado) contra el beneficio demostrado con evidencia ejecutable (boundary de
+  contratos limpio y enforced en CI, aislamiento de fallo verificado, reversión ensayada y barata,
+  herramienta de reconciliación reutilizable). El balance es explícito: el objetivo de esta fase fue
+  demostrar capacidad técnica sin tráfico productivo real que lo exigiera, no optimizar costos — bajo ese
+  marco, ninguno de los dos lados del balance se infló ni se ocultó.
 
 #### Hito
 
-> BitCode puede extraer un módulo cuando existe una razón válida, manteniendo contratos y continuidad.
+> BitCode puede extraer un módulo cuando existe una razón válida, manteniendo contratos y continuidad —
+> demostrado end-to-end con Workflow como piloto (F9-01 a F9-11), con las limitaciones honestas explícitas
+> arriba (sin tráfico productivo real, sin owner/alerting operativo asignado) documentadas para cuando
+> este framework de referencia deje de serlo.
 
 ---
 

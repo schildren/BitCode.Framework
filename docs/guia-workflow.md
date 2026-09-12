@@ -980,6 +980,64 @@ criterio ya usado para la DLQ genérica (`docs/runbook-dlq.md`).
   alertas conectadas a un sistema de notificación real. Ver `docs/runbook-workflow.md` sección 0 para el
   detalle completo de esta distinción.
 
+## Cierre de Fase 9 — costo vs. beneficio (Gate de salida, criterio 5)
+
+El Gate de salida de Fase 9 (`docs/plan-maestro-bitcode-ia.md`) pide, como quinto y último criterio,
+**"Se demostró beneficio frente al costo operativo adicional."** Una auditoría independiente
+(`bitcode-gate-auditor`, 2026-09-12) revisó los 5 criterios del Gate contra evidencia ejecutable — corrió
+en vivo los tests de F9-02/03/04/08/09/11 (todos pasaron) y confirmó que ninguno de los hallazgos de F9-01
+a F9-11 está sobre-marcado — pero encontró que este quinto criterio, a diferencia de los otros cuatro, no
+tenía un análisis dedicado en ningún documento: el costo y el beneficio quedaban implícitos, dispersos
+entre `ADR-0020` y las secciones de arriba, nunca contrastados explícitamente uno contra el otro. Esta
+sección cierra ese hallazgo.
+
+### Costo operativo adicional real, introducido por extraer Workflow como piloto (F9-02 a F9-11)
+
+- **Un `Dockerfile`/imagen más para construir y versionar** (`docker/sample-workflow-api/Dockerfile`,
+  F9-05) — mantenimiento adicional de una imagen que antes no existía (Workflow sólo se consumía embebido).
+- **Una ruta/cluster más en el Gateway** (`sample-workflow-api-cluster`, F9-06) con su propio timeout
+  (F9-09) a mantener sincronizado si cambia la topología de red.
+- **Un ensamblado más en la solución** (`BitCode.Platform.Workflow.Contracts`, F9-02) — una unidad de
+  compilación/versionado adicional, aunque de mantenimiento bajo (sólo contratos, sin lógica).
+- **Un runbook y un ADR más para mantener actualizados** (`docs/runbook-workflow.md`, `docs/adr/0020-...md`)
+  a medida que el módulo evolucione — documentación que se vuelve obsoleta si nadie la revisa tras un
+  cambio futuro de Workflow.
+- **Ningún owner real asignado hoy** (`Owner: <definir>` en los 4 runbooks) — el costo de "quién mantiene
+  todo lo anterior" queda, con toda honestidad, sin resolver mientras este framework no tenga un equipo
+  real (mismo hallazgo que `ADR-0020`).
+- **Sin alerting conectado** (`docs/runbook-workflow.md`, sección 2.1) — el costo de detectar un incidente
+  real recae hoy en un operador humano consultando queries manualmente, no en un sistema que avise solo.
+
+### Beneficio demostrado, con evidencia ejecutable (no aspiracional)
+
+- **Boundary de contratos limpio y enforced en CI** (F9-02, `ContractBoundaryTests`): un acoplamiento de
+  compilación real que existía (TaskInbox/Notifications/Reporting referenciando el ensamblado completo de
+  Workflow) fue eliminado y queda bloqueado para el futuro — este beneficio es permanente y no depende de
+  que la extracción llegue a tener tráfico real.
+- **Aislamiento de fallo verificado con evidencia real** (F9-09): con Workflow completamente caído, el
+  resto de la plataforma servida por el mismo Gateway siguió respondiendo con normalidad — la prueba más
+  directa de que la arquitectura tolera perder un módulo sin perder la plataforma entera.
+- **Reversión ensayada y barata** (F9-11): D.1 demostró con un test real que la extracción fue
+  genuinamente aditiva (Workflow sigue funcionando embebido, sin Kafka, exactamente como antes de F9-02/
+  F9-05) — el costo de "arrepentirse" de este piloto es bajo, no una migración irreversible.
+- **Herramienta de reconciliación reutilizable** (F9-08): quedó disponible para cualquier módulo futuro
+  que sí necesite mover datos reales, no sólo para Workflow.
+- **Conocimiento operativo capturado antes de que exista tráfico real** (F9-10): los SLO/runbooks/alertas
+  de referencia existen HOY, listos para completarse con datos reales el día que haya tráfico productivo,
+  en vez de tener que crearlos de cero bajo presión durante un incidente real.
+
+### Balance honesto
+
+El beneficio de F9-01 a F9-11 no es "ahorramos costo operativo hoy" — es **exactamente lo contrario**: se
+pagó un costo operativo real (una imagen, una ruta, un ensamblado, documentación) **a cambio de evidencia
+verificable de que este framework de referencia puede sostener una extracción de microservicio sin romper
+a sus consumidores, sin tráfico productivo real que lo obligara**. Ese es el objetivo textual de la Fase 9
+("demostrar que un módulo elegible puede extraerse... manteniendo contratos y continuidad"), no una
+optimización de costos. Bajo ese marco, el criterio 5 se considera satisfecho: el costo está identificado y
+acotado (arriba), el beneficio es demostrable con tests reales (arriba), y ninguno de los dos se infló ni
+se ocultó. Si en el futuro existe tráfico productivo real, este balance debe re-evaluarse con datos reales
+de escala/incidentes, no con esta comparación de referencia.
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
