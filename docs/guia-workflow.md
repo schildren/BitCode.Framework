@@ -946,6 +946,40 @@ no solo contra `WebApplicationFactory`, el mismo resultado de aislamiento.
 - **`sample-api-cluster` no recibió el mismo timeout** — gap conocido, documentado arriba, fuera del
   alcance de F9-09 (que es sobre el módulo piloto).
 
+## Operación (F9-10)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-10, "Operación") pide "crear SLO, alertas, runbooks y
+ownership", con entregable **"Paquete operativo"** y criterio de aceptación literal **"On-call
+preparado"**. El paquete operativo completo (SLO de referencia, condiciones de alerta con su query
+concreta, 3 runbooks accionables y la convención de ownership) vive en un documento dedicado:
+[`docs/runbook-workflow.md`](runbook-workflow.md) — se separó de esta guía por volumen, siguiendo el mismo
+criterio ya usado para la DLQ genérica (`docs/runbook-dlq.md`).
+
+**Resumen honesto (detalle completo en el runbook):**
+
+- **SLO:** tres objetivos de referencia derivados de infraestructura YA verificada, no de tráfico
+  productivo real (que no existe, `ADR-0020`): disponibilidad de `/health/ready` (F9-05), latencia
+  Gateway→Workflow coherente con el `ActivityTimeout` de 5 segundos del cluster YARP (F9-09), y tasa de
+  éxito de publicación al Outbox/Kafka ligada al mecanismo de reintentos/dead-letter ya probado contra
+  eventos reales de Workflow (F3-07/F9-04).
+- **Alertas:** se inspeccionó `docker/otel-collector-local.yaml` y
+  `k8s/otel-collector/otel-collector-config.yaml` — ningún backend real de métricas/alerting está
+  desplegado hoy (los pipelines de métricas/logs exportan solo a `debug`; únicamente trazas llegan a un
+  backend real, Tempo/Jaeger). Las condiciones de alerta quedan como **queries concretas** (SQL sobre
+  `OutboxMessages`, API de Jaeger, `/health/ready`) para evaluación manual, no como reglas activas de un
+  motor de alerting conectado a un canal de notificación.
+- **Runbooks:** 3 documentados de punta a punta — "Workflow no responde a `/health/ready`" (nuevo,
+  diagnóstico con `docker logs`/`KafkaProducerHealthCheck`/SQL Server), "Mensajes en dead-letter del flujo
+  Workflow → TaskInbox/Notifications/Reporting" (reutiliza `docs/runbook-dlq.md`, adaptado a los `EventType`
+  reales de Workflow y al hallazgo de F9-04) y "Rollback del routing de Workflow" (reutiliza el mecanismo
+  ya verificado en F9-06/F9-07, sin reescribirlo).
+- **Ownership:** mismo hallazgo honesto que `ADR-0020` (autor único, sin `CODEOWNERS` propio del proyecto)
+  — cada runbook lleva un campo `Owner: <definir>` en vez de un nombre o equipo inventado.
+- **Alcance real de "On-call preparado" en este framework:** significa que el paquete operativo existe y
+  es accionable con las herramientas reales de este repositorio — **no** que exista una guardia 24/7 con
+  alertas conectadas a un sistema de notificación real. Ver `docs/runbook-workflow.md` sección 0 para el
+  detalle completo de esta distinción.
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
@@ -1014,3 +1048,5 @@ re-verificada, y trazas reales confirmadas contra la API de Jaeger (`Sample.Work
   bounded context, monitoreo vía OpenTelemetry/Jaeger, rollback), con verificación real re-ejecutada
   contra el host independiente (F9-05) y el Gateway (F9-06), y limitaciones honestas del framework
   (sin traffic mirroring, sin traffic splitting por porcentaje, sin canary sin downtime).
+- [`docs/runbook-workflow.md`](runbook-workflow.md) — F9-10, paquete operativo completo (SLO, alertas,
+  3 runbooks accionables y convención de ownership) del servicio piloto extraído Workflow.
