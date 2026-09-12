@@ -27,6 +27,12 @@
     <ProjectReference Include="..\..\src\Shared.Testing\Shared.Testing.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.TaskInbox\BitCode.Platform.TaskInbox.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+    <!-- F9-04: WorkflowEventDeadLetterIntegrationTests ejercita KafkaEventConsumer(TEvent) real
+         (F3-07/F3-08) contra un evento de integración real de Workflow, para probar el mecanismo de
+         compensación (dead-letter tras agotar reintentos) específicamente en el flujo Workflow a
+         TaskInbox: referencia de proyecto de TEST únicamente, mismo criterio que
+         Shared.Infrastructure.Persistence.Tests con Shared.Infrastructure.Security (test-only). -->
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
   </ItemGroup>
 
 </Project>

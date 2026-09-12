@@ -238,6 +238,64 @@ consumir `BitCode.Platform.Workflow.Contracts` como una dependencia externa vers
 publicado, con su propia política de compatibilidad), no como `ProjectReference` dentro del mismo
 repo — ese es trabajo explícitamente fuera del alcance de F9-02.
 
+## Fase 9 (F9-04): compensaciones probadas específicamente sobre el flujo Workflow
+
+`docs/plan-maestro-bitcode-ia.md`, backlog F9-04 ("Eventos" — "Completar eventos, Inbox, Outbox y
+compensaciones", criterio de aceptación "Flujo eventual probado") pide, explícitamente, evidencia real de
+qué pasa cuando un consumidor de Workflow (Task Inbox, Notifications, Reporting) falla de forma
+PERMANENTE — no solo transitoria — y si existe un mecanismo de compensación/dead-letter, o si el mensaje
+se pierde o bloquea la cola para siempre.
+
+**Hallazgo honesto: el mecanismo de compensación YA EXISTÍA de forma genérica antes de esta tarea** (F3-07
+"Reintentos clasificados y backoff", F3-08 "DLQ", F3-09 "Poison messages" — ver secciones de arriba). No
+era necesario diseñar nada nuevo del lado de infraestructura compartida: `KafkaEventConsumer<TEvent>` ya
+clasifica el fallo, aplica backoff con un límite de reintentos (`EventRetryPolicyOptions.MaxAttempts`), y
+al agotarse publica una copia a un tópico dead-letter real (`IDeadLetterPublisher`/`KafkaDeadLetterPublisher`)
+sin bloquear la partición ni perder el mensaje válido siguiente. Lo que SÍ faltaba, y es lo que cierra
+F9-04, es evidencia de que ese mecanismo genérico funciona igual cuando el evento es uno real de Workflow
+(no un evento de prueba sintético) y el consumidor es del bounded context piloto de Fase 9:
+
+- **Gap real identificado (cerrado por esta tarea):** antes de F9-04, la ÚNICA prueba de integración real
+  del camino a DLQ (`KafkaEventConsumerPoisonMessageIntegrationTests`) cubría el caso "poison message"
+  (JSON corrupto, error de DESERIALIZACIÓN, F3-09) — pero **ninguna prueba en el repositorio** ejercitaba
+  el otro camino a DLQ (F3-08): un mensaje que sí se deserializa correctamente pero cuyo HANDLER DE
+  NEGOCIO falla de forma permanente/agota sus reintentos (`EventProcessingExhaustedException`). Es
+  precisamente el escenario que pide F9-04 ("un bug de deserialización, o una regla de negocio que
+  rechaza permanentemente el mensaje"): el primero ya estaba probado, el segundo no.
+- **Prueba nueva:** `samples/Sample.TaskInbox.Api.Tests/Integration/WorkflowEventDeadLetterIntegrationTests.cs`
+  (SQL Server real + Kafka real, Testcontainers) publica un `TareaAsignadaIntegrationEvent` real de
+  Workflow cuyo handler de negocio simula el rechazo permanente de una regla de negocio, seguido de un
+  segundo `TareaAsignadaIntegrationEvent` válido. Verifica: (1) el primero agota su margen de reintentos
+  (`EventProcessingExhaustedException`) y se publica al tópico `Workflow.TareaAsignada.dlq` con los
+  metadatos esperados (motivo, intentos, `EventId` de origen); (2) el offset se confirma igual, así que
+  el consumer sigue operando y procesa con normalidad el segundo mensaje; (3) el efecto de negocio nunca
+  se persistió para la tarea agotada (ningún `TaskInboxItem` creado) pero sí para la tarea válida
+  siguiente. El consumidor real de este flujo (`TareaAsignadaIntegrationEventConsumer`) es `internal` a
+  `BitCode.Platform.TaskInbox` y no es referenciable desde el ensamblado de test; la prueba usa un doble
+  (`SelectivelyFailingTareaAsignadaConsumer`) que replica el mismo efecto observable (alta/actualización
+  de `TaskInboxItem` vía `IRepository<TEntity,TId>`) y simula el rechazo permanente solo para el
+  `WorkflowTaskId` que el propio test señaliza — el mismo tipo de fallo que produciría un consumidor real
+  ante un dato de negocio inválido que ningún reintento corrige.
+- **Ya cubierto, sin necesidad de duplicar pruebas (criterio "duplicados no repiten efectos", F3-04):**
+  la deduplicación de un evento real de Workflow reentregado ya tenía DOS pruebas independientes y
+  complementarias antes de F9-04, que juntas dan confianza razonable sin que haga falta una tercera
+  redundante: (a) a nivel del EFECTO DE NEGOCIO real, sin broker
+  (`samples/Sample.TaskInbox.Api.Tests/Integration/TaskInboxEndpointsIntegrationTests.cs`, prueba
+  `TareaAsignada_ReentregadaConElMismoEventId_NoDuplicaLaFila`: invoca dos veces
+  `IInboxMessageProcessor.ProcessAsync` con el mismo `TareaAsignadaIntegrationEvent`/`EventId` contra SQL
+  Server real y confirma que `TaskInboxItem` no se duplica); (b) a nivel del CABLE Kafka real, con un
+  evento de prueba sintético (`InboxConsumerIntegrationTests.ConsumeAndHandleOnceAsync_SameEventPublishedTwice_ExecutesHandlerOnlyOnce`).
+  Ninguna prueba combina ambas dimensiones a la vez (evento real de Workflow + broker Kafka real +
+  mismo test) — se documenta como limitación conocida, no como gap urgente: el mecanismo que decide
+  "¿ya se procesó este `EventId`?" (`IInboxMessageProcessor`) es exactamente el mismo código en los dos
+  casos, así que el riesgo residual de que la combinación exacta se comporte distinto es bajo. Se
+  consideró deliberadamente NO agregar esa tercera prueba para no fabricar cobertura redundante de algo
+  que las dos pruebas existentes ya demuestran por separado.
+- **Qué NO se tocó:** no se agregó ningún evento de integración nuevo (los 6 eventos ya existentes de
+  Workflow son los que este criterio de aceptación pide completar/probar, no ampliar), no se modificó
+  `KafkaEventConsumer<TEvent>`/`InboxMessageProcessor`/`OutboxBatchProcessor` (el mecanismo genérico ya
+  cumplía lo que F9-04 pedía probar), y no se marcó ningún ítem del Gate de salida de Fase 9.
+
 ## Referencias
 
 - `src/Platform/BitCode.Platform.Workflow.Contracts` (F9-02, ensamblado de solo contratos de los 6
@@ -252,6 +310,12 @@ repo — ese es trabajo explícitamente fuera del alcance de F9-02.
 - `src/Shared.Domain/Inbox/IInboxStore.cs`, `InboxMessage.cs` (F1-24).
 - `tests/Shared.Infrastructure.Persistence.Tests/Integration/InboxConsumerIntegrationTests.cs`,
   `InboxConsumerCollection.cs` (F3-04).
+- `samples/Sample.TaskInbox.Api.Tests/Integration/WorkflowEventDeadLetterIntegrationTests.cs` (F9-04:
+  agotamiento de reintentos y dead-letter, F3-07/F3-08, probados específicamente contra un evento real de
+  Workflow, `TareaAsignadaIntegrationEvent`).
+- `samples/Sample.TaskInbox.Api.Tests/Integration/TaskInboxEndpointsIntegrationTests.cs` (prueba
+  `TareaAsignada_ReentregadaConElMismoEventId_NoDuplicaLaFila`: deduplicación del efecto de negocio real
+  para un evento real de Workflow, sin broker).
 - `tests/Shared.Infrastructure.Messaging.Kafka.Tests/InMemoryInboxMessageProcessor.cs` (F3-04, test
   double para pruebas de F3-02 sin SQL Server real).
 - `docs/politica-reintentos-eventos.md` (F3-07, política completa).
