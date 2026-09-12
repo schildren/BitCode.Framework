@@ -1,8 +1,16 @@
 # 0020. Fase 9 (F9-01): selección de módulo piloto para extracción como microservicio
 
-**Estado:** Proposed
-**Fecha:** 2026-09-12
-**Responsable:** Pendiente de asignación — requiere aprobación humana explícita antes de habilitar F9-02
+**Estado:** Accepted
+**Fecha:** 2026-09-12 (propuesto) — 2026-09-12 (aceptado)
+**Responsable:** Javier León (aprobación humana explícita)
+
+## Aprobación
+
+Aprobado explícitamente por Javier León el 2026-09-12: **Workflow** es el módulo piloto elegido, entre
+las tres opciones presentadas (Workflow / Reporting / posponer Fase 9). Con esta aprobación queda
+habilitada F9-02 (Contract boundary), condicionada — como recomienda este mismo ADR — a resolver primero
+el acoplamiento de compilación (`ProjectReference` directo) que `BitCode.Platform.TaskInbox` y
+`BitCode.Platform.Notifications` tienen hoy contra `BitCode.Platform.Workflow`.
 
 ## Contexto
 
@@ -157,19 +165,20 @@ tienen hoy ninguna evidencia real que los respalde, para ningún módulo.
   diferencias reales y verificables entre módulos, que es lo que esta matriz aprovecha.
 - **Riesgo de decisión unilateral por un agente.** Mitigación explícita: ver la sección siguiente.
 
-## Requiere aprobación humana antes de iniciar F9-02
+## Aprobación humana recibida — F9-02 habilitada
 
 El criterio de aceptación literal de F9-01 en `docs/plan-maestro-bitcode-ia.md` (Fase 9, backlog) es
-**"Aprobación humana"** — no "ADR aceptado por el propio agente", no "módulo seleccionado". En
-consecuencia:
+**"Aprobación humana"**. Esa aprobación ya se registró arriba (sección "Aprobación"): Javier León eligió
+Workflow como módulo piloto el 2026-09-12. En consecuencia:
 
-- Este ADR permanece en estado `Proposed`. Ningún agente debe cambiarlo a `Accepted`.
-- Ninguna tarea de F9-02 en adelante debe comenzar hasta que una persona (Javier León u otro responsable
-  designado) revise esta matriz, decida si continuar con Workflow, con otro módulo, o posponer la fase
-  completa, y dejen esa decisión registrada explícitamente (por ejemplo, actualizando el campo
-  `Responsable` y `Estado` de este mismo ADR).
-- Ningún módulo fue tocado, movido ni preparado para extracción como parte de esta tarea: F9-01 es
-  puramente de análisis y documentación, sin cambios de código, infraestructura ni configuración.
+- Este ADR pasa a `Accepted`.
+- F9-02 (Contract boundary) queda habilitada, con la condición explícita fijada en la recomendación
+  original de este ADR: antes de cualquier otro cambio, eliminar el `ProjectReference` directo que
+  `BitCode.Platform.TaskInbox` y `BitCode.Platform.Notifications` tienen hoy contra
+  `BitCode.Platform.Workflow`, reemplazándolo por dependencia solo hacia un paquete/ensamblado de
+  contratos de eventos compartido (sin referenciar el módulo completo).
+- Ningún módulo fue tocado, movido ni preparado para extracción como parte de F9-01: esa tarea fue
+  puramente de análisis y documentación. El trabajo de código empieza recién en F9-02.
 
 ## Referencias
 
