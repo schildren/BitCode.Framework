@@ -55,6 +55,11 @@ public static class KafkaServiceCollectionExtensions
         // efectivamente se resuelve.
         services.TryAddSingleton<IEventPublishFailureClassifier, KafkaEventPublishFailureClassifier>();
 
+        // F9-05: health check de readiness del productor -- ver KafkaProducerHealthCheck para el
+        // alcance exacto (metadatos del clúster, no un round-trip de publicación real).
+        services.AddHealthChecks()
+            .AddCheck<KafkaProducerHealthCheck>("kafka", tags: ["ready"]);
+
         return services;
     }
 }

@@ -353,6 +353,148 @@ deuda de infraestructura compartida (un chequeo en `AddSharedPersistence<TContex
 una connection string ya registrada por otro `DbContext` de módulo distinto en el mismo proceso), fuera
 del alcance de F9-03.
 
+## Host independiente (F9-05)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-05, "Host independiente") pidió demostrar que
+Workflow, tal como quedó tras F9-02 (contract boundary)/F9-03 (data ownership)/F9-04 (eventos, Inbox,
+Outbox, compensaciones), puede desplegarse y observarse como proceso independiente ("operación
+autónoma"), sin depender en tiempo de ejecución de ningún otro módulo de plataforma. `ADR-0020` es
+explícito en que Fase 9, sobre este framework sin tráfico productivo, es un **ejercicio de demostración
+de capacidad técnica** — esta sección documenta exactamente qué se verificó y qué no.
+
+### Qué YA existía antes de esta tarea
+
+`samples/Sample.Workflow.Api` (Fase 6, módulo 6) ya era un host ejecutable completo -- HTTP con RBAC/ABAC,
+auditoría, idempotencia, versionado de API, y ya tenía:
+
+- **Config propia**: `appsettings.json` con sus propias `ConnectionStrings:Default`/`Identity`, `Jwt:*` y
+  `OpenTelemetry:ServiceName` -- sin acoplarse a la config de ningún otro módulo de plataforma.
+- **Health checks propios**: `/health/live` y `/health/ready` (`MapSharedHealthChecks`, F1-25) con
+  `WorkflowDbContextHealthCheck` (`sql-server-workflow`, tag `"ready"`) verificando ÚNICAMENTE su propia
+  base de datos -- nunca la de otro módulo.
+- **Telemetry**: `AddSharedObservability(configuration)` (OpenTelemetry traces/metrics/logs) ya cableado
+  en `InfrastructureModule`, apuntando al `otel-collector` compartido del framework.
+
+Esto NO era el gap real de F9-05: el gap real, verificado al inspeccionar el código, era que **ningún
+host de Fase 6 (incluido Workflow) tenía Kafka realmente wireado** (ver el comentario histórico de
+`WorkflowServiceCollectionExtensions.AddSharedWorkflow`: "ningún evento de integración productivo de esta
+plataforma se publica hoy contra Kafka real"). Un host sin Kafka real solo demuestra autonomía de
+HTTP+SQL, no la pieza más relevante para un módulo cuyo perfil de elegibilidad (ADR-0020) es justamente
+ser "la única fuente real de fan-out de eventos de integración del framework".
+
+### Qué se agregó en esta tarea
+
+1. **`KafkaProducerHealthCheck`** (`src/Shared.Infrastructure.Messaging.Kafka/KafkaProducerHealthCheck.cs`,
+   `internal`): nuevo health check de readiness (tag `"ready"`) que crea un
+   `DependentAdminClientBuilder` a partir del `Handle` del mismo `IProducer<string,byte[]>` singleton que
+   ya registra `AddSharedMessagingKafka` (no abre una conexión nueva) y llama `GetMetadata(timeout: 5s)`
+   contra el clúster completo. Se registra automáticamente dentro de `AddSharedMessagingKafka` -- **todo
+   host que ya llame ese método para producir/consumir gana este check gratis, sin cambios propios**.
+2. **`Sample.Workflow.Api` ahora wirea Kafka de verdad**: `InfrastructureModule.ConfigureServices` llama
+   `services.AddSharedMessagingKafka(configuration)` seguido de `services.AddSharedOutboxPublisher()`
+   (después de `AddSharedPersistence<WorkflowDbContext>`, mismo orden documentado en ambos métodos) --
+   `appsettings.json` agrega la sección `Messaging:Kafka:BootstrapServers` (default `localhost:9092`,
+   overrideable por `Messaging__Kafka__BootstrapServers` como cualquier otra config de ASP.NET Core).
+3. **`docker/sample-workflow-api/Dockerfile`**: primer Containerfile propio de un módulo de plataforma de
+   Fase 6 (hasta ahora solo existía `docker/sample-api/Dockerfile`, el host BASE de Fase 4, según dejó
+   registrado F9-01/ADR-0020). Mismo patrón exacto que ese Dockerfile (build multi-stage, imagen final
+   `aspnet:10.0-noble-chiseled-extra` -- ICU real, no invariant mode, mismo motivo documentado en
+   `docs/politica-contenedores.md` sección 3 -- usuario non-root, sin shell).
+
+### Verificación real ejecutada (no solo "el código existe")
+
+Se construyó la imagen (`docker build -f docker/sample-workflow-api/Dockerfile -t
+bitcode/sample-workflow-api:0.1.0 .`), se levantó el `docker-compose.yml` ya validado en F8-11/auditoría
+de Fase 8 (`sqlserver`, `kafka`, `otel-collector`, más `redis`/`jaeger` sin uso directo de este host) y se
+corrió el contenedor recién construido conectado a la misma red de Docker Compose
+(`bitcode-dev_default`), con `ConnectionStrings__Default`/`Identity` apuntando a `bitcode-sqlserver` y
+`Messaging__Kafka__BootstrapServers=bitcode-kafka:29092` -- ningún `localhost`, coherente con "standalone
+container", no "`dotnet run` en el entorno de desarrollo":
+
+- **Arranque real**: logs confirmaron `EnsureCreatedAsync` creando el esquema completo de
+  `WorkflowDbContext`/`SampleIdentityDbContext` (incluidas `OutboxMessage`/`IdempotencyKey`) contra SQL
+  Server real, `Now listening on: http://[::]:8080`, `Application started`.
+- **`/health/live`**: `200 OK` (liveness, como siempre, ignora todas las dependencias).
+- **`/health/ready`**: `200 OK` con Kafka y SQL Server arriba. Para confirmar que el check de Kafka es
+  real y no un placeholder que siempre devuelve sano, se detuvo el contenedor `bitcode-kafka` en caliente:
+  `/health/ready` pasó a `503 Unhealthy` inmediatamente, y volvió a `200 Healthy` en cuanto Kafka volvió a
+  reportarse `healthy` -- evidencia de que el endpoint reacciona a un fallo real de una dependencia real,
+  no a un mock.
+- **Publicación de eventos de punta a punta, corriendo como contenedor standalone**: se generó un JWT
+  válido (mismo secreto/issuer/audience de `appsettings.json`, mismas claims que emite
+  `JwtTokenGenerator`: `sub`, `tenant_id`, `role`) para un usuario y rol sembrados directamente en
+  `BitCodeSampleWorkflowIdentity` (con los 9 permisos de `WorkflowPermissions` como
+  `AspNetRoleClaims`, mismo modelo que `RoleManagerPermissionExtensions.AddPermissionAsync` produciría) y
+  se hicieron 4 llamadas HTTP reales contra el contenedor (`POST /api/v1/workflows` → crear versión →
+  publicar → `POST /api/v1/workflows/instancias`), todas `201`/`200`. La última generó dos filas
+  `OutboxMessage` (`WorkflowInstanciaIniciada` + `WorkflowInstanciaFinalizada`, porque la transición de
+  prueba no requería tarea humana) que el `OutboxPublisherBackgroundService` ya en ejecución dentro del
+  contenedor publicó a Kafka real en menos de un ciclo de sondeo. `kafka-topics --list` mostró los tres
+  tópicos reales creados por publicaciones reales de esta corrida
+  (`Workflow.WorkflowVersionPublicada`, `Workflow.WorkflowInstanciaIniciada`,
+  `Workflow.WorkflowInstanciaFinalizada`), y `kafka-console-consumer --from-beginning` sobre los dos
+  últimos devolvió el JSON completo del evento (`WorkflowInstanceId`, `EventId`, `EventType`,
+  `SchemaVersion`, `PartitionKey`, `OccurredOnUtc`), confirmando el payload real, no solo el nombre del
+  tópico.
+- **Resiliencia observada, no buscada a propósito**: durante la prueba de apagar/prender Kafka (pensada
+  solo para el health check), el `OutboxBatchProcessor` registró errores reales de conexión
+  (`Broker transport failure`) para las filas ya encoladas y las reintentó exitosamente en cuanto Kafka
+  volvió -- comportamiento consistente con F3-07 (retries), observado contra infraestructura real, no
+  simulado.
+
+### Limitaciones honestas (no ocultas)
+
+- **El health check de Kafka es deliberadamente superficial**: solo confirma que el clúster responde
+  metadatos (`GetMetadata`), no que un tópico concreto exista, tenga particiones suficientes, ni que la
+  publicación real vaya a funcionar bajo carga o con ACL restrictivas -- ver el comentario de clase de
+  `KafkaProducerHealthCheck`. Un despliegue productivo real querría, además, un check de "puedo escribir
+  al tópico X" contra un tópico canario, no solo metadatos del clúster.
+- **No se agregó ningún manifiesto Kubernetes (`k8s/sample-workflow-api/`) para esta tarea.** El único
+  manifiesto K8s existente en el repo (`k8s/sample-api/`) pertenece al host BASE de Fase 4, no a un
+  módulo de plataforma. Generar un manifiesto K8s de Workflow sin un clúster real contra el cual
+  ejercitarlo habría sido un artefacto no verificado -- se priorizó, como pide explícitamente esta tarea,
+  la verificación real y ejecutable con Docker Compose (que sí se llevó a cabo de punta a punta) por
+  sobre YAML sin probar. Queda como trabajo explícitamente fuera de alcance.
+- **`docker-compose.yml` no incluye un servicio `sample-workflow-api` permanente**: el contenedor de esta
+  verificación se corrió con `docker run` manual contra la red que crea `docker compose up -d`, sin
+  modificar los 5 servicios ya validados de F8-11. Un consumidor que quiera repetir la verificación local
+  debe construir la imagen y correrla de la misma forma (comandos documentados arriba).
+- **La identidad usada en la verificación se sembró directamente por SQL**, no a través de un flujo de
+  registro/login (`Sample.Workflow.Api` no expone ninguno -- es responsabilidad de Identity
+  Administration, otro módulo). Esto es equivalente en efecto a lo que hace `SeedActorAsync` en
+  `WorkflowEndpointsIntegrationTests` (crear rol+permisos+usuario y generar el JWT directamente), solo que
+  contra una base de datos de contenedor real en vez de Testcontainers en proceso.
+- **Solo se ejercitó el camino de PUBLICACIÓN** (Workflow → Kafka). Workflow no consume sus propios
+  eventos (los consumidores reales son TaskInbox/Notifications/Reporting, otros módulos, fuera del
+  alcance de "host independiente de Workflow"), así que esta verificación no instancia ningún
+  `KafkaEventConsumer<TEvent>` dentro de `Sample.Workflow.Api` -- sería relevante para una tarea de F9-05
+  de uno de esos otros módulos, no de este.
+- **No se corrieron pruebas de carga ni de latencia contra el contenedor** -- eso es explícitamente F9-09
+  ("Resiliencia") del backlog de Fase 9, no F9-05.
+
+### Cómo reproducir la verificación
+
+```bash
+# 1. Construir la imagen (contexto = raíz del repo).
+docker build -f docker/sample-workflow-api/Dockerfile -t bitcode/sample-workflow-api:0.1.0 .
+
+# 2. Levantar la infraestructura ya validada (F8-11).
+docker compose up -d
+# Esperar a que sqlserver/kafka/otel-collector reporten "healthy" (docker inspect -f '{{.State.Health.Status}}' ...).
+
+# 3. Correr el host standalone contra esa misma red.
+docker run -d --name sample-workflow-api --network bitcode-dev_default -p 18081:8080 \
+  -e ConnectionStrings__Default="Server=bitcode-sqlserver,1433;Database=BitCodeSampleWorkflow;User Id=sa;Password=Password123!;TrustServerCertificate=True" \
+  -e ConnectionStrings__Identity="Server=bitcode-sqlserver,1433;Database=BitCodeSampleWorkflowIdentity;User Id=sa;Password=Password123!;TrustServerCertificate=True" \
+  -e Messaging__Kafka__BootstrapServers="bitcode-kafka:29092" \
+  -e OTEL_EXPORTER_OTLP_ENDPOINT="http://bitcode-otel-collector:4318" \
+  bitcode/sample-workflow-api:0.1.0
+
+# 4. Verificar.
+curl http://localhost:18081/health/live
+curl http://localhost:18081/health/ready
+```
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,

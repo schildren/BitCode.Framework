@@ -1,7 +1,9 @@
 using BitCode.Framework.Platform.Workflow;
 using BitCode.Framework.Shared.Application;
+using BitCode.Framework.Shared.Infrastructure.Messaging.Kafka;
 using BitCode.Framework.Shared.Infrastructure.Observability;
 using BitCode.Framework.Shared.Infrastructure.Persistence;
+using BitCode.Framework.Shared.Infrastructure.Persistence.Outbox;
 using BitCode.Framework.Shared.Infrastructure.Security;
 using BitCode.Framework.Shared.Infrastructure.Security.Abac;
 using BitCode.Framework.Shared.Infrastructure.Security.Audit;
@@ -24,7 +26,8 @@ namespace Sample.Workflow.Api;
 /// registra <c>AddSharedBackgroundJobs</c>/<c>WorkflowEscalamientoJob</c> -- el escalamiento por SLA se
 /// verifica en <c>Sample.Workflow.Api.Tests</c> invocando el job directamente contra el mismo
 /// <see cref="WorkflowDbContext"/> (ver <c>docs/guia-workflow.md</c>, sección "Timeout y SLA", para cómo
-/// lo agregaría un consumidor productivo con Quartz HA real).
+/// lo agregaría un consumidor productivo con Quartz HA real). SÍ registra Kafka/Outbox (F9-05,
+/// "Host independiente") -- ver <c>docs/guia-workflow.md</c>, sección "Host independiente (F9-05)".
 /// </summary>
 public class InfrastructureModule : IWebFrameworkModule
 {
@@ -39,6 +42,15 @@ public class InfrastructureModule : IWebFrameworkModule
         services.AddHttpContextTenantProvider();
 
         services.AddSharedPersistence<WorkflowDbContext>(connectionString);
+
+        // F9-05: publica los eventos de integración de Workflow (Outbox -> Kafka) contra un broker
+        // real -- antes de esta tarea ningún host de Fase 6 tenía Kafka wireado (ver el comentario de
+        // WorkflowServiceCollectionExtensions.AddSharedWorkflow), así que "operación autónoma" habría
+        // sido solo HTTP+SQL. AddSharedMessagingKafka() ANTES de AddSharedOutboxPublisher() -- registra
+        // el IEventPublisher/IEventPublishFailureClassifier concretos de Kafka antes de que el segundo
+        // intente registrar sus TryAdd de reserva (ver el comentario de ambos métodos).
+        services.AddSharedMessagingKafka(configuration);
+        services.AddSharedOutboxPublisher();
 
         services.AddDbContext<SampleIdentityDbContext>(options => options.UseSqlServer(identityConnectionString));
         services.AddSharedSecurity<

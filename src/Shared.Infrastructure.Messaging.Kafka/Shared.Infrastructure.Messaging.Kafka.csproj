@@ -7,6 +7,10 @@
     <PackageReference Include="Confluent.Kafka" Version="2.15.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <!-- F9-05: AddHealthChecks()/IHealthCheck, mismo paquete genérico (no específico de ASP.NET Core)
+         que ya usa Shared.Infrastructure.Persistence (F1-25) para el health check de readiness del
+         productor Kafka (KafkaProducerHealthCheck). -->
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
     <ProjectReference Include="..\..\src\Shared.Application\Shared.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared.Infrastructure.Messaging.Kafka\Shared.Infrastructure.Messaging.Kafka.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Observability\Shared.Infrastructure.Observability.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
     <ProjectReference Include="..\..\src\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
