@@ -21,15 +21,19 @@
          referencia ningún ensamblado de mensajería concreto (Kafka, F3-02) desde esta librería: el
          mecanismo de Inbox/IEventConsumer<T> ya es agnóstico de broker (Shared.Application.Eventing),
          igual que Task Inbox (Fase 6, módulo 7). -->
-    <!-- Referencia a BitCode.Platform.Workflow SOLO para reutilizar su evento de integración PÚBLICO
+    <!-- Fase 9 (F9-02, "Contract boundary"): referencia SOLO el ensamblado de contratos de Workflow
+         (BitCode.Platform.Workflow.Contracts) para reutilizar su evento de integración PÚBLICO
          TareaAsignadaIntegrationEvent como EJEMPLO DE REFERENCIA de "cómo enganchar un consumidor nuevo"
-         (ver Eventos/TareaAsignadaNotificationEventConsumer.cs) -nunca referencia WorkflowDbContext ni
-         ningún comando/query interno de Workflow. El mecanismo genérico de este módulo (plantillas,
-         canales, preferencias, retry, tracking) NO depende de Workflow: cualquier otro bounded context
-         puede engancharse agregando su propio IEventConsumer<TEvent> + plantilla, sin tocar esta
-         referencia ni el core de Notifications. Ver docs/guia-notifications.md, sección "Cómo se dispara
-         una notificación". -->
-    <ProjectReference Include="..\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+         (ver Eventos/TareaAsignadaNotificationEventConsumer.cs), YA NO tiene ProjectReference directo
+         al ensamblado completo de BitCode.Platform.Workflow (WorkflowDbContext, comandos/queries
+         internos), condición fijada por docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md.
+         El mecanismo genérico de este módulo (plantillas, canales, preferencias, retry, tracking) sigue
+         sin depender de Workflow: cualquier otro bounded context puede engancharse agregando su propio
+         IEventConsumer<TEvent> + plantilla + (si aplica) su propio ensamblado de contratos, sin tocar
+         esta referencia ni el core de Notifications. Ver docs/guia-notifications.md, sección "Cómo se
+         dispara una notificación", y docs/guia-inbox-consumer.md, sección "Boundary de contratos
+         (F9-02)". -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

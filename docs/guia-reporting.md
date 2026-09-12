@@ -319,6 +319,9 @@ esperados. 12/12 pasan.
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, fila "Reporting".
 - [`convenciones.md`](convenciones.md) — reglas duras 1, 2, 5, 6, 22, 27.
 - [`guia-workflow.md`](guia-workflow.md) — módulo del que este consume eventos.
+- [`guia-inbox-consumer.md`](guia-inbox-consumer.md), sección "Boundary de contratos (F9-02)" —
+  este módulo ya NO tiene `ProjectReference` al proyecto completo de Workflow, solo a
+  `BitCode.Platform.Workflow.Contracts`.
 - [`guia-taskinbox.md`](guia-taskinbox.md) — mismo mecanismo de read-model/Inbox, primer módulo en
   documentar varios de los límites conocidos que este módulo hereda.
 - [`guia-integration-hub.md`](guia-integration-hub.md) — precedente de la decisión honesta de "sin

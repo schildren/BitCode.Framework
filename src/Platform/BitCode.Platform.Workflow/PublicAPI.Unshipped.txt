@@ -69,70 +69,10 @@ BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersion.WorkflowVersion
 BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
 BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado.Borrador = 0 -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
 BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado.Publicada = 1 -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionEstado
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Deconstruct(out System.Guid WorkflowVersionId, out System.Guid WorkflowDefinitionId, out int Numero) -> void
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Numero.get -> int
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Numero.init -> void
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.WorkflowDefinitionId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.WorkflowDefinitionId.init -> void
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.WorkflowVersionId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.WorkflowVersionId.init -> void
-BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.WorkflowVersionPublicadaIntegrationEvent(System.Guid WorkflowVersionId, System.Guid WorkflowDefinitionId, int Numero) -> void
 BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob
 BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.Execute(Quartz.IJobExecutionContext! context) -> System.Threading.Tasks.Task!
 BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.EscalarVencidasAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 BitCode.Framework.Platform.Workflow.Escalamiento.WorkflowEscalamientoJob.WorkflowEscalamientoJob(BitCode.Framework.Platform.Workflow.WorkflowDbContext! dbContext) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.Deconstruct(out System.Guid WorkflowTaskId, out System.Guid WorkflowInstanceId, out System.Guid ResueltaPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.ResueltaPorUserId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.ResueltaPorUserId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.TareaAprobadaIntegrationEvent(System.Guid WorkflowTaskId, System.Guid WorkflowInstanceId, System.Guid ResueltaPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.WorkflowInstanceId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.WorkflowInstanceId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.WorkflowTaskId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.WorkflowTaskId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.AsignadoAUserId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.AsignadoAUserId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.Deconstruct(out System.Guid WorkflowTaskId, out System.Guid WorkflowInstanceId, out System.Guid AsignadoAUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.TareaAsignadaIntegrationEvent(System.Guid WorkflowTaskId, System.Guid WorkflowInstanceId, System.Guid AsignadoAUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.WorkflowInstanceId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.WorkflowInstanceId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.WorkflowTaskId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.WorkflowTaskId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.Deconstruct(out System.Guid WorkflowTaskId, out System.Guid WorkflowInstanceId, out System.Guid ResueltaPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.ResueltaPorUserId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.ResueltaPorUserId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.TareaRechazadaIntegrationEvent(System.Guid WorkflowTaskId, System.Guid WorkflowInstanceId, System.Guid ResueltaPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.WorkflowInstanceId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.WorkflowInstanceId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.WorkflowTaskId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.WorkflowTaskId.init -> void
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.ActorUserId.get -> System.Guid?
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowHistorial.Detalle.get -> string!
@@ -168,38 +108,6 @@ BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstance.WorkflowVersionI
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado.EnCurso = 0 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado.Finalizada = 1 -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanceEstado
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.Deconstruct(out System.Guid WorkflowInstanceId, out System.Guid WorkflowDefinitionId, out System.Guid EstadoFinalId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.EstadoFinalId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.EstadoFinalId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.WorkflowDefinitionId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.WorkflowDefinitionId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.WorkflowInstanceId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.WorkflowInstanceId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.WorkflowInstanciaFinalizadaIntegrationEvent(System.Guid WorkflowInstanceId, System.Guid WorkflowDefinitionId, System.Guid EstadoFinalId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.Deconstruct(out System.Guid WorkflowInstanceId, out System.Guid WorkflowDefinitionId, out System.Guid WorkflowVersionId, out System.Guid IniciadoPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.Equals(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent? other) -> bool
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.EventId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.EventId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.EventType.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.IniciadoPorUserId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.IniciadoPorUserId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.PartitionKey.get -> string!
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.SchemaVersion.get -> int
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowDefinitionId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowDefinitionId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowInstanceId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowInstanceId.init -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowInstanciaIniciadaIntegrationEvent(System.Guid WorkflowInstanceId, System.Guid WorkflowDefinitionId, System.Guid WorkflowVersionId, System.Guid IniciadoPorUserId) -> void
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowVersionId.get -> System.Guid
-BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.WorkflowVersionId.init -> void
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.AccionResuelta.get -> string?
 BitCode.Framework.Platform.Workflow.Instancias.WorkflowTask.AsignadoAUserId.get -> System.Guid
@@ -254,48 +162,6 @@ const BitCode.Framework.Platform.Workflow.WorkflowPermissions.TareasResolver = "
 const BitCode.Framework.Platform.Workflow.WorkflowPermissions.TareasVer = "workflow.tareas.ver" -> string!
 const BitCode.Framework.Platform.Workflow.WorkflowPermissions.VersionesCrear = "workflow.versiones.crear" -> string!
 const BitCode.Framework.Platform.Workflow.WorkflowPermissions.VersionesPublicar = "workflow.versiones.publicar" -> string!
-override BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.ToString() -> string!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.ToString() -> string!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.ToString() -> string!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.ToString() -> string!
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.ToString() -> string!
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.<Clone>$() -> BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent!
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.Equals(object? obj) -> bool
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.GetHashCode() -> int
-override BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.ToString() -> string!
-override sealed BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
-override sealed BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
-override sealed BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
-override sealed BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
-override sealed BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
-override sealed BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.Equals(BitCode.Framework.Shared.Kernel.DomainEvent? other) -> bool
 static BitCode.Framework.Platform.Workflow.Definiciones.WorkflowRuleEvaluator.Evaluar(string? expresion, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! variables) -> bool
-static BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Definiciones.WorkflowVersionPublicadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaAprobadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaAsignadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.TareaRechazadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaFinalizadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.operator !=(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent? right) -> bool
-static BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent.operator ==(BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent? left, BitCode.Framework.Platform.Workflow.Instancias.WorkflowInstanciaIniciadaIntegrationEvent? right) -> bool
 static BitCode.Framework.Platform.Workflow.WorkflowEndpointRouteBuilderExtensions.MapWorkflowEndpoints(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static BitCode.Framework.Platform.Workflow.WorkflowServiceCollectionExtensions.AddSharedWorkflow(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

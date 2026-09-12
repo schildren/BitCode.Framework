@@ -38,10 +38,14 @@ mismo mecanismo que ya usa el framework para consumir eventos de otro bounded co
 idempotente) poblado consumiendo los tres eventos de integración públicos de Workflow:
 `Workflow.TareaAsignada` (`TareaAsignadaIntegrationEvent`), `Workflow.TareaAprobada`
 (`TareaAprobadaIntegrationEvent`) y `Workflow.TareaRechazada` (`TareaRechazadaIntegrationEvent`). Este
-módulo **nunca** referencia `WorkflowDbContext` ni ningún comando/query interno de Workflow — la única
-dependencia de compilación hacia `BitCode.Platform.Workflow` es para reutilizar esos tres `record`
-públicos como contrato de entrada de sus propios `IEventConsumer<TEvent>` (ver
-`BitCode.Platform.TaskInbox.csproj`, comentario de esa referencia).
+módulo **nunca** referencia `WorkflowDbContext` ni ningún comando/query interno de Workflow. Desde
+Fase 9 (F9-02, "Contract boundary" — ver
+`docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`), este módulo tampoco tiene ya
+`ProjectReference` al proyecto COMPLETO de `BitCode.Platform.Workflow`: la única dependencia de
+compilación es hacia `BitCode.Platform.Workflow.Contracts`, un ensamblado de solo contratos que
+reexpone esos tres `record` públicos (mismo namespace, mismo `EventType`/`SchemaVersion`) sin arrastrar
+el motor de estados ni `WorkflowDbContext` (ver `BitCode.Platform.TaskInbox.csproj`, comentario de esa
+referencia, y `docs/guia-inbox-consumer.md`, sección "Boundary de contratos (F9-02)").
 
 **Cómo usar ambos módulos juntos, en la práctica:** un cliente real usa los endpoints de Task Inbox
 (`GET /api/v1/taskinbox/bandeja`, con filtros) para DESCUBRIR y FILTRAR sus tareas, y usa los endpoints
@@ -269,6 +273,9 @@ asignado original y aparece en la del nuevo). 11/11 pasan.
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, fila "Task Inbox".
 - [`convenciones.md`](convenciones.md) — reglas duras 1, 2, 5, 6, 27.
+- [`guia-inbox-consumer.md`](guia-inbox-consumer.md), sección "Boundary de contratos (F9-02)" —
+  este módulo ya NO tiene `ProjectReference` al proyecto completo de Workflow, solo a
+  `BitCode.Platform.Workflow.Contracts`.
 - [`guia-workflow.md`](guia-workflow.md) — módulo del que este consume eventos; mismo criterio de
   ownership/RBAC.
 - [`guia-inbox-consumer.md`](guia-inbox-consumer.md) — mecanismo de Inbox (F1-24/F3-04) reutilizado sin

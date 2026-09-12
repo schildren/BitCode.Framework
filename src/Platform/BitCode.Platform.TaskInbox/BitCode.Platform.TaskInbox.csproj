@@ -18,13 +18,16 @@
     <ProjectReference Include="..\..\Shared.Infrastructure.Persistence\Shared.Infrastructure.Persistence.csproj" />
     <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
     <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
-    <!-- Dependencia declarada por el Plan Maestro (Fase 6, módulo 7: "Dependencias: Workflow"): esta
-         librería referencia BitCode.Platform.Workflow SOLO para reutilizar sus tres eventos de
+    <!-- Fase 9 (F9-02, "Contract boundary"): esta librería referencia SOLO el ensamblado de contratos
+         de Workflow (BitCode.Platform.Workflow.Contracts) para reutilizar sus tres eventos de
          integración PÚBLICOS (TareaAsignadaIntegrationEvent/TareaAprobadaIntegrationEvent/
          TareaRechazadaIntegrationEvent) como contrato de entrada de sus propios IEventConsumer(T),
-         nunca referencia ni instancia WorkflowDbContext ni ningún comando/query interno de Workflow.
-         Ver docs/guia-taskinbox.md, sección "Límite de bounded context". -->
-    <ProjectReference Include="..\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+         YA NO tiene ProjectReference directo al ensamblado completo de BitCode.Platform.Workflow (motor
+         de estados, WorkflowDbContext, comandos/queries internos), condición fijada por
+         docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md antes de continuar con Fase 9
+         sobre Workflow como módulo piloto. Ver docs/guia-taskinbox.md, sección "Límite de bounded
+         context", y docs/guia-inbox-consumer.md, sección "Boundary de contratos (F9-02)". -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

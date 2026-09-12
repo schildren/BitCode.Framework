@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Workflow.Contracts -- Fase 9 (F9-02, "Contract boundary") del Plan Maestro BitCode:
+      ensamblado de SOLO contratos: los 6 eventos de integración públicos de Workflow (Fase 6, módulo 6)
+      que implementan `IIntegrationEvent`, sin ninguna lógica de negocio, sin `WorkflowDbContext`, sin
+      handlers ni entidades internas. Existe para que los consumidores reales de esos eventos (Task
+      Inbox, Notifications, Reporting) puedan referenciar el TIPO .NET del evento sin arrastrar el
+      ensamblado completo de Workflow (motor de estados, `WorkflowDbContext`, comandos/queries internos),
+      condición explícita fijada por `docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`
+      antes de habilitar cualquier otro trabajo de Fase 9 sobre Workflow como módulo piloto. Los tipos
+      conservan DELIBERADAMENTE el mismo namespace que tenían en `BitCode.Platform.Workflow`
+      (`BitCode.Framework.Platform.Workflow.Instancias`/`.Definiciones`) para que ningún archivo
+      consumidor existente necesite cambiar su `using` (ver `docs/guia-inbox-consumer.md`, sección
+      "Boundary de contratos (F9-02)", para el detalle honesto de esta migración, incluyendo el límite
+      real que sí queda: `OutboxMessage.EventType` guarda el `Type.AssemblyQualifiedName` del evento, que
+      cambia de ensamblado con este movimiento -- cualquier fila de Outbox pendiente de publicar en el
+      momento exacto de este despliegue quedaría con un tipo irresolvible, riesgo aceptado explícitamente
+      porque este framework no tiene tráfico productivo real hoy).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared.Kernel\Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\Shared.Application\Shared.Application.csproj" />
+  </ItemGroup>
+
+</Project>

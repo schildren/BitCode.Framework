@@ -18,6 +18,14 @@
     <ProjectReference Include="..\..\Shared.Infrastructure.Security\Shared.Infrastructure.Security.csproj" />
     <ProjectReference Include="..\..\Shared.Infrastructure.Web\Shared.Infrastructure.Web.csproj" />
     <ProjectReference Include="..\..\Shared.Infrastructure.BackgroundJobs\Shared.Infrastructure.BackgroundJobs.csproj" />
+    <!-- Fase 9 (F9-02, "Contract boundary"): los 6 eventos de integración públicos de este módulo
+         (TareaAsignada/Aprobada/RechazadaIntegrationEvent, WorkflowInstanciaIniciada/
+         FinalizadaIntegrationEvent, WorkflowVersionPublicadaIntegrationEvent) viven ahora en este
+         ensamblado de SOLO contratos, referenciado tanto por este módulo (que los levanta) como por sus
+         consumidores (Task Inbox, Notifications, Reporting), que ya NO referencian este proyecto
+         completo, ver `src/Platform/BitCode.Platform.Workflow.Contracts` y
+         `docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`. -->
+    <ProjectReference Include="..\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

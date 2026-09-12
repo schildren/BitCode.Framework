@@ -173,8 +173,77 @@ verifica el adapter Kafka en aislamiento, la coordinación real con Inbox contra
 (F3-03) usa un `PassthroughInboxMessageProcessor` equivalente por el mismo motivo (ese test verifica
 duplicados aceptables del relay de Outbox contra el broker, no la deduplicación de Inbox en sí).
 
+## Boundary de contratos (F9-02)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-02, "Contract boundary") eligió Workflow como
+módulo piloto de extracción como microservicio
+(`docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`). Ese ADR encontró, como condición
+explícita antes de cualquier otro trabajo de Fase 9, que sus tres consumidores reales de eventos
+(Task Inbox, Notifications y, se confirmó al ejecutar F9-02, también Reporting) tenían un
+`ProjectReference` DIRECTO contra el ensamblado COMPLETO de `BitCode.Platform.Workflow` (motor de
+estados, `WorkflowDbContext`, comandos/queries internos) solo para poder usar el tipo .NET de sus
+eventos de integración — el acoplamiento de compilación que impediría extraer Workflow sin romper a
+sus consumidores.
+
+**Solución aplicada:** los 6 eventos de integración públicos de Workflow
+(`TareaAsignada/Aprobada/RechazadaIntegrationEvent`, `WorkflowInstanciaIniciada/
+FinalizadaIntegrationEvent`, `WorkflowVersionPublicadaIntegrationEvent`) se movieron a un ensamblado
+nuevo de SOLO contratos, `BitCode.Platform.Workflow.Contracts`
+(`src/Platform/BitCode.Platform.Workflow.Contracts`) — sin `WorkflowDbContext`, sin handlers, sin
+lógica de negocio, sin ninguna otra dependencia además de `Shared.Kernel` (por `DomainEvent`) y
+`Shared.Application` (por `IIntegrationEvent`/`IHasPartitionKey`). Tanto `BitCode.Platform.Workflow`
+(que sigue siendo quien LEVANTA estos eventos sobre sus propios agregados, `WorkflowInstance`/
+`WorkflowTask`/`WorkflowVersion`) como sus tres consumidores ahora referencian ese ensamblado de
+contratos; Task Inbox, Notifications y Reporting **ya no tienen** `ProjectReference` al proyecto
+completo de Workflow.
+
+Los tipos conservan DELIBERADAMENTE el mismo namespace que tenían dentro de
+`BitCode.Platform.Workflow` (`BitCode.Framework.Platform.Workflow.Instancias`/`.Definiciones`): esto
+significa que ningún archivo consumidor existente (los `IEventConsumer<TEvent>` de Task Inbox/
+Notifications/Reporting) necesitó cambiar un solo `using` — el único cambio real fue el
+`ProjectReference` en cada `.csproj`. Se verificó con los cuatro proyectos de test de integración
+existentes contra SQL Server real (Testcontainers) que el fan-out de eventos sigue funcionando
+exactamente igual después del cambio: `samples/Sample.Workflow.Api.Tests`,
+`samples/Sample.TaskInbox.Api.Tests`, `samples/Sample.Notifications.Api.Tests`,
+`samples/Sample.Reporting.Api.Tests`.
+
+**Límite honesto que sí queda (no resuelto por esta tarea):** `OutboxBatchProcessor`
+(`src/Shared.Infrastructure.Persistence/Outbox/OutboxBatchProcessor.cs`) resuelve el tipo de cada
+`OutboxMessage` pendiente con `Type.GetType(message.EventType, ...)`, donde `EventType` guarda el
+`Type.AssemblyQualifiedName` del `DomainEvent` en el momento en que se persistió la fila — ese nombre
+incluye el ensamblado. Al mover los 6 eventos de Workflow a `BitCode.Platform.Workflow.Contracts`, el
+`AssemblyQualifiedName` que Workflow escribe en filas NUEVAS de Outbox apunta ahora a ese ensamblado
+nuevo. Cualquier fila de `OutboxMessage` que ya hubiera quedado PENDIENTE de publicar (no procesada)
+en el momento exacto de desplegar este cambio, con el `AssemblyQualifiedName` de ANTES (apuntando al
+ensamblado `BitCode.Platform.Workflow`), quedaría con un tipo irresolvible y se marcaría como fallo
+permanente (mismo camino que cualquier tipo borrado, ver remarks de `OutboxBatchProcessor`). Se evaluó
+mitigar esto con `[assembly: TypeForwardedTo(...)]` en `BitCode.Platform.Workflow` (mecanismo estándar
+de .NET para este escenario), pero se descartó para esta tarea: el analizador de compatibilidad de API
+pública (`docs/gate-compatibilidad-api.md`, F1-03) trata cada tipo reenviado como superficie pública
+del ensamblado de origen otra vez, duplicando el mantenimiento de `PublicAPI.*.txt` entre dos proyectos
+por cada evento — costo que no se justifica hoy porque, como documenta explícitamente
+`docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md`, este framework no tiene tráfico
+productivo real ni un release publicado todavía. **Pendiente explícito para cuando exista tráfico
+productivo real** (F9-05 en adelante, o antes si se habilita producción): o bien reintroducir
+`TypeForwardedTo` aceptando el costo de mantenimiento de `PublicAPI.*.txt`, o bien operar el despliegue
+de este tipo de cambio drenando el Outbox de Workflow (esperar a que `OutboxPublisherBackgroundService`
+procese todas las filas pendientes) antes de desplegar la nueva versión del binario.
+
+**Otra limitación honesta:** este ensamblado de contratos vive hoy como un proyecto más de la misma
+solución/monorepo (`BitCode.Framework.slnx`), empaquetado igual que el resto (ver
+`docs/politica-empaquetado.md`) pero NO publicado todavía como paquete NuGet versionado de forma
+independiente. Si en el futuro Workflow se extrae de verdad como servicio en un repositorio/proceso de
+despliegue separado (Fase 9, F9-05 "Host independiente" en adelante), sus consumidores necesitarán
+consumir `BitCode.Platform.Workflow.Contracts` como una dependencia externa versionada (paquete NuGet
+publicado, con su propia política de compatibilidad), no como `ProjectReference` dentro del mismo
+repo — ese es trabajo explícitamente fuera del alcance de F9-02.
+
 ## Referencias
 
+- `src/Platform/BitCode.Platform.Workflow.Contracts` (F9-02, ensamblado de solo contratos de los 6
+  eventos de integración públicos de Workflow).
+- `docs/adr/0020-fase9-seleccion-piloto-extraccion-microservicio.md` (Fase 9, selección de Workflow
+  como módulo piloto y condición de F9-02).
 - `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventConsumer.cs` (F3-04: coordinación con Inbox; F3-07: reintentos clasificados y backoff; F3-09: aislamiento de mensajes poison).
 - `docs/runbook-dlq.md` (F3-08/F3-09, operación de la DLQ, incluida la distinción poison vs. agotamiento de reintentos).
 - `src/Shared.Infrastructure.Messaging.Kafka/KafkaEventPublishFailureClassifier.cs` (F3-07).

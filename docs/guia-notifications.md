@@ -343,6 +343,9 @@ de reintento). 9/9 pasan.
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, fila "Notifications".
 - [`convenciones.md`](convenciones.md) — reglas duras 1, 2, 5, 6, 22, 27, 28.
+- [`guia-inbox-consumer.md`](guia-inbox-consumer.md), sección "Boundary de contratos (F9-02)" —
+  este módulo ya NO tiene `ProjectReference` al proyecto completo de Workflow, solo a
+  `BitCode.Platform.Workflow.Contracts`.
 - [`guia-workflow.md`](guia-workflow.md) / [`guia-taskinbox.md`](guia-taskinbox.md) — módulos cuyo
   precedente de diseño (RBAC/ownership, Quartz HA, hueco de `TenantId`) reutiliza este módulo.
 - [`guia-inbox-consumer.md`](guia-inbox-consumer.md) — mecanismo de Inbox (F1-24/F3-04) reutilizado sin

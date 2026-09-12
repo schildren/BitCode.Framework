@@ -38,6 +38,12 @@
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.FeatureManagement\BitCode.Platform.FeatureManagement.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Documents\BitCode.Platform.Documents.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow\BitCode.Platform.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Workflow.Contracts\BitCode.Platform.Workflow.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.TaskInbox\BitCode.Platform.TaskInbox.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Notifications\BitCode.Platform.Notifications.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Reporting\BitCode.Platform.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.ImportExport\BitCode.Platform.ImportExport.csproj" />
+    <ProjectReference Include="..\..\src\Platform\BitCode.Platform.Dashboard\BitCode.Platform.Dashboard.csproj" />
     <ProjectReference Include="..\..\src\Platform\BitCode.Platform.IntegrationHub\BitCode.Platform.IntegrationHub.csproj" />
     <ProjectReference Include="..\..\samples\Sample.Api\Sample.Api.csproj" />
     <ProjectReference Include="..\..\samples\Sample.Eventing\Sample.Eventing.csproj" />

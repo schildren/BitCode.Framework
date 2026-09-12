@@ -38,6 +38,7 @@
     <Project Path="src/Platform/BitCode.Platform.FeatureManagement/BitCode.Platform.FeatureManagement.csproj" />
     <Project Path="src/Platform/BitCode.Platform.Documents/BitCode.Platform.Documents.csproj" />
     <Project Path="src/Platform/BitCode.Platform.Workflow/BitCode.Platform.Workflow.csproj" />
+    <Project Path="src/Platform/BitCode.Platform.Workflow.Contracts/BitCode.Platform.Workflow.Contracts.csproj" />
     <Project Path="src/Platform/BitCode.Platform.TaskInbox/BitCode.Platform.TaskInbox.csproj" />
     <Project Path="src/Platform/BitCode.Platform.Notifications/BitCode.Platform.Notifications.csproj" />
     <Project Path="src/Platform/BitCode.Platform.IntegrationHub/BitCode.Platform.IntegrationHub.csproj" />
