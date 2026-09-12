@@ -630,6 +630,205 @@ no dejar una prueba automatizada frágil en vez de forzarla.
   tarea siguió el mismo patrón manual (`docker build`/`docker run` o `dotnet run`) que F9-05, sin alterar
   ese contrato.
 
+## Strangler rollout (F9-07)
+
+Fase 9 (`docs/plan-maestro-bitcode-ia.md`, backlog F9-07, "Strangler rollout") pide "duplicar lectura o
+migrar gradualmente según riesgo", con entregable **"Plan de rollout"** y criterio de aceptación
+**"Sin big bang"**. Como ya documentan `ADR-0020` y las secciones "Host independiente (F9-05)"/"Routing
+(F9-06)" de arriba, este framework no tiene tráfico productivo real que migrar hoy — por lo que este plan
+es, por diseño, un procedimiento concreto apoyado ÚNICAMENTE en los mecanismos que F9-02 a F9-06 ya
+construyeron y verificaron (contratos separados, store propio, compensaciones, host independiente,
+routing estático reversible), no en capacidades hipotéticas de un "service mesh" o un feature-flag de
+routing dinámico que este framework no tiene.
+
+### Fase 1 — Duplicar lectura / validar paridad ANTES de enrutar tráfico real
+
+**Mecanismo de mirroring/shadow traffic de YARP: inspeccionado y descartado por inexistente.**
+`Yarp.ReverseProxy` 2.3.0 (`src/BitCode.Gateway/BitCode.Gateway.csproj`) no ofrece, en la superficie de
+configuración que usa este Gateway (`ReverseProxy:Routes`/`ReverseProxy:Clusters`, `LoadFromConfig`),
+ningún mecanismo declarativo de "traffic mirroring" (duplicar cada request real hacia un segundo destino
+sin devolver su respuesta al cliente) ni de "shadow testing" — no existe una sección de configuración
+para eso y no hay ningún `IProxyConfigProvider`/middleware custom en `Program.cs` que lo implemente. Un
+mirroring real requeriría escribir un transform/middleware propio (por ejemplo, un `RequestTransform` que
+además de proxyar al destino real dispare una copia fire-and-forget hacia el segundo destino) — no existe
+hoy en el repo, y no se inventó uno nuevo para esta tarea porque hacerlo bien (sin duplicar efectos de
+escritura, con timeout/backpressure propios) es un cambio de infraestructura no trivial fuera del alcance
+literal de F9-07 ("Plan de rollout", no "implementar mirroring"). Se documenta esta ausencia explícitamente
+en vez de sugerir una capacidad de shadow-traffic que el framework no tiene.
+
+**Lo que SÍ existe y es la validación de paridad real y ejecutable hoy, sin tráfico productivo:**
+
+1. **Paridad de comportamiento del propio código.** No hay un "monolito" como proceso separado del que
+   duplicar lectura — el host independiente (`samples/Sample.Workflow.Api` corriendo standalone, F9-05) y
+   el "monolito" ejecutan exactamente el mismo código de `BitCode.Platform.Workflow` (misma librería,
+   compilada una sola vez). La paridad a validar, entonces, no es "¿el código se comporta igual en dos
+   lugares?" (es el mismo binario) sino "¿el código se comporta igual FUERA del proceso in-memory de
+   pruebas (`WebApplicationFactory`) que DENTRO de un contenedor Docker real, con SQL Server/Kafka reales
+   detrás de una red de contenedores?" — que es precisamente la pregunta que la infraestructura del
+   framework permite responder hoy.
+2. **Verificación real ejecutada para esta tarea** (evidencia, no solo el plan):
+   - `dotnet test samples/Sample.Workflow.Api.Tests/Sample.Workflow.Api.Tests.csproj -c Release` →
+     **9/9 pasan** (`WorkflowEndpointsIntegrationTests` + `WorkflowDataOwnershipIntegrationTests`, SQL
+     Server real vía Testcontainers) — confirma el camino feliz completo, RBAC/ownership y aislamiento de
+     datos ANTES de construir la imagen, ejerciendo el mismo assembly que corre el host independiente.
+   - Se reconstruyó `bitcode/sample-workflow-api:0.1.0` (`docker build -f
+     docker/sample-workflow-api/Dockerfile`, mismo Dockerfile de F9-05) y se corrió como contenedor
+     standalone contra `docker compose up -d sqlserver kafka otel-collector jaeger redis` (mismos 5
+     servicios de F8-11, red `bitcode-dev_default`). `GET /health/live` → `200`, `GET /health/ready` →
+     `200` (SQL Server y Kafka reales arriba) — mismo resultado documentado en F9-05, reproducido de nuevo
+     para esta tarea.
+   - `GET /api/v1/workflows` sin token, ejecutado DIRECTO contra el contenedor (`http://localhost:18081`,
+     sin pasar por el Gateway) → `401 Unauthorized`, idéntico al comportamiento que ya prueban
+     `WorkflowEndpointsIntegrationTests` (`401 sin autenticación`) y al que F9-06 ya había confirmado
+     comparando el mismo endpoint contra el proceso real — evidencia adicional de paridad entre "el test
+     en memoria dice 401" y "el contenedor real responde 401".
+3. **Conclusión honesta de esta fase:** sin un segundo proceso "monolito" real corriendo en paralelo, no
+   hay nada que "duplicar" literalmente — la paridad que se puede demostrar (y se demostró) es que el
+   MISMO código, corrido de tres formas distintas (Testcontainers en proceso de test, contenedor Docker
+   standalone, y — más abajo — detrás del Gateway), produce el mismo comportamiento observable en los
+   tres casos. Si en el futuro existiera un monolito real desplegado con tráfico productivo, el mecanismo
+   equivalente sería correr esta misma suite de integración (o una réplica de smoke tests HTTP) apuntando
+   a la URL base del monolito real y comparando; el framework no necesita un componente nuevo para eso,
+   solo un target de `BaseUrl` distinto — no se implementó ese modo "contra URL externa" en esta tarea
+   porque no hay ningún monolito real al que apuntarlo hoy.
+
+### Fase 2 — Migración gradual por riesgo, usando SOLO el mecanismo real de routing (F9-06)
+
+**Limitación real reconocida antes de proponer los pasos:** el Gateway (YARP + `LoadFromConfig`) no
+soporta división de tráfico por PORCENTAJE ni por header/cookie de sesión (no hay `Weight` en
+`DestinationConfig` expuesto vía `appsettings.json` en esta versión/configuración, ni ningún
+`ILoadBalancingPolicy` custom registrado en `Program.cs` que lo implemente) — la granularidad de "cambio
+de tráfico" que este framework tiene HOY es **por ruta completa** (todo el prefijo `/api/v1/workflows/**`
+va a un cluster o al otro), decidida en `appsettings.json`, aplicada recién al **reiniciar el proceso**
+del Gateway (sin hot-reload, ver "Routing (F9-06)" arriba). No hay canary real (0%→5%→25%→100% del mismo
+endpoint) posible sin escribir código nuevo de balanceo — se documenta así en vez de simular una capacidad
+de canary que no existe.
+
+**Lo que SÍ permite "sin big bang" con ese único mecanismo real — la estrangulación es por LÍMITE DE
+CONTRATO (bounded context), no por porcentaje de tráfico:**
+
+1. **Paso 0 (ya completado, F9-05/F9-06):** desplegar el host independiente de Workflow en paralelo al
+   resto de la plataforma, SIN que el Gateway le envíe tráfico todavía (`ReverseProxy:Routes` sin la ruta
+   `sample-workflow-api`, o Gateway apuntando la ruta a un destino inexistente) — riesgo cero, nada
+   depende todavía del proceso nuevo.
+2. **Paso 1 (ya completado, F9-06):** agregar la ruta `/api/v{version}/workflows/{**catch-all}` al
+   Gateway apuntando al host independiente, dejando **todas las demás rutas de la plataforma sin tocar**
+   (`sample-api` catch-all preexistente sigue intacta). Esto YA es "migración gradual por riesgo" en el
+   único sentido en que este framework la soporta hoy: se migra **un bounded context completo a la vez**
+   (Workflow), nunca un porcentaje arbitrario de sus requests ni todos los módulos de la plataforma de
+   una sola vez — el radio de impacto de un error queda acotado a quien llama endpoints de Workflow, no a
+   toda la plataforma. Si en el futuro se migraran más módulos piloto (Reporting, según ADR-0020), cada
+   uno agregaría su propia ruta de la misma forma, en un cambio de configuración propio, nunca todos
+   juntos.
+3. **Paso 2 (repetible, procedimiento de esta tarea):** antes de habilitar la ruta nueva en un ambiente
+   real, ejecutar la Fase 1 completa (tests + verificación de contenedor standalone) contra la imagen que
+   se va a desplegar — un `docker build` con un tag inmutable (`bitcode/sample-workflow-api:<version>`,
+   ya versionado por MinVer/F8-13) que sea el MISMO artefacto que después se apunta desde
+   `ReverseProxy:Clusters:sample-workflow-api-cluster:Destinations`, nunca una imagen distinta a la
+   probada.
+4. **Paso 3 (verificado en esta tarea, evidencia abajo): habilitar el routing con monitoreo activo desde
+   el segundo 1.** Cambiar `ReverseProxy:Clusters:sample-workflow-api-cluster:Destinations:destination1:
+   Address` al destino real y reiniciar el Gateway — el único "corte" real de este framework — mientras
+   `docker-compose.yml` (F8-11) ya tiene el `otel-collector`/Jaeger corriendo para observar el resultado
+   inmediatamente después (ver Fase 3 abajo).
+5. **Paso 4:** si el criterio de éxito (ver Fase 3) se cumple durante una ventana de observación razonable
+   (por ejemplo, sin objetivo de negocio real todavía, un smoke test manual inmediato más un período corto
+   de guardia activa), el rollout de ESE bounded context se da por completo. Si no se cumple, se ejecuta
+   el rollback (ver Fase 4) inmediatamente — no hay una "fase intermedia" de porcentaje parcial a la que
+   volver, porque el mecanismo real es todo-o-nada por ruta.
+
+**Mitigación honesta por la ausencia de canary sin downtime:** dado que el único mecanismo de corte real
+es "reiniciar el proceso del Gateway" (sin hot-reload, F9-06), la mitigación razonable — en vez de
+prometer un canary sin downtime que este framework no puede ejecutar hoy — es una **ventana de
+mantenimiento corta y anunciada** para el reinicio (segundos, no minutos, según el comportamiento ya
+observado en F9-06: `dotnet run`/reinicio de contenedor tarda del orden de segundos en volver a escuchar),
+combinada con que el cambio de tráfico es "por bounded context" (Paso 1 arriba) y no simultáneo con
+ningún otro cambio — así el radio de impacto de una ventana corta de indisponibilidad se limita a los
+endpoints de Workflow, no a toda la plataforma.
+
+### Fase 3 — Monitoreo post-cambio con las herramientas ya existentes (verificado con evidencia real)
+
+Se ejecutó el Paso 3 de la Fase 2 de punta a punta para esta tarea, con `docker compose up -d sqlserver
+kafka otel-collector jaeger redis` (F8-11) y el contenedor standalone de Workflow (`bitcode/
+sample-workflow-api:0.1.0`, igual que en la Fase 1) corriendo con `OpenTelemetry__OtlpEndpoint=http://
+bitcode-otel-collector:4317`:
+
+1. `GET /api/v1/workflows` directo al contenedor (`401`) generó una traza real, confirmada consultando la
+   API de Jaeger (`GET http://localhost:16686/api/services` → incluye `"Sample.Workflow.Api"`;
+   `GET http://localhost:16686/api/traces?service=Sample.Workflow.Api` devuelve el span real
+   `GET /api/v{version:apiVersion}/workflows/` con `http.response.status_code: 401`).
+2. Se corrió el Gateway real (`dotnet run`, `ASPNETCORE_ENVIRONMENT=Development`) con
+   `ReverseProxy:Clusters:sample-workflow-api-cluster` apuntando al contenedor
+   (`http://localhost:18081/`) y `OpenTelemetry:OtlpEndpoint=http://localhost:4317` (cambio temporal de
+   `appsettings.Development.json` para esta verificación, revertido al finalizar — ver más abajo). Un
+   request `GET /api/v1/workflows` sin token contra el Gateway (`http://localhost:5080`) devolvió `401`
+   (rechazado por el auth boundary de F4-08 antes de proxyar, mismo comportamiento ya documentado en
+   F9-06) y generó una traza real del servicio `"BitCode.Gateway"`, confirmada de la misma forma contra la
+   API de Jaeger (`GET /api/services` pasó de 2 a 3 entradas: `jaeger-all-in-one`, `Sample.Workflow.Api`,
+   `BitCode.Gateway`).
+3. **Esto confirma, con evidencia real (no solo documental), que el mecanismo de observabilidad ya
+   existente (`AddSharedObservability`, F3-10, exportando a `otel-collector`/Jaeger, F8-11) es suficiente
+   para monitorear el resultado de un cambio de routing de Fase 2 inmediatamente después de aplicarlo**:
+   un operador puede consultar Jaeger (UI en `http://localhost:16686` o su API) filtrando por servicio y
+   por `http.response.status_code` para confirmar que el tráfico llega al destino esperado y con qué
+   códigos de respuesta, sin necesitar ninguna herramienta nueva.
+
+**Criterios de éxito objetivos y medibles propuestos** (no hay tráfico productivo real hoy contra el cual
+fijar un umbral con datos reales — mismo tipo de limitación honesta que ya documenta `ADR-0020` para
+"escala/SLA" — se proponen los criterios que SÍ se pueden evaluar con las herramientas ya existentes en
+cuanto exista tráfico real):
+
+- `GET /health/ready` del host independiente en `200` de forma sostenida durante la ventana de observación
+  (no solo en el instante del corte).
+- Tasa de `5xx` en las trazas de Jaeger filtradas por servicio `Sample.Workflow.Api` no mayor que la tasa
+  de `5xx` observada en el mismo endpoint antes del corte (criterio comparativo, no un número absoluto
+  inventado).
+- Ausencia de errores de publicación a Kafka sostenidos en los logs del `OutboxBatchProcessor` (ver
+  `KafkaProducerHealthCheck`, F9-05) más allá de los transitorios ya esperados por la política de
+  reintentos (F3-07).
+- Trigger de rollback: incumplimiento de CUALQUIERA de los tres criterios anteriores de forma sostenida
+  (no un único evento aislado, que la política de reintentos de F3-07 ya está diseñada para absorber).
+
+### Fase 4 — Rollback (mismo mecanismo verificado en F9-06, con criterio explícito de disparo)
+
+El rollback de esta tarea es exactamente el mecanismo ya verificado en "Routing (F9-06)": revertir
+`ReverseProxy:Clusters:sample-workflow-api-cluster:Destinations` (o quitar la ruta
+`sample-workflow-api` completa) en `appsettings.json`/`appsettings.Development.json` y **reiniciar el
+proceso del Gateway** — sin hot-reload disponible, tal como ya documenta esa sección. Se volvió a
+verificar para esta tarea: tras el Paso 3 de la Fase 2 (Gateway apuntando al contenedor real), se revirtió
+`appsettings.Development.json` a su contenido original (destino `http://localhost:5299/`, donde no había
+ningún `Sample.Workflow.Api` corriendo) y se reinició el proceso del Gateway — `GET /api/v1/workflows`
+volvió a fallar sin token con `401` (el auth boundary sigue aplicando primero) tal como espera F9-06; con
+un token válido habría devuelto `502` contra el destino ahora inexistente, exactamente el comportamiento
+ya documentado y verificado en F9-06 con un JWT real.
+
+**Disparador concreto de rollback** (no solo "si algo sale mal" en abstracto): cualquiera de los criterios
+de incumplimiento listados en la Fase 3, sostenido más allá de lo que la política de reintentos de F3-07
+ya absorbe, o un fallo de arranque del host independiente (`/health/ready` en `503` de forma persistente
+tras el corte). El costo del rollback es el mismo que el del corte: una ventana de mantenimiento corta
+por el reinicio del proceso del Gateway — no hay una forma de revertir sin ese reinicio con la
+infraestructura actual (mismo hallazgo honesto de F9-06).
+
+### Limitaciones reales reconocidas de este plan (no un rollout "ideal" de libro de texto)
+
+- **Sin traffic mirroring/shadow testing real** — YARP 2.3.0 tal como está configurado en este Gateway no
+  lo soporta; la validación de paridad de la Fase 1 se apoya en pruebas automatizadas + verificación
+  manual contra el mismo artefacto, no en comparar respuestas de dos procesos en paralelo ante el mismo
+  request real.
+- **Sin traffic splitting por porcentaje ni por header/cookie** — la granularidad real de "migración
+  gradual" de este framework es por bounded context/ruta completa, nunca por fracción de las requests de
+  un mismo endpoint.
+- **Sin canary sin downtime** — el corte y el rollback comparten el mismo costo: un reinicio de proceso
+  del Gateway, mitigado con una ventana de mantenimiento corta y anunciada, no evitado del todo.
+- **Sin feature flags de routing dinámico** — `BitCode.Platform.FeatureManagement` (Fase 6, módulo 4)
+  existe como módulo de plataforma, pero nada en el Gateway lo consulta hoy para decidir a qué cluster
+  enrutar un request; usarlo para routing dinámico sería una extensión real y no trivial (el Gateway
+  tendría que resolver feature flags por tenant/request antes de proxyar), fuera del alcance de F9-07.
+- **Los criterios de éxito de la Fase 3 son objetivos pero sin un umbral numérico fijado con datos reales**
+  — no existe tráfico productivo del que derivar ese número hoy (misma limitación que ya reconoce
+  `ADR-0020`); se proponen como criterios COMPARATIVOS (antes/después) en vez de inventar un SLA sin
+  evidencia.
+
 ## Auditoría
 
 Toda mutación (`CrearWorkflowDefinitionCommand`, `CrearWorkflowVersionCommand`,
@@ -660,6 +859,17 @@ proxyar, routing correcto hacia el backend de Workflow (nunca hacia `sample-api`
 la ruta preexistente de `sample-api` sigue funcionando sin regresión — ver sección "Routing (F9-06)"
 arriba para el detalle completo, incluida la verificación manual de la reversión contra el Gateway real.
 
+**F9-07 (Strangler rollout):** no se agregó ninguna prueba automatizada nueva — el "Plan de rollout" es,
+por criterio de aceptación literal ("Sin big bang"), un documento/procedimiento, no un componente de
+código. La evidencia de que el procedimiento es ejecutable (no solo teórico) es la re-ejecución real
+documentada en la sección "Strangler rollout (F9-07)" arriba: `dotnet test
+samples/Sample.Workflow.Api.Tests` (9/9) contra Testcontainers, el contenedor standalone real de F9-05
+reconstruido y verificado de nuevo, el Gateway real de F9-06 apuntado al contenedor y su reversión
+re-verificada, y trazas reales confirmadas contra la API de Jaeger (`Sample.Workflow.Api` y
+`BitCode.Gateway` ambos aparecieron en `GET /api/services` tras el tráfico generado). Entorno restaurado
+(`docker compose down`, contenedor `sample-workflow-api` eliminado,
+`src/BitCode.Gateway/appsettings.Development.json` revertido a su contenido de F9-06) al finalizar.
+
 ## Referencias
 
 - [`plan-maestro-bitcode-ia.md`](plan-maestro-bitcode-ia.md) — Fase 6, "Épica de Workflow".
@@ -676,3 +886,7 @@ arriba para el detalle completo, incluida la verificación manual de la reversi�
 - `samples/Sample.Workflow.Api.Tests/Integration/WorkflowDataOwnershipIntegrationTests.cs` — F9-03, evidencia de store propio.
 - `src/BitCode.Gateway/appsettings.json`, `appsettings.Development.json` — F9-06, ruta/cluster nuevos hacia el host independiente de Workflow.
 - `tests/BitCode.Gateway.Tests/Integration/GatewayWorkflowRoutingIntegrationTests.cs`, `GatewayWorkflowRoutingTestBackend.cs` — F9-06, evidencia automatizada de routing y de que el auth boundary de F4-08 sigue aplicando.
+- Sección "Strangler rollout (F9-07)" arriba — plan de rollout concreto (paridad, migración gradual por
+  bounded context, monitoreo vía OpenTelemetry/Jaeger, rollback), con verificación real re-ejecutada
+  contra el host independiente (F9-05) y el Gateway (F9-06), y limitaciones honestas del framework
+  (sin traffic mirroring, sin traffic splitting por porcentaje, sin canary sin downtime).
